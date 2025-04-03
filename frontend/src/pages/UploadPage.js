@@ -84,7 +84,7 @@ const UploadPage = () => {
         formData.append('jira_ticket_id', jiraTicketId);
       }
       
-      const response = await fetch('http://localhost:8000/api/upload-msg', {
+      const response = await fetch('http://localhost:9000/api/upload-msg', {
         method: 'POST',
         body: formData,
       });

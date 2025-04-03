@@ -42,7 +42,7 @@ const SearchPage = () => {
     setError('');
     
     try {
-      const response = await fetch('http://localhost:8000/api/search', {
+      const response = await fetch('http://localhost:9000/api/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

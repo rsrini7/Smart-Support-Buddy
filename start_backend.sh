@@ -48,6 +48,6 @@ fi
 # Start the FastAPI server
 echo "Starting FastAPI server..."
 cd "$BACKEND_DIR"
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload
 
 echo "Server stopped."
