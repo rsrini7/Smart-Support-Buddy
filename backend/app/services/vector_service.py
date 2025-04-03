@@ -130,8 +130,7 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
             documents=[full_text]
         )
         
-        # Persist the changes
-        client.persist()
+        # Note: persist() is no longer needed with PersistentClient as it automatically handles persistence
         
         return issue_id
     
