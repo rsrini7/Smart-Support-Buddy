@@ -1,0 +1,20 @@
+# Backend dependencies
+fastapi>=0.95.0
+uvicorn>=0.21.0
+python-multipart>=0.0.6
+pydantic>=1.10.7
+pydantic-settings>=2.0.0  # For BaseSettings functionality
+extract-msg>=0.41.0  # For parsing Outlook MSG files
+jira>=3.5.0  # Python Jira REST API client
+sqlalchemy>=2.0.0  # SQL ORM
+psycopg2-binary>=2.9.6  # PostgreSQL adapter
+python-dotenv>=1.0.0  # Environment variable management
+langchain>=0.0.267  # LLM framework
+chromadb>=0.4.6  # Vector database for embeddings
+scikit-learn>=1.2.2  # For ML utilities
+numpy>=1.24.3
+pandas>=2.0.1
+pytesseract>=0.3.10  # For OCR if needed
+Pillow>=9.5.0  # Image processing
+simple-parsing>=0.1.0  # Command line parsing
+sentence-transformers>=2.2.2  # For text embeddings
