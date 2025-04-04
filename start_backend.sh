@@ -24,23 +24,67 @@ until curl -s -f "http://localhost:8000/api/v1/heartbeat" > /dev/null 2>&1; do
     sleep 5
 done
 
+# Load environment variables if .env exists
+if [ -f "$BACKEND_DIR/.env" ]; then
+    source "$BACKEND_DIR/.env"
+fi
+
+# Set default values for Jira credentials if not provided
+JIRA_USER=${JIRA_USER:-"admin"}
+JIRA_PASS=${JIRA_PASS:-"admin"}
+
 # Wait for Jira to be ready (this may take a few minutes)
 echo "Waiting for Jira to be ready..."
 MAX_RETRIES=30
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -s -f "http://localhost:9090/rest/api/2/serverInfo" > /dev/null 2>&1; then
-        echo "Jira is ready!"
-        break
-    fi
-    echo "Waiting for Jira... (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+    # Use basic auth and handle different response scenarios
+    RESPONSE=$(curl -s -w "\n%{http_code}" \
+        -u "$JIRA_USER:$JIRA_PASS" \
+        "http://localhost:9090/rest/api/2/serverInfo")
+    HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+    BODY=$(echo "$RESPONSE" | sed '$d')
+    
+    case "$HTTP_CODE" in
+        200)
+            if [ ! -z "$BODY" ]; then
+                echo "Jira is ready and authenticated!"
+                break
+            else
+                echo "Warning: Empty response from Jira server"
+            fi
+            ;;
+        401|403)
+            echo "Error: Authentication failed. Please check JIRA_USER and JIRA_PASS environment variables"
+            ;;
+        404)
+            echo "Error: Jira API endpoint not found. Please check if Jira is properly installed"
+            ;;
+        503)
+            echo "Jira is still starting up..."
+            ;;
+        *)
+            echo "Unexpected response (HTTP $HTTP_CODE)"
+            if [ ! -z "$BODY" ]; then
+                echo "Response: $BODY"
+            fi
+            ;;
+    esac
+    
     RETRY_COUNT=$((RETRY_COUNT + 1))
-    sleep 10
+    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+        echo "Retrying in 10 seconds... (Attempt $RETRY_COUNT/$MAX_RETRIES)"
+        sleep 10
+    fi
 done
 
 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo "Error: Jira failed to start after $MAX_RETRIES attempts"
+    echo "Please check:
+    1. Docker containers are running (docker ps)
+    2. Jira credentials are correct
+    3. Jira is running on port 9090"
     exit 1
 fi
 

@@ -7,7 +7,7 @@ import json
 from app.core.config import settings
 from app.services.msg_parser import parse_msg_file
 from app.services.jira_service import get_jira_ticket, link_msg_to_jira
-from app.services.vector_service import search_similar_issues, add_issue_to_vectordb
+from app.services.vector_service import search_similar_issues, add_issue_to_vectordb, delete_issue
 from app.db.models import IssueCreate, IssueResponse, SearchQuery
 
 router = APIRouter()
@@ -101,5 +101,17 @@ async def list_issues(
         # This would be implemented to fetch issues from the database
         # For now, return a placeholder
         return []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/issues/{issue_id}")
+async def delete_production_issue(issue_id: str):
+    """Delete a production issue"""
+    try:
+        success = delete_issue(issue_id)
+        if not success:
+            raise HTTPException(status_code=404, detail=f"Issue {issue_id} not found or could not be deleted")
+        
+        return {"status": "success", "message": f"Issue {issue_id} deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

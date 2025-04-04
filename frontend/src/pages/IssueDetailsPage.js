@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Typography,
   Box,
@@ -16,15 +16,24 @@ import {
   List,
   ListItem,
   ListItemText,
-  Link
+  Link,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
 } from '@mui/material';
 
 const IssueDetailsPage = () => {
   const { issueId } = useParams();
+  const navigate = useNavigate();
   const [issue, setIssue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tabValue, setTabValue] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const fetchIssueDetails = async () => {
@@ -87,6 +96,36 @@ const IssueDetailsPage = () => {
     setTabValue(newValue);
   };
 
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
+    try {
+      const response = await fetch(`http://localhost:9000/api/issues/${issueId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || 'Failed to delete issue');
+      }
+
+      // Navigate back to search page after successful deletion
+      navigate('/search');
+    } catch (err) {
+      setError(err.message);
+      setDeleteDialogOpen(false);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown';
     const date = new Date(dateString);
@@ -119,9 +158,19 @@ const IssueDetailsPage = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Issue Details
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4">
+          Issue Details
+        </Typography>
+        <Button
+          variant="contained"
+          color="error"
+          onClick={handleDeleteClick}
+          disabled={loading || deleteLoading}
+        >
+          Delete Issue
+        </Button>
+      </Box>
       
       <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="h5" gutterBottom>
@@ -334,7 +383,7 @@ const IssueDetailsPage = () => {
                       View in Jira
                     </Typography>
                     <Link 
-                      href={`https://jira.example.com/browse/${issue.jira_data.key}`} 
+                      href={`${process.env.REACT_APP_JIRA_BASE_URL}/browse/${issue.jira_data.key}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                     >
@@ -347,6 +396,23 @@ const IssueDetailsPage = () => {
           </Box>
         )}
       </Paper>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+      >
+        <DialogTitle>Delete Issue</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this issue? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={deleteLoading}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" disabled={deleteLoading} autoFocus>
+            {deleteLoading ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

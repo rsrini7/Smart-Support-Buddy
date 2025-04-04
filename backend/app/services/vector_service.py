@@ -138,6 +138,32 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
         logger.error(f"Error adding issue to vector database: {str(e)}")
         raise
 
+def delete_issue(issue_id: str) -> bool:
+    """
+    Delete a production issue from the vector database.
+    
+    Args:
+        issue_id: ID of the issue to delete
+        
+    Returns:
+        bool: True if deletion was successful, False otherwise
+    """
+    try:
+        # Get vector DB client
+        client = get_vector_db_client()
+        
+        # Get the collection
+        collection = client.get_or_create_collection("production_issues")
+        
+        # Delete the document from the collection
+        collection.delete(ids=[issue_id])
+        
+        return True
+    
+    except Exception as e:
+        logger.error(f"Error deleting issue from vector database: {str(e)}")
+        return False
+
 def search_similar_issues(query_text: str, jira_ticket_id: Optional[str] = None, limit: int = 10) -> List[IssueResponse]:
     """
     Search for similar production issues based on a query text.

@@ -1,0 +1,20 @@
+# ./jira-setup-files/jira-response.varfile
+
+# Jira License Key (Replace with your actual key)
+jira.license.message=AAAB2A0ODAoPeNqVUl2PmkAUfedXkPSlfcAd0F0/EpJawJaVj61Qd9f4MotXmS0CvQMi/758aLTVmjSZlzmTOeeec8+HCTJxnKJIeqLcHZHhqKeImu6LClHuBQ2BZiyJdZqBWiMS6UnkXrBYADEHv0zBoVtQNde2jZlmji3hnSHtHN6NFat/q4bjG7OnmekZgpNv3wDd9Q8OyFVJPlIZ+5RheaZTn5YsxWSVB1mnvkg8WWcFRejQIGM7UDPMQfDyNx4gSxuxBjF2NMrp6d4QVexUgzgDbMGolf5GeajaWqFNJqR8DS17Gmz28/e9S6ISB8ldrJkrPg6/f1WiXw+ueRdOF6lSFs+mbL4uXopH3y+W6lI9OjF11TJ1z3AkSyGDIekOB7d8eBnFeqI1jXjlBHAHWFF8cfs9yZu+DKXnRd+TnPHcFX5COa9Sq03JD4T0yaDblYUNAsRhkqaAN3J/yjEIKYe/N3n+u4kmRcaPsRqO+qePK1rXOqDDaR2PlVvRO7gVP9Y7ENslfFqOxNOeBJuyCo1pHPx/GS5adT7oeVNucPyjHcfEFcHFDY0Zb1vVR44sZp83W8qiTpBsBS2Js0rKqHxEV54b5Ys5G/RiwBvRHlQa+FLkN6PaT2AwLQIUNfXuHiHDGq8aEg79gZZR5kK5cfICFQCOYwJ1FGZ8B69ipy9HCYLalbJwHQ==X02mi
+
+# Skip certain setup steps (Database step is skipped by providing dbconfig.xml)
+jira.setup.step=setupAdministrator
+
+# Admin User Details (Replace with your desired admin credentials)
+jira.setup.administrator.username=admin
+jira.setup.administrator.password=admin
+jira.setup.administrator.fullname=Jira Administrator
+jira.setup.administrator.email=7rsrini@gmail.com
+
+# Application Properties
+jira.setup.application.title=My Company Jira
+jira.setup.mode.private=true # true for private (login required), false for public signup
+
+# Final step indicator
+jira.setup.complete=true
