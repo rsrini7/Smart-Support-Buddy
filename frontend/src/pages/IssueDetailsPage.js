@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Typography,
   Box,
@@ -28,6 +28,7 @@ import {
 const IssueDetailsPage = () => {
   const { issueId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [issue, setIssue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -36,7 +37,13 @@ const IssueDetailsPage = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const handleGoBack = () => {
-    navigate(-1);
+    // Check if we have search state to return to
+    const searchState = location.state;
+    if (searchState?.searchResults) {
+      navigate('/search', { state: searchState });
+    } else {
+      navigate(-1);
+    }
   };
 
   useEffect(() => {

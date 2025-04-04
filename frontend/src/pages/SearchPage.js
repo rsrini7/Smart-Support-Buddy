@@ -14,15 +14,18 @@ import {
   Divider,
   Chip
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const SearchPage = () => {
   const navigate = useNavigate();
-  const [queryText, setQueryText] = useState('');
-  const [jiraTicketId, setJiraTicketId] = useState('');
+  const location = useLocation();
+
+  // Initialize state from location if available
+  const [queryText, setQueryText] = useState(location.state?.searchQuery || '');
+  const [jiraTicketId, setJiraTicketId] = useState(location.state?.searchJiraId || '');
+  const [results, setResults] = useState(location.state?.searchResults || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [results, setResults] = useState([]);
 
   const handleQueryChange = (event) => {
     setQueryText(event.target.value);
@@ -70,13 +73,19 @@ const SearchPage = () => {
   };
 
   const handleViewIssue = (issueId) => {
-    navigate(`/issues/${issueId}`);
+    navigate(`/issues/${issueId}`, {
+      state: {
+        searchResults: results,
+        searchQuery: queryText,
+        searchJiraId: jiraTicketId
+      }
+    });
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown';
     const date = new Date(dateString);
-    return date.toLocaleDateString();
+    return date.toLocaleString();
   };
 
   const handleKeyPress = (event) => {
@@ -161,7 +170,7 @@ const SearchPage = () => {
                         />
                       )}
                       <Chip 
-                        label={`Similarity: ${Math.round(issue.similarity_score * 100)}%`} 
+                        label={`Similarity: ${(issue.similarity_score * 100).toFixed(2)}%`} 
                         color="secondary" 
                         size="small" 
                         sx={{ mr: 1 }}
