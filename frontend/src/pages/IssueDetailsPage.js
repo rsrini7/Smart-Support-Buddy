@@ -35,6 +35,10 @@ const IssueDetailsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
   useEffect(() => {
     const fetchIssueDetails = async () => {
       try {
@@ -123,6 +127,11 @@ const IssueDetailsPage = () => {
 
   return (
     <Box>
+      <Box sx={{ mb: 2 }}>
+        <Button variant="outlined" onClick={handleGoBack} sx={{ mr: 2 }}>
+          Back
+        </Button>
+      </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">
           Issue Details

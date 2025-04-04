@@ -216,12 +216,12 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
         logger.error(f"Error getting issue from vector database: {str(e)}")
         raise
 
-def search_similar_issues(query_text: str, jira_ticket_id: Optional[str] = None, limit: int = 10) -> List[IssueResponse]:
+def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10) -> List[IssueResponse]:
     """
-    Search for similar production issues based on a query text.
+    Search for similar production issues based on a query text or Jira ticket ID.
     
     Args:
-        query_text: Text to search for
+        query_text: Text to search for (optional)
         jira_ticket_id: Optional Jira ticket ID to filter results
         limit: Maximum number of results to return
         
@@ -232,38 +232,51 @@ def search_similar_issues(query_text: str, jira_ticket_id: Optional[str] = None,
         # Get vector DB client
         client = get_vector_db_client()
         
-        # Get embedding model
-        model = get_embedding_model()
-        
         # Get the collection
         collection = client.get_or_create_collection("production_issues")
         
-        # Generate embedding for the query
-        query_embedding = model.encode(query_text).tolist()
-        
-        # Prepare filter if Jira ticket ID is provided
-        where_filter = None
-        if jira_ticket_id:
-            where_filter = {"jira_ticket_id": jira_ticket_id}
-        
-        # Query the collection
-        results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=limit,
-            where=where_filter,
-            include=['metadatas', 'documents', 'distances']
-        )
+        # If only Jira ticket ID is provided, use get() instead of query()
+        if jira_ticket_id and not query_text:
+            # Get all documents with matching Jira ticket ID
+            results = collection.get(
+                where={"jira_ticket_id": jira_ticket_id},
+                limit=limit,
+            )
+        else:
+            # Get embedding model for text search
+            model = get_embedding_model()
+            
+            # Generate embedding for the query
+            query_embedding = model.encode(query_text).tolist()
+            
+            # Prepare filter if Jira ticket ID is provided
+            where_filter = {"jira_ticket_id": jira_ticket_id} if jira_ticket_id else None
+            
+            # Query the collection
+            results = collection.query(
+                query_embeddings=[query_embedding],
+                n_results=limit,
+                where=where_filter,
+                include=['metadatas', 'documents', 'distances']
+            )
         
         # Process results
         issue_responses = []
         if results and len(results["ids"]) > 0:
-            for i, issue_id in enumerate(results["ids"][0]):
-                metadata = results["metadatas"][0][i]
-                document = results["documents"][0][i]
-                distance = results["distances"][0][i] if "distances" in results else 0.0
-                
-                # Convert distance to similarity score (1.0 is perfect match)
-                similarity_score = 1.0 - min(distance, 1.0)
+            # Determine if we're processing query results or direct get results
+            is_query_result = query_text and "distances" in results
+            
+            # Get the correct indices based on result type
+            ids = results["ids"][0] if is_query_result else results["ids"]
+            metadatas = results["metadatas"][0] if is_query_result else results["metadatas"]
+            documents = results["documents"][0] if is_query_result else results["documents"]
+            
+            for i, issue_id in enumerate(ids):
+                metadata = metadatas[i]
+                document = documents[i]
+                # Calculate similarity score - 1.0 for Jira ID matches, distance-based for text search
+                distance = results["distances"][0][i] if is_query_result else 0.0
+                similarity_score = 1.0 - min(distance, 1.0) if is_query_result else 1.0
                 
                 # Parse received_date if available
                 received_date = None
@@ -283,7 +296,7 @@ def search_similar_issues(query_text: str, jira_ticket_id: Optional[str] = None,
                     jira_data=None,  # We could fetch this if needed
                     sender=metadata.get("sender"),
                     received_date=received_date,
-                    created_at=datetime.now(),  # This is not accurate but we don't have the actual creation time
+                    created_at=datetime.now(),
                     updated_at=None,
                     root_cause=metadata.get("root_cause"),
                     solution=metadata.get("solution"),

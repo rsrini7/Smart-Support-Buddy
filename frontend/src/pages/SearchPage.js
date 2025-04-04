@@ -79,6 +79,12 @@ const SearchPage = () => {
     return date.toLocaleDateString();
   };
 
+  const handleKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
@@ -97,6 +103,7 @@ const SearchPage = () => {
             variant="outlined"
             value={queryText}
             onChange={handleQueryChange}
+            onKeyPress={handleKeyPress}
             placeholder="Enter keywords or description"
             sx={{ mb: 2 }}
           />
@@ -107,6 +114,7 @@ const SearchPage = () => {
             variant="outlined"
             value={jiraTicketId}
             onChange={handleJiraTicketChange}
+            onKeyPress={handleKeyPress}
             placeholder="e.g., PROD-123"
             sx={{ mb: 3 }}
           />
