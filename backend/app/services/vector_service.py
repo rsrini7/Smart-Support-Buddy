@@ -22,6 +22,8 @@ def get_vector_db_client():
         ChromaDB client instance
     """
     try:
+        # Disable telemetry before creating the client
+        chromadb.configure(anonymized_telemetry=False)
         # Using the new client construction method as per migration guide
         client = chromadb.PersistentClient(path=settings.VECTOR_DB_PATH)
         return client
@@ -198,7 +200,8 @@ def search_similar_issues(query_text: str, jira_ticket_id: Optional[str] = None,
         results = collection.query(
             query_embeddings=[query_embedding],
             n_results=limit,
-            where=where_filter
+            where=where_filter,
+            include=['metadatas', 'documents', 'distances']
         )
         
         # Process results
