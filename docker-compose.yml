@@ -47,6 +47,7 @@ services:
       - ATL_DB_DRIVER=org.postgresql.Driver
       - JVM_MINIMUM_MEMORY=1024m
       - JVM_MAXIMUM_MEMORY=2048m
+      - CATALINA_OPTS=-Dserver.max-http-header-size=1048576
     volumes:
       - jira_data:/var/atlassian/application-data/jira
     ports:

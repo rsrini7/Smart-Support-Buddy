@@ -26,10 +26,23 @@ done
 
 # Wait for Jira to be ready (this may take a few minutes)
 echo "Waiting for Jira to be ready..."
-until curl -s -f "http://localhost:9090" > /dev/null 2>&1; do
-    echo "Waiting for Jira..."
+MAX_RETRIES=30
+RETRY_COUNT=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -s -f "http://localhost:9090/rest/api/2/serverInfo" > /dev/null 2>&1; then
+        echo "Jira is ready!"
+        break
+    fi
+    echo "Waiting for Jira... (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+    RETRY_COUNT=$((RETRY_COUNT + 1))
     sleep 10
 done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "Error: Jira failed to start after $MAX_RETRIES attempts"
+    exit 1
+fi
 
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then
