@@ -38,51 +38,16 @@ const IssueDetailsPage = () => {
   useEffect(() => {
     const fetchIssueDetails = async () => {
       try {
-        // This would be a real API call in a complete implementation
-        // For now, we'll simulate a delay and return mock data
         setLoading(true);
+        const response = await fetch(`http://localhost:9000/api/issues/${issueId}`);
         
-        // Simulating API call
-        setTimeout(() => {
-          // Mock data - in a real app, this would come from the API
-          const mockIssue = {
-            id: issueId,
-            title: 'Database Connection Timeout in Production',
-            description: 'Users reported inability to access the application due to database connection timeouts. The issue started after the recent deployment and affected approximately 30% of users.',
-            msg_file_path: '/uploads/issue_123.msg',
-            jira_ticket_id: 'PROD-456',
-            sender: 'operations@example.com',
-            received_date: '2023-06-15T14:30:00Z',
-            created_at: '2023-06-15T15:00:00Z',
-            updated_at: '2023-06-16T09:15:00Z',
-            root_cause: 'Connection pool settings were incorrectly configured in the new deployment, leading to exhaustion of available connections during peak load.',
-            solution: 'Increased the maximum connection pool size and implemented connection timeout handling. Also added monitoring alerts for connection pool utilization.',
-            jira_data: {
-              key: 'PROD-456',
-              summary: 'Database Connection Timeout Issue',
-              status: 'Resolved',
-              priority: 'High',
-              assignee: 'Jane Smith',
-              reporter: 'John Doe',
-              created: '2023-06-15T14:45:00Z',
-              updated: '2023-06-16T09:10:00Z',
-              components: ['Database', 'Backend'],
-              labels: ['production', 'critical']
-            },
-            msg_data: {
-              subject: 'URGENT: Database Connection Issues',
-              body: 'The production environment is experiencing database connection timeouts. Users are reporting errors when trying to access the application. Please investigate and resolve ASAP.',
-              sender: 'operations@example.com',
-              recipients: ['support@example.com', 'dev-team@example.com'],
-              received_date: '2023-06-15T14:30:00Z',
-              attachments: ['error_logs.txt', 'screenshot.png']
-            }
-          };
-          
-          setIssue(mockIssue);
-          setLoading(false);
-        }, 1000);
-        
+        if (!response.ok) {
+          throw new Error('Failed to fetch issue details');
+        }
+
+        const data = await response.json();
+        setIssue(data);
+        setLoading(false);
       } catch (err) {
         setError('Failed to load issue details');
         setLoading(false);

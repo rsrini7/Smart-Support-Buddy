@@ -94,6 +94,18 @@ async def list_issues(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/issues/{issue_id}", response_model=IssueResponse)
+async def get_issue(issue_id: str):
+    """Get a specific production issue by ID"""
+    try:
+        from app.services.vector_service import get_issue
+        issue = get_issue(issue_id)
+        if not issue:
+            raise HTTPException(status_code=404, detail=f"Issue {issue_id} not found")
+        return issue
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.delete("/issues/{issue_id}")
 async def delete_production_issue(issue_id: str):
     """Delete a production issue"""

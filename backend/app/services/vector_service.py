@@ -166,6 +166,56 @@ def delete_issue(issue_id: str) -> bool:
         logger.error(f"Error deleting issue from vector database: {str(e)}")
         return False
 
+def get_issue(issue_id: str) -> Optional[IssueResponse]:
+    """
+    Get a specific production issue by ID from the vector database.
+    
+    Args:
+        issue_id: ID of the issue to retrieve
+        
+    Returns:
+        IssueResponse object if found, None otherwise
+    """
+    try:
+        # Get vector DB client
+        client = get_vector_db_client()
+        
+        # Get the collection
+        collection = client.get_or_create_collection("production_issues")
+        
+        # Get the document by ID
+        result = collection.get(ids=[issue_id])
+        
+        # If no results found, return None
+        if not result or not result['ids']:
+            return None
+            
+        # Extract metadata and document
+        metadata = result['metadatas'][0]
+        document = result['documents'][0]
+        
+        # Create IssueResponse object
+        return IssueResponse(
+            id=issue_id,
+            title=metadata.get('subject', ''),
+            description=document,
+            root_cause=metadata.get('root_cause', ''),
+            solution=metadata.get('solution', ''),
+            jira_ticket_id=metadata.get('jira_ticket_id', ''),
+            received_date=metadata.get('received_date', '') or metadata.get('created_date', ''),
+            created_at=datetime.now(),  # Add required created_at field
+            updated_at=None,
+            msg_data={
+                'subject': metadata.get('subject', ''),
+                'sender': metadata.get('sender', ''),
+                'file_path': metadata.get('msg_file_path', '')
+            } if metadata.get('msg_file_path') else None
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting issue from vector database: {str(e)}")
+        raise
+
 def search_similar_issues(query_text: str, jira_ticket_id: Optional[str] = None, limit: int = 10) -> List[IssueResponse]:
     """
     Search for similar production issues based on a query text.
