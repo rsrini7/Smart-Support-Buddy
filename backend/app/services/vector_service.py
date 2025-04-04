@@ -237,9 +237,15 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
         
         # If only Jira ticket ID is provided, use get() instead of query()
         if jira_ticket_id and not query_text:
-            # Get all documents with matching Jira ticket ID
+            # Get all documents with matching Jira ticket ID (case-insensitive)
             results = collection.get(
-                where={"jira_ticket_id": jira_ticket_id},
+                where={"$and": [
+                    {"jira_ticket_id": {"$ne": ""}},  # Ensure jira_ticket_id exists and is not empty
+                    {"$or": [
+                        {"jira_ticket_id": jira_ticket_id.upper()},  # Match uppercase
+                        {"jira_ticket_id": jira_ticket_id.lower()}   # Match lowercase
+                    ]}
+                ]},
                 limit=limit,
             )
         else:
@@ -249,16 +255,25 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
             # Generate embedding for the query
             query_embedding = model.encode(query_text).tolist()
             
-            # Prepare filter if Jira ticket ID is provided
-            where_filter = {"jira_ticket_id": jira_ticket_id} if jira_ticket_id else None
+            # Query parameters
+            query_params = {
+                "query_embeddings": [query_embedding],
+                "n_results": limit,
+                "include": ['metadatas', 'documents', 'distances']
+            }
+            
+            # Add where filter only if Jira ticket ID is provided
+            if jira_ticket_id:
+                query_params["where"] = {"$and": [
+                    {"jira_ticket_id": {"$ne": ""}},  # Ensure jira_ticket_id exists and is not empty
+                    {"$or": [
+                        {"jira_ticket_id": jira_ticket_id.upper()},  # Match uppercase
+                        {"jira_ticket_id": jira_ticket_id.lower()}   # Match lowercase
+                    ]}
+                ]}
             
             # Query the collection
-            results = collection.query(
-                query_embeddings=[query_embedding],
-                n_results=limit,
-                where=where_filter,
-                include=['metadatas', 'documents', 'distances']
-            )
+            results = collection.query(**query_params)
         
         # Process results
         issue_responses = []
