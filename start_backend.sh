@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Production Issue Identifier - Backend Startup Script
-# This script installs dependencies and starts the FastAPI backend server
+# This script starts Docker services and the FastAPI backend server
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
@@ -12,6 +12,24 @@ BACKEND_DIR="$(pwd)/backend"
 DATA_DIR="$BACKEND_DIR/data"
 UPLOAD_DIR="$DATA_DIR/uploads"
 VECTOR_DB_DIR="$DATA_DIR/vectordb"
+
+# Start Docker Compose services
+echo "Starting Docker Compose services..."
+docker compose up -d chroma postgres jira
+
+# Wait for ChromaDB to be healthy
+echo "Waiting for ChromaDB to be healthy..."
+until curl -s -f "http://localhost:8000/api/v1/heartbeat" > /dev/null 2>&1; do
+    echo "Waiting for ChromaDB..."
+    sleep 5
+done
+
+# Wait for Jira to be ready (this may take a few minutes)
+echo "Waiting for Jira to be ready..."
+until curl -s -f "http://localhost:9090" > /dev/null 2>&1; do
+    echo "Waiting for Jira..."
+    sleep 10
+done
 
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then

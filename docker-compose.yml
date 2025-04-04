@@ -1,6 +1,25 @@
-version: '3.8'
 
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - ./backend/.env.docker
+    volumes:
+      - ./backend:/app
+      - ./backend/data:/app/data
+    ports:
+      - "9000:9000"
+    networks:
+      - app_network
+    depends_on:
+      - chroma
+      - jira
+      - postgres
+
   chroma:
     image: chromadb/chroma:latest
     environment:
@@ -12,13 +31,51 @@ services:
     ports:
       - "8000:8000"
     networks:
-      - chroma_net
+      - app_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
       interval: 30s
       timeout: 10s
       retries: 3
 
+  jira:
+    image: atlassian/jira-software:latest
+    environment:
+      - ATL_JDBC_URL=jdbc:postgresql://postgres:5432/jira
+      - ATL_JDBC_USER=jira
+      - ATL_JDBC_PASSWORD=jirapass
+      - ATL_DB_DRIVER=org.postgresql.Driver
+      - JVM_MINIMUM_MEMORY=1024m
+      - JVM_MAXIMUM_MEMORY=2048m
+    volumes:
+      - jira_data:/var/atlassian/application-data/jira
+    ports:
+      - "9090:8080"
+    networks:
+      - app_network
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=jira
+      - POSTGRES_PASSWORD=jirapass
+      - POSTGRES_DB=jira
+      - POSTGRES_USER_2=postgres
+      - POSTGRES_PASSWORD_2=postgres
+      - POSTGRES_DB_2=prodissue
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app_network
+
+volumes:
+  jira_data:
+  postgres_data:
+
 networks:
-  chroma_net:
+  app_network:
     driver: bridge
