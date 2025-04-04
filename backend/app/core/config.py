@@ -2,9 +2,20 @@ import os
 from pydantic_settings import BaseSettings
 from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
+import logging
 
-# Load environment variables from .env file
-load_dotenv()
+logger = logging.getLogger(__name__)
+
+# Try loading from .env.docker first, then fall back to .env
+docker_env = load_dotenv('.env.docker')
+if docker_env:
+    logger.info("Loaded environment variables from .env.docker")
+else:
+    env_loaded = load_dotenv('.env')
+    if env_loaded:
+        logger.info("Loaded environment variables from .env")
+    else:
+        logger.warning("No environment file (.env.docker or .env) found, using default values")
 
 class Settings(BaseSettings):
     # API settings
@@ -18,9 +29,15 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost/prodissue")
     
     # Jira settings
-    JIRA_URL: Optional[str] = os.getenv("JIRA_URL")
-    JIRA_USERNAME: Optional[str] = os.getenv("JIRA_USERNAME")
-    JIRA_API_TOKEN: Optional[str] = os.getenv("JIRA_API_TOKEN")
+    JIRA_URL: str = os.getenv("JIRA_URL", "http://localhost:9090")
+    JIRA_USERNAME: str = os.getenv("JIRA_USERNAME", "admin")
+    JIRA_API_TOKEN: str = os.getenv("JIRA_API_TOKEN", "")
+    JIRA_PASSWORD: str = os.getenv("JIRA_PASSWORD", "")  # For local Jira instance authentication
+    
+    @property
+    def has_valid_jira_config(self) -> bool:
+        """Check if Jira configuration is valid."""
+        return bool(self.JIRA_URL and self.JIRA_USERNAME and (self.JIRA_API_TOKEN or self.JIRA_PASSWORD))
     
     # Vector DB settings
     VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "./data/vectordb")

@@ -7,6 +7,10 @@ import uvicorn
 
 from app.api.routes import router as api_router
 from app.core.config import settings
+from app.core.logging_config import setup_logging
+
+# Initialize logging configuration
+setup_logging()
 
 app = FastAPI(
     title="Production Issue Identifier",

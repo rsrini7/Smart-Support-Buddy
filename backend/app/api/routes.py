@@ -15,14 +15,18 @@ router = APIRouter()
 @router.post("/upload-msg", response_model=Dict[str, Any])
 async def upload_msg_file(
     file: Optional[UploadFile] = File(None),
-    jira_ticket_id: Optional[str] = Form(None)
+    jira_ticket_id: str = Form(...)
 ):
-    """Upload an MSG file and/or process a Jira ticket"""
+    """Upload an MSG file and/or process a Jira ticket. Jira ticket ID is required."""
     try:
         # Initialize variables
         msg_data = {}
         file_path = None
-        jira_data = None
+        
+        # Get Jira ticket data (required)
+        jira_data = get_jira_ticket(jira_ticket_id)
+        if not jira_data:
+            raise HTTPException(status_code=404, detail=f"Jira ticket {jira_ticket_id} not found")
         
         # Process file if provided
         if file:
@@ -33,29 +37,15 @@ async def upload_msg_file(
             
             # Parse the MSG file
             msg_data = parse_msg_file(file_path)
-        
-        # If Jira ticket ID is provided, get the ticket data
-        if jira_ticket_id:
-            jira_data = get_jira_ticket(jira_ticket_id)
             
-            # Link MSG data to Jira if both are available
-            if jira_data and file:  
-                link_msg_to_jira(msg_data, jira_data)
-        
-        # Validate that at least one of file or jira_ticket_id is provided
-        if not file and not jira_ticket_id:
-            raise HTTPException(status_code=400, detail="Either a MSG file or a Jira ticket ID must be provided")
+            # Link MSG data to Jira
+            link_msg_to_jira(msg_data, jira_data)
             
         # Add the issue to the vector database
-        issue_id = add_issue_to_vectordb(msg_data, jira_data)
+        issue_id = add_issue_to_vectordb(msg_data if file else None, jira_data)
         
         # Customize success message based on what was provided
-        if file and jira_ticket_id:
-            message = "MSG file uploaded and linked to Jira ticket successfully"
-        elif file:
-            message = "MSG file uploaded and processed successfully"
-        else:
-            message = "Jira ticket processed successfully"
+        message = "MSG file uploaded and linked to Jira ticket successfully" if file else "Jira ticket processed successfully"
         
         return {
             "status": "success",

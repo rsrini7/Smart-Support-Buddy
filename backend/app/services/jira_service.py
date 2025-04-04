@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 
 from app.core.config import settings
+from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -13,21 +14,113 @@ def get_jira_client():
     Get a Jira client instance using credentials from settings.
     
     Returns:
-        JIRA client instance or None if credentials are not configured
+        JIRA client instance
+    
+    Raises:
+        HTTPException: If Jira credentials are missing or invalid
     """
-    try:
-        if not all([settings.JIRA_URL, settings.JIRA_USERNAME, settings.JIRA_API_TOKEN]):
-            logger.warning("Jira credentials not fully configured")
-            return None
-            
-        jira = JIRA(
-            server=settings.JIRA_URL,
-            basic_auth=(settings.JIRA_USERNAME, settings.JIRA_API_TOKEN)
+    logger.info("Initializing Jira client with provided configuration")
+    logger.info(f"Attempting to connect with username: {settings.JIRA_USERNAME}")
+    logger.info(f"Jira URL configured as: {settings.JIRA_URL}")
+    logger.debug(f"API token present: {'Yes' if settings.JIRA_API_TOKEN else 'No'}")
+    logger.debug(f"API token length: {len(settings.JIRA_API_TOKEN) if settings.JIRA_API_TOKEN else 0}")
+    
+    # Check if Jira configuration is valid
+    if not settings.has_valid_jira_config:
+        error_msg = "Invalid Jira configuration. Please check your environment variables."
+        logger.error(error_msg)
+        raise HTTPException(
+            status_code=401,
+            detail=error_msg
         )
-        return jira
+            
+    try:
+        # Normalize and validate Jira URL
+        jira_url = settings.JIRA_URL.strip() if settings.JIRA_URL else ""
+        if not jira_url.startswith(('http://', 'https://')):
+            logger.info(f"Adding HTTPS protocol to Jira URL: {jira_url}")
+            jira_url = f'https://{jira_url}'
+        
+        # Force HTTPS for Atlassian Cloud instances
+        if 'atlassian.net' in jira_url:
+            logger.info("Detected Atlassian Cloud instance, forcing HTTPS")
+            jira_url = jira_url.replace('http://', 'https://')
+
+        logger.info(f"Attempting to connect to Jira at: {jira_url}")
+        logger.debug(f"Connection details - Username: {settings.JIRA_USERNAME}, Token Length: {len(settings.JIRA_API_TOKEN) if settings.JIRA_API_TOKEN else 0}")
+
+        # Initialize Jira client with proper authentication and options
+        # For local Jira instance, always use password authentication
+        is_local = 'localhost' in jira_url or '127.0.0.1' in jira_url or 'jira:9090' in jira_url
+        
+        # For local instance, ensure we're using password authentication
+        if is_local:
+            if not settings.JIRA_PASSWORD:
+                logger.error("Password is required for local Jira instance")
+                raise HTTPException(
+                    status_code=401,
+                    detail="Password is required for local Jira instance"
+                )
+            auth_tuple = (settings.JIRA_USERNAME.strip(), settings.JIRA_PASSWORD.strip())
+        else:
+            if not settings.JIRA_API_TOKEN:
+                logger.error("API token is required for cloud Jira instance")
+                raise HTTPException(
+                    status_code=401,
+                    detail="API token is required for cloud Jira instance"
+                )
+            auth_tuple = (settings.JIRA_USERNAME.strip(), settings.JIRA_API_TOKEN.strip())
+        
+        logger.info(f"Using {'password' if is_local else 'API token'} authentication for {'local' if is_local else 'cloud'} instance")
+        
+        # Configure client options based on environment
+        options = {
+            'server': jira_url,
+            'verify': not is_local,  # Skip SSL verification for local instance
+        }
+        
+        jira = JIRA(
+            options=options,
+            basic_auth=auth_tuple,
+            validate=True,
+            max_retries=3
+        )
+
+        # Verify connection and permissions
+        try:
+            user = jira.myself()
+            logger.info(f"Successfully authenticated as {user['displayName']} with Jira instance")
+            return jira
+        except Exception as auth_error:
+            error_msg = str(auth_error).lower()
+            if 'unauthorized' in error_msg or 'authentication' in error_msg:
+                logger.error(f"Authentication failed: Invalid credentials for user {settings.JIRA_USERNAME}")
+                raise HTTPException(
+                    status_code=401,
+                    detail="Invalid credentials. Please verify your Jira username and API token."
+                )
+            elif 'forbidden' in error_msg:
+                logger.error(f"Authentication failed: Insufficient permissions for user {settings.JIRA_USERNAME}")
+                raise HTTPException(
+                    status_code=403,
+                    detail="Insufficient permissions. Please check your Jira account permissions."
+                )
+            else:
+                logger.error(f"Authentication failed with unexpected error: {error_msg}")
+                raise HTTPException(
+                    status_code=401,
+                    detail=f"Authentication failed: {str(auth_error)}"
+                )
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error initializing Jira client: {str(e)}")
-        return None
+        error_msg = f"Error initializing Jira client: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to connect to Jira. Please check your configuration and network connection."
+        )
 
 def get_jira_ticket(ticket_id: str) -> Optional[Dict[str, Any]]:
     """
