@@ -37,9 +37,24 @@ def get_jira_client():
     try:
         # Normalize and validate Jira URL
         jira_url = settings.JIRA_URL.strip() if settings.JIRA_URL else ""
-        if not jira_url.startswith(('http://', 'https://')):
-            logger.info(f"Adding HTTPS protocol to Jira URL: {jira_url}")
-            jira_url = f'https://{jira_url}'
+        
+        # Replace 'jira' with 'localhost' for local development
+        if jira_url == 'jira:9090' or jira_url == 'http://jira:9090' or jira_url == 'https://jira:9090':
+            logger.info("Detected local Jira instance with 'jira' hostname, replacing with 'localhost'")
+            jira_url = 'http://localhost:9090'
+        
+        # For local development (localhost), always use HTTP
+        if 'localhost' in jira_url or '127.0.0.1' in jira_url:
+            if jira_url.startswith('https://'):
+                jira_url = jira_url.replace('https://', 'http://')
+            elif not jira_url.startswith('http://'):
+                jira_url = f'http://{jira_url}'
+            logger.info(f"Using HTTP for local Jira instance: {jira_url}")
+        else:
+            # Add HTTPS protocol for non-local URLs if missing
+            if not jira_url.startswith(('http://', 'https://')):
+                logger.info(f"Adding HTTPS protocol to Jira URL: {jira_url}")
+                jira_url = f'https://{jira_url}'
         
         # Force HTTPS for Atlassian Cloud instances
         if 'atlassian.net' in jira_url:
@@ -59,9 +74,16 @@ def get_jira_client():
                 logger.error("Password is required for local Jira instance")
                 raise HTTPException(
                     status_code=401,
-                    detail="Password is required for local Jira instance"
+                    detail="Password is required for local Jira instance. Please check your .env file."
+                )
+            if not settings.JIRA_USERNAME:
+                logger.error("Username is required for local Jira instance")
+                raise HTTPException(
+                    status_code=401,
+                    detail="Username is required for local Jira instance. Please check your .env file."
                 )
             auth_tuple = (settings.JIRA_USERNAME.strip(), settings.JIRA_PASSWORD.strip())
+            logger.info(f"Using basic authentication for local instance with username: {settings.JIRA_USERNAME}")
         else:
             if not settings.JIRA_API_TOKEN:
                 logger.error("API token is required for cloud Jira instance")
@@ -77,6 +99,7 @@ def get_jira_client():
         options = {
             'server': jira_url,
             'verify': not is_local,  # Skip SSL verification for local instance
+            'timeout': 10  # Add timeout to prevent hanging
         }
         
         jira = JIRA(
