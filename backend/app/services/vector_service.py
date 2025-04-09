@@ -112,11 +112,15 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
             "msg_body": msg_body,
             "msg_sender": msg_data.get("sender", ""),
             "msg_received_date": msg_data.get("received_date", "").isoformat() if msg_data.get("received_date") else "",
+            "msg_jira_id": msg_data.get("jira_id", ""),
+            "msg_jira_url": msg_data.get("jira_url", ""),
+            "msg_root_cause": msg_data.get("root_cause", ""),
+            "msg_solution": msg_data.get("solution", ""),
+            "msg_file_path": msg_data.get("file_path", ""),
             "jira_ticket_id": jira_ticket_id or "",
             "jira_summary": jira_summary,
             "jira_root_cause": jira_root_cause,
             "jira_solution": jira_solution,
-            "msg_file_path": msg_data.get("file_path", ""),
             # Add current date if no received_date from MSG
             "created_date": datetime.now().isoformat() if not msg_data.get("received_date") else ""
         }
@@ -206,7 +210,11 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
                 'body': metadata.get('msg_body', ''),
                 'sender': metadata.get('msg_sender', ''),
                 'received_date': metadata.get('msg_received_date', ''),
-                'file_path': metadata.get('msg_file_path', '')
+                'file_path': metadata.get('msg_file_path', ''),
+                'jira_id': metadata.get('msg_jira_id', ''),
+                'jira_url': metadata.get('msg_jira_url', ''),
+                'root_cause': metadata.get('msg_root_cause', ''),
+                'solution': metadata.get('msg_solution', '')
             } if metadata.get('msg_file_path') else None
         )
         
