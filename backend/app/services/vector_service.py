@@ -280,18 +280,18 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
         combined_solution = ""
 
         if jira_root_cause and msg_root_cause:
-            combined_root_cause = f"Jira Root Cause:\n{jira_root_cause}\n\nMSG Root Cause:\n{msg_root_cause}"
+            combined_root_cause = f"\nJira Root Cause: \n{jira_root_cause}\n\nMSG Root Cause:\n{msg_root_cause}"
         elif jira_root_cause:
-            combined_root_cause = f"Jira Root Cause:\n{jira_root_cause}"
+            combined_root_cause = f"{jira_root_cause}"
         elif msg_root_cause:
-            combined_root_cause = f"MSG Root Cause:\n{msg_root_cause}"
+            combined_root_cause = f"{msg_root_cause}"
 
         if jira_solution and msg_solution:
-            combined_solution = f"Jira Solution:\n{jira_solution}\n\nMSG Solution:\n{msg_solution}"
+            combined_solution = f"\Jira  Root Cause: \n{jira_solution}\n\nMSG Solution:\n{msg_solution}"
         elif jira_solution:
-            combined_solution = f"Jira Solution:\n{jira_solution}"
+            combined_solution = f"{jira_solution}"
         elif msg_solution:
-            combined_solution = f"MSG Solution:\n{msg_solution}"
+            combined_solution = f"{msg_solution}"
 
 
 
