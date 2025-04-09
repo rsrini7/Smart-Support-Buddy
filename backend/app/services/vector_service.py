@@ -117,6 +117,8 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
             "msg_root_cause": msg_data.get("root_cause", ""),
             "msg_solution": msg_data.get("solution", ""),
             "msg_file_path": msg_data.get("file_path", ""),
+            "recipients": msg_data.get("recipients", []),
+            "attachments": msg_data.get("attachments", []),
             "jira_ticket_id": jira_ticket_id or "",
             "jira_summary": jira_summary,
             "jira_root_cause": jira_root_cause,
@@ -195,6 +197,14 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
         document = result['documents'][0]
         
         # Create IssueResponse object
+        jira_data = None
+        try:
+            from app.services.jira_service import get_jira_ticket
+            if metadata.get('jira_ticket_id'):
+                jira_data = get_jira_ticket(metadata.get('jira_ticket_id'))
+        except Exception as e:
+            logger.warning(f"Failed to fetch Jira data for ticket {metadata.get('jira_ticket_id')}: {e}")
+
         return IssueResponse(
             id=issue_id,
             title=metadata.get('msg_subject', ''),
@@ -214,8 +224,11 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
                 'jira_id': metadata.get('msg_jira_id', ''),
                 'jira_url': metadata.get('msg_jira_url', ''),
                 'root_cause': metadata.get('msg_root_cause', ''),
-                'solution': metadata.get('msg_solution', '')
-            } if metadata.get('msg_file_path') else None
+                'solution': metadata.get('msg_solution', ''),
+                'recipients': metadata.get('recipients', []),
+                'attachments': metadata.get('attachments', [])
+            } if metadata.get('msg_file_path') else None,
+            jira_data=jira_data
         )
         
     except Exception as e:
