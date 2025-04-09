@@ -29,6 +29,8 @@ const IssueDetailsPage = () => {
   const { issueId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const previousQuery = location.state?.searchQuery || '';
+  const previousJiraId = location.state?.searchJiraId || '';
   const [issue, setIssue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -93,7 +95,7 @@ const IssueDetailsPage = () => {
       }
 
       // Navigate back to search page after successful deletion
-      navigate('/search');
+      navigate('/search', { state: { searchQuery: previousQuery, searchJiraId: previousJiraId } });
     } catch (err) {
       setError(err.message);
       setDeleteDialogOpen(false);

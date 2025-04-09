@@ -15,6 +15,7 @@ import {
   Chip
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
+  import { useEffect } from 'react';
 
 const SearchPage = () => {
   const navigate = useNavigate();
@@ -26,6 +27,12 @@ const SearchPage = () => {
   const [results, setResults] = useState(location.state?.searchResults || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  useEffect(() => {
+    if ((queryText && queryText.trim() !== '') || (jiraTicketId && jiraTicketId.trim() !== '')) {
+      handleSearch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleQueryChange = (event) => {
     setQueryText(event.target.value);
