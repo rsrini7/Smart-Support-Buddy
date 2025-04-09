@@ -3,7 +3,6 @@ import { Box, Typography, Button, List, ListItem, ListItemText, Alert, CircularP
 
 const IngestMsgFilesPage = () => {
   const [files, setFiles] = useState([]);
-  const [folderName, setFolderName] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -13,14 +12,6 @@ const IngestMsgFilesPage = () => {
     setFiles(selectedFiles);
     setResults([]);
     setError('');
-
-    if (selectedFiles.length > 0) {
-      const firstPath = selectedFiles[0].webkitRelativePath;
-      const folderHierarchy = firstPath.split('/').slice(0, -1).join('/');
-      setFolderName(folderHierarchy);
-    } else {
-      setFolderName('');
-    }
   };
 
   const handleIngest = async () => {

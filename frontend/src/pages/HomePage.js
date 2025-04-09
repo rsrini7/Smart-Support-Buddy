@@ -13,10 +13,19 @@ const HomePage = () => {
           Easily manage, search, and analyze production issues using MSG files and Jira integration
         </Typography>
         <Box sx={{ mt: 3 }}>
-          <Button 
-            variant="contained" 
-            color="secondary" 
-            component={RouterLink} 
+          <Button
+            variant="contained"
+            color="primary"
+            component={RouterLink}
+            to="/ingest-msg-files"
+            sx={{ mr: 2 }}
+          >
+            Ingest MSG
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            component={RouterLink}
             to="/upload"
             sx={{ mr: 2 }}
           >
