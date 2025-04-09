@@ -104,13 +104,6 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
         extracted_details = extract_issue_details(result)
         result.update(extracted_details)
 
-        # Log the final parsed result
-        try:
-            import json as _json
-            logger.debug("Parsed MSG file result: %s", _json.dumps(result, indent=2, default=str))
-        except Exception:
-            logger.debug("Parsed MSG file result (non-JSON): %s", str(result))
-
     except Exception as e:
         logger.error(f"Error inside parse_msg_file for file_path {file_path}: {e}")
         raise e  # Re-raise the exception for further handling
@@ -149,15 +142,27 @@ def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
     jira_pattern = r"\b[A-Z][A-Z0-9]+-\d+\b"
     jira_matches = re.findall(jira_pattern, combined_text)
     if jira_matches:
+        # If Jira IDs found directly, use the first one
         issue_details["jira_id"] = jira_matches[0]
-
-        # Search for Jira URL in the text
-        jira_url_pattern = r"https?://[^\s]+/browse/[A-Z][A-Z0-9]+-\d+"
+        issue_details["jira_url"] = None
+        
+        # No Jira IDs found directly, try to extract from Jira URL
+        jira_url_pattern = r"https?://[^\s]+/(browse|projects/.+/issues)/[A-Z][A-Z0-9]+-\d+"
         jira_url_match = re.search(jira_url_pattern, combined_text)
         if jira_url_match:
-            issue_details["jira_url"] = jira_url_match.group(0)
+            jira_url = jira_url_match.group(0)
+            issue_details["jira_url"] = jira_url
+
+            # Extract Jira ID from URL
+            import re as _re
+            m = _re.search(r"([A-Z][A-Z0-9]+-\d+)", jira_url)
+            if m:
+                issue_details["jira_id"] = m.group(1)
+            else:
+                issue_details["jira_id"] = None
         else:
             issue_details["jira_url"] = None
+            issue_details["jira_id"] = None
 
     return issue_details
     # - Text classification to identify root cause and solution sections
