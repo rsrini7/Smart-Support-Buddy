@@ -46,9 +46,16 @@ def get_embedding_model():
         logger.error(f"Error initializing embedding model: {str(e)}")
         raise
 
-def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[Dict[str, Any]] = None) -> str:
+def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: Optional[Dict[str, Any]] = None) -> str:
     """
     Add a production issue to the vector database.
+
+    Args:
+        msg_data: Optional parsed MSG file data dictionary
+        jira_data: Optional Jira ticket data dictionary
+
+    Returns:
+        ID of the created issue
     
     Args:
         msg_data: Parsed MSG file data (optional if jira_data is provided)
@@ -62,6 +69,7 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
             msg_data = {}
         if jira_data is None:
             jira_data = {}
+
         # Ensure at least one of msg_data or jira_data is provided
         if not msg_data and not jira_data:
             raise ValueError("Either MSG data or Jira data must be provided")
@@ -71,10 +79,7 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
         
         # Get embedding model
         model = get_embedding_model()
-        
-        # Create a unique ID for the issue
-        issue_id = f"issue_{datetime.now().strftime('%Y%m%d%H%M%S')}_{os.path.basename(msg_data.get('file_path', ''))}"
-        
+
         msg_subject = ""
         msg_body = ""
         
@@ -82,6 +87,12 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
         if(msg_data):
             msg_subject = msg_data.get("subject", "")
             msg_body = msg_data.get("body", "")
+
+        # Create a unique ID for the issue
+        file_path = msg_data.get('file_path', '') if msg_data else ''
+        suffix = os.path.basename(file_path) if file_path else 'no_msgfile'
+        issue_id = f"issue_{datetime.now().strftime('%Y%m%d%H%M%S')}_{suffix}"
+        
         
         # Combine with Jira data if available
         jira_summary = ""
