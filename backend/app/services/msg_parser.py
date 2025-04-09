@@ -195,5 +195,11 @@ def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
         issue_details["root_cause"] = "\n".join(root_cause_lines).strip()
     if solution_lines:
         issue_details["solution"] = "\n".join(solution_lines).strip()
-    
+    # --- Suggestion for future improvement ---
+    # Consider using NLP techniques such as:
+    # - Text classification to identify root cause and solution sections
+    # - Named Entity Recognition (NER) to extract relevant entities
+    # - Summarization models to generate concise root cause and solution summaries
+    # This would improve accuracy beyond simple keyword or fallback heuristics.
+
     return issue_details
