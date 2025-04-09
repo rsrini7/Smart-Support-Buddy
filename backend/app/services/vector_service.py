@@ -116,7 +116,6 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
             "msg_jira_url": msg_data.get("jira_url", ""),
             "msg_root_cause": msg_data.get("root_cause", ""),
             "msg_solution": msg_data.get("solution", ""),
-            "msg_file_path": msg_data.get("file_path", ""),
             "recipients": msg_data.get("recipients", []),
             "attachments": msg_data.get("attachments", []),
             "jira_ticket_id": jira_ticket_id or "",
@@ -220,14 +219,13 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
                 'body': metadata.get('msg_body', ''),
                 'sender': metadata.get('msg_sender', ''),
                 'received_date': metadata.get('msg_received_date', ''),
-                'file_path': metadata.get('msg_file_path', ''),
                 'jira_id': metadata.get('msg_jira_id', ''),
                 'jira_url': metadata.get('msg_jira_url', ''),
                 'root_cause': metadata.get('msg_root_cause', ''),
                 'solution': metadata.get('msg_solution', ''),
                 'recipients': metadata.get('recipients', []),
                 'attachments': metadata.get('attachments', [])
-            } if metadata.get('msg_file_path') else None,
+            },
             jira_data=jira_data
         )
         
@@ -327,7 +325,6 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                     id=issue_id,
                     title=metadata.get("msg_subject") or metadata.get("jira_summary") or metadata.get("jira_ticket_id") or "Unknown Issue",
                     description=document,
-                    msg_file_path=metadata.get("msg_file_path"),
                     jira_ticket_id=metadata.get("jira_ticket_id"),
                     jira_data=None,  # We could fetch this if needed
                     sender=metadata.get("msg_sender"),

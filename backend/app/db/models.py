@@ -6,7 +6,6 @@ class IssueCreate(BaseModel):
     """Schema for creating a new production issue"""
     title: str
     description: str
-    msg_file_path: str
     jira_ticket_id: Optional[str] = None
     sender: Optional[str] = None
     received_date: Optional[datetime] = None
@@ -18,7 +17,6 @@ class IssueResponse(BaseModel):
     id: str
     title: str
     description: str
-    msg_file_path: Optional[str] = None
     jira_ticket_id: Optional[str] = None
     jira_data: Optional[Dict[str, Any]] = None
     sender: Optional[str] = None

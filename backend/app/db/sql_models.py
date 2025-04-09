@@ -15,7 +15,6 @@ class Issue(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     title = Column(String, nullable=False, index=True)
     description = Column(Text, nullable=False)
-    msg_file_path = Column(String, nullable=True)
     jira_ticket_id = Column(String, nullable=True, index=True)
     sender = Column(String, nullable=True)
     received_date = Column(DateTime, nullable=True)
