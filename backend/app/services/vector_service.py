@@ -226,6 +226,8 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
         elif msg_solution:
             combined_solution = f"MSG Solution:\n{msg_solution}"
 
+
+
         return IssueResponse(
             id=issue_id,
             title=metadata.get('msg_subject', ''),

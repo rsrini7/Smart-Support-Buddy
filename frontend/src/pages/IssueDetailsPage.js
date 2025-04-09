@@ -373,6 +373,28 @@ const IssueDetailsPage = () => {
                   </CardContent>
                 </Card>
               </Grid>
+
+              {issue.jira_data?.comments && issue.jira_data.comments.length > 0 && (
+                <Grid item xs={12}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        Jira Comments
+                      </Typography>
+                      <List dense>
+                        {issue.jira_data.comments.map((comment, index) => (
+                          <ListItem key={index} alignItems="flex-start">
+                            <ListItemText
+                              primary={comment.author?.displayName || 'Unknown Author'}
+                              secondary={comment.body || ''}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
             </Grid>
           </Box>
         )}

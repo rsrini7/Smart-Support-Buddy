@@ -193,8 +193,8 @@ def get_jira_ticket(ticket_id: str) -> Optional[Dict[str, Any]]:
             "summary": fields.summary,
             "description": fields.description,
             "status": fields.status.name,
-            "created": datetime.strptime(fields.created, '%Y-%m-%dT%H:%M:%S.%f%z'),
-            "updated": datetime.strptime(fields.updated, '%Y-%m-%dT%H:%M:%S.%f%z'),
+            "created": datetime.strptime(fields.created, '%Y-%m-%dT%H:%M:%S.%f%z').isoformat(),
+            "updated": datetime.strptime(fields.updated, '%Y-%m-%dT%H:%M:%S.%f%z').isoformat(),
             "assignee": fields.assignee.displayName if fields.assignee else None,
             "reporter": fields.reporter.displayName if fields.reporter else None,
             "priority": fields.priority.name if fields.priority else None,
@@ -203,7 +203,22 @@ def get_jira_ticket(ticket_id: str) -> Optional[Dict[str, Any]]:
             "labels": labels,
             "custom_fields": custom_fields
         }
-        
+
+        # Fetch comments
+        comments_data = []
+        try:
+            comments = issue.fields.comment.comments
+            for comment in comments:
+                comments_data.append({
+                    "author": comment.author.displayName if comment.author else "Unknown",
+                    "created": comment.created,
+                    "body": comment.body
+                })
+        except Exception as e:
+            logger.warning(f"Failed to fetch comments for Jira ticket {ticket_id}: {e}")
+
+        result["comments"] = comments_data
+
         return result
     
     except Exception as e:
