@@ -170,7 +170,7 @@ const SearchPage = () => {
                         />
                       )}
                       <Chip 
-                        label={`Similarity: ${(issue.similarity_score * 100).toFixed(2)}%`} 
+                        label={`Similarity: ${(issue.similarity_score * 100).toFixed(6)}%`}
                         color="secondary" 
                         size="small" 
                         sx={{ mr: 1 }}

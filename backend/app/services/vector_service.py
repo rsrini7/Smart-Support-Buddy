@@ -290,7 +290,8 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                 document = documents[i]
                 # Calculate similarity score - 1.0 for Jira ID matches, distance-based for text search
                 distance = results["distances"][0][i] if is_query_result else 0.0
-                similarity_score = 1.0 - min(distance, 1.0) if is_query_result else 1.0
+                similarity_score = 1.0 - min(distance / 2, 1.0) if is_query_result else 1.0
+                logger.debug(f"Issue ID: {issue_id} | Distance: {distance:.6f} | Similarity: {similarity_score:.6f}")
                 
                 # Parse received_date if available
                 received_date = None
