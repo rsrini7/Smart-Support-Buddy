@@ -204,12 +204,34 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
         except Exception as e:
             logger.warning(f"Failed to fetch Jira data for ticket {metadata.get('jira_ticket_id')}: {e}")
 
+        jira_root_cause = metadata.get('jira_root_cause', '')
+        jira_solution = metadata.get('jira_solution', '')
+        msg_root_cause = metadata.get('msg_root_cause', '')
+        msg_solution = metadata.get('msg_solution', '')
+
+        combined_root_cause = ""
+        combined_solution = ""
+
+        if jira_root_cause and msg_root_cause:
+            combined_root_cause = f"Jira Root Cause:\n{jira_root_cause}\n\nMSG Root Cause:\n{msg_root_cause}"
+        elif jira_root_cause:
+            combined_root_cause = f"Jira Root Cause:\n{jira_root_cause}"
+        elif msg_root_cause:
+            combined_root_cause = f"MSG Root Cause:\n{msg_root_cause}"
+
+        if jira_solution and msg_solution:
+            combined_solution = f"Jira Solution:\n{jira_solution}\n\nMSG Solution:\n{msg_solution}"
+        elif jira_solution:
+            combined_solution = f"Jira Solution:\n{jira_solution}"
+        elif msg_solution:
+            combined_solution = f"MSG Solution:\n{msg_solution}"
+
         return IssueResponse(
             id=issue_id,
             title=metadata.get('msg_subject', ''),
             description=document,
-            root_cause=metadata.get('jira_root_cause', ''),
-            solution=metadata.get('jira_solution', ''),
+            root_cause=combined_root_cause,
+            solution=combined_solution,
             jira_ticket_id=metadata.get('jira_ticket_id', ''),
             received_date=metadata.get('msg_received_date', '') or metadata.get('created_date', ''),
             created_at=datetime.now(),  # Add required created_at field
