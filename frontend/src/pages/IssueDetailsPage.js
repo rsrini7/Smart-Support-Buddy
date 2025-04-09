@@ -211,57 +211,7 @@ const IssueDetailsPage = () => {
                 </Card>
               </Grid>
               
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Root Cause (From Jira)
-                    </Typography>
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                      {issue.root_cause || 'No root cause identified'}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
 
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Solution (From Jira)
-                    </Typography>
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                      {issue.solution || 'No solution provided'}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined" sx={{ mt: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Root Cause (From MSG File)
-                    </Typography>
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                      {(issue.msg_data && issue.msg_data.root_cause) || 'No root cause from msg file'}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined" sx={{ mt: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Solution (From MSG File)
-                    </Typography>
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                      {(issue.msg_data && issue.msg_data.solution) || 'No solution from msg file'}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
             </Grid>
           </Box>
         )}

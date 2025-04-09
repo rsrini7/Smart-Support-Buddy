@@ -98,21 +98,12 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
         jira_summary = ""
         jira_description = ""
         jira_ticket_id = None
-        jira_root_cause = ""
-        jira_solution = ""
         
         if jira_data:
             jira_ticket_id = jira_data.get("key")
             jira_summary = jira_data.get("summary", "")
             jira_description = jira_data.get("description", "") or ""
             
-            # Extract root cause and solution from Jira data
-            from app.services.jira_service import extract_root_cause_solution
-            extracted = extract_root_cause_solution(jira_data)
-            jira_root_cause = extracted.get("root_cause", "") or ""
-            jira_solution = extracted.get("solution", "") or ""
-        # Extract Jira comments and append to text
-        jira_comments_text = ""
         if jira_data:
             logger.debug(f"jira_data type: {type(jira_data)}, content: {jira_data}")
             comments = jira_data.get("comments", [])
@@ -139,8 +130,7 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
                 jira_comments_text = "\n".join(formatted_comments)
 
         # Create the full text for embedding, including comments
-        full_text = f"{msg_subject}\n{msg_body}\n{jira_summary}\n{jira_description}\n{jira_root_cause}\n{jira_solution}\n{jira_comments_text}"
-        full_text = f"{msg_subject}\n{msg_body}\n{jira_summary}\n{jira_description}\n{jira_root_cause}\n{jira_solution}"
+        full_text = f"{msg_subject}\n{msg_body}\n{jira_summary}\n{jira_description}"
         
         # Generate embedding
         embedding = model.encode(full_text).tolist()
@@ -156,14 +146,10 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
             "msg_received_date": msg_data.get("received_date", "").isoformat() if msg_data.get("received_date") else "",
             "msg_jira_id": msg_data.get("jira_id", ""),
             "msg_jira_url": msg_data.get("jira_url", ""),
-            "msg_root_cause": msg_data.get("root_cause", ""),
-            "msg_solution": msg_data.get("solution", ""),
             "recipients": msg_data.get("recipients", []),
             "attachments": msg_data.get("attachments", []),
             "jira_ticket_id": jira_ticket_id or "",
             "jira_summary": jira_summary,
-            "jira_root_cause": jira_root_cause,
-            "jira_solution": jira_solution,
             # Add current date if no received_date from MSG
             "created_date": datetime.now().isoformat() if not msg_data.get("received_date") else ""
         }
@@ -251,56 +237,19 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
         # Create IssueResponse object
         jira_data = None
         try:
-            from app.services.jira_service import get_jira_ticket, extract_root_cause_solution
+            from app.services.jira_service import get_jira_ticket
             if metadata.get('jira_ticket_id'):
                 jira_data = get_jira_ticket(metadata.get('jira_ticket_id'))
-                # Extract root cause and solution from Jira data including comments
-                extracted = extract_root_cause_solution(jira_data)
-                jira_root_cause = extracted.get("root_cause", "")
-                jira_solution = extracted.get("solution", "")
             else:
-                jira_root_cause = ""
-                jira_solution = ""
+                jira_data = None
         except Exception as e:
             logger.warning(f"Failed to fetch Jira data for ticket {metadata.get('jira_ticket_id')}: {e}")
-            jira_root_cause = ""
-            jira_solution = ""
-
-        # These metadata fields may be empty or outdated, so prioritize freshly extracted Jira data if available
-        meta_jira_root_cause = metadata.get('jira_root_cause', '')
-        meta_jira_solution = metadata.get('jira_solution', '')
-        msg_root_cause = metadata.get('msg_root_cause', '')
-        msg_solution = metadata.get('msg_solution', '')
-
-        # Use the freshly extracted Jira data if available, else fallback to metadata
-        jira_root_cause = jira_root_cause or meta_jira_root_cause
-        jira_solution = jira_solution or meta_jira_solution
-
-        combined_root_cause = ""
-        combined_solution = ""
-
-        if jira_root_cause and msg_root_cause:
-            combined_root_cause = f"\nJira Root Cause: \n{jira_root_cause}\n\nMSG Root Cause:\n{msg_root_cause}"
-        elif jira_root_cause:
-            combined_root_cause = f"{jira_root_cause}"
-        elif msg_root_cause:
-            combined_root_cause = f"{msg_root_cause}"
-
-        if jira_solution and msg_solution:
-            combined_solution = f"\Jira  Root Cause: \n{jira_solution}\n\nMSG Solution:\n{msg_solution}"
-        elif jira_solution:
-            combined_solution = f"{jira_solution}"
-        elif msg_solution:
-            combined_solution = f"{msg_solution}"
-
-
-
+            jira_data = None
+        
         return IssueResponse(
             id=issue_id,
             title=metadata.get('msg_subject', ''),
             description=document,
-            root_cause=combined_root_cause,
-            solution=combined_solution,
             jira_ticket_id=metadata.get('jira_ticket_id', ''),
             received_date=metadata.get('msg_received_date', '') or metadata.get('created_date', ''),
             created_at=datetime.now(),  # Add required created_at field
@@ -312,8 +261,6 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
                 'received_date': metadata.get('msg_received_date', ''),
                 'jira_id': metadata.get('msg_jira_id', ''),
                 'jira_url': metadata.get('msg_jira_url', ''),
-                'root_cause': metadata.get('msg_root_cause', ''),
-                'solution': metadata.get('msg_solution', ''),
                 'recipients': metadata.get('recipients', []),
                 'attachments': metadata.get('attachments', [])
             },
@@ -419,8 +366,6 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                     'received_date': metadata.get('msg_received_date', ''),
                     'jira_id': metadata.get('msg_jira_id', ''),
                     'jira_url': metadata.get('msg_jira_url', ''),
-                    'root_cause': metadata.get('msg_root_cause', ''),
-                    'solution': metadata.get('msg_solution', ''),
                     'recipients': metadata.get('recipients', []),
                     'attachments': metadata.get('attachments', [])
                 }
@@ -436,8 +381,6 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                     received_date=metadata.get("msg_received_date", "") or metadata.get("created_date", ""),
                     created_at=datetime.now(),
                     updated_at=None,
-                    root_cause=metadata.get("jira_root_cause", ""),
-                    solution=metadata.get("jira_solution", ""),
                     similarity_score=similarity_score,
                     msg_data=msg_data
                 )

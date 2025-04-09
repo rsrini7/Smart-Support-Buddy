@@ -142,10 +142,8 @@ def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
         "description": body,
         "jira_id": None,
         "jira_url": None,
-        "root_cause": None,
-        "solution": None,
     }
-    
+
     # --- Extract Jira ID ---
     # Typical Jira ID pattern: ABC-1234
     jira_pattern = r"\b[A-Z][A-Z0-9]+-\d+\b"
@@ -160,43 +158,8 @@ def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
             issue_details["jira_url"] = jira_url_match.group(0)
         else:
             issue_details["jira_url"] = None
-    
-    # --- Extract root cause and solution sections ---
-    lines = combined_text.splitlines()
-    capture_root_cause = False
-    capture_solution = False
-    root_cause_lines = []
-    solution_lines = []
-    
-    for line in lines:
-        lower_line = line.lower()
-        # Start capturing root cause
-        if any(term in lower_line for term in ["root cause", "reason", "rca", "identified issue", "why this happened", "issue caused by"]):
-            capture_root_cause = True
-            capture_solution = False
-            continue
-        # Start capturing solution
-        if any(term in lower_line for term in ["solution", "resolution", "resolved", "workaround", "fix"]):
-            capture_solution = True
-            capture_root_cause = False
-            continue
-        # Stop capturing on empty line or new section header
-        if line.strip() == "" or any(h in lower_line for h in ["steps", "impact", "next steps", "action items", "summary"]):
-            capture_root_cause = False
-            capture_solution = False
-            continue
-        # Append lines
-        if capture_root_cause:
-            root_cause_lines.append(line)
-        if capture_solution:
-            solution_lines.append(line)
-    
-    if root_cause_lines:
-        issue_details["root_cause"] = "\n".join(root_cause_lines).strip()
-    if solution_lines:
-        issue_details["solution"] = "\n".join(solution_lines).strip()
-    # --- Suggestion for future improvement ---
-    # Consider using NLP techniques such as:
+
+    return issue_details
     # - Text classification to identify root cause and solution sections
     # - Named Entity Recognition (NER) to extract relevant entities
     # - Summarization models to generate concise root cause and solution summaries
