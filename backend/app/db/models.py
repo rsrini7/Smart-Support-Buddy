@@ -19,6 +19,7 @@ class IssueResponse(BaseModel):
     description: str
     jira_ticket_id: Optional[str] = None
     jira_data: Optional[Dict[str, Any]] = None
+    msg_data: Optional[Dict[str, Any]] = None
     sender: Optional[str] = None
     received_date: Optional[datetime] = None
     created_at: datetime

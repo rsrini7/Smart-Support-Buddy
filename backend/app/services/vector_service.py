@@ -320,6 +320,20 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                     except:
                         pass
                 
+                # Reconstruct msg_data dictionary
+                msg_data = {
+                    'subject': metadata.get('msg_subject', ''),
+                    'body': metadata.get('msg_body', ''),
+                    'sender': metadata.get('msg_sender', ''),
+                    'received_date': metadata.get('msg_received_date', ''),
+                    'jira_id': metadata.get('msg_jira_id', ''),
+                    'jira_url': metadata.get('msg_jira_url', ''),
+                    'root_cause': metadata.get('msg_root_cause', ''),
+                    'solution': metadata.get('msg_solution', ''),
+                    'recipients': metadata.get('recipients', []),
+                    'attachments': metadata.get('attachments', [])
+                }
+
                 # Create IssueResponse object
                 issue_response = IssueResponse(
                     id=issue_id,
@@ -333,7 +347,8 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                     updated_at=None,
                     root_cause=metadata.get("jira_root_cause", ""),
                     solution=metadata.get("jira_solution", ""),
-                    similarity_score=similarity_score
+                    similarity_score=similarity_score,
+                    msg_data=msg_data
                 )
                 
                 issue_responses.append(issue_response)
