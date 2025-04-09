@@ -18,6 +18,7 @@ async def upload_msg_file(
     jira_ticket_id: Optional[str] = Form(None)
 ):
     """Upload an MSG file and/or process a Jira ticket. Jira ticket ID is required."""
+    print("Entered upload_msg_file endpoint")
     try:
         # Initialize variables
         msg_data = {}

@@ -5,8 +5,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import logging
+
 def parse_msg_file(file_path: str) -> Dict[str, Any]:
     """
+    logger = logging.getLogger(__name__)
+    logger.info(f"parse_msg_file called with file_path: {file_path}")
+    try:
     Parse an Outlook MSG file and extract relevant information.
     
     Args:
@@ -15,9 +20,13 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
     Returns:
         Dictionary containing extracted information from the MSG file
     """
+    logger = logging.getLogger(__name__)
+    logger.info(f"parse_msg_file called with file_path: {file_path}")
+
     try:
         # Check if file exists
         if not os.path.exists(file_path):
+            logger.error(f"File not found or invalid path: {file_path}")
             raise FileNotFoundError(f"MSG file not found at {file_path}")
             
         # Open the MSG file
@@ -102,14 +111,14 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
         except Exception:
             logger.debug("Parsed MSG file result (non-JSON): %s", str(result))
 
-        # Close the MSG file
-        msg.close()
-        
-        return result
-    
     except Exception as e:
-        logger.error(f"Error parsing MSG file: {str(e)}")
-        raise
+        logger.error(f"Error inside parse_msg_file for file_path {file_path}: {e}")
+        raise e  # Re-raise the exception for further handling
+    finally:
+        # Close the MSG file
+        if 'msg' in locals():
+            msg.close()
+    return result
 
 import re
 

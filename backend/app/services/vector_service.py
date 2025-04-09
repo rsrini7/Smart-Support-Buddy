@@ -58,6 +58,10 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
         ID of the created issue
     """
     try:
+        if msg_data is None:
+            msg_data = {}
+        if jira_data is None:
+            jira_data = {}
         # Ensure at least one of msg_data or jira_data is provided
         if not msg_data and not jira_data:
             raise ValueError("Either MSG data or Jira data must be provided")
@@ -99,8 +103,6 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
         # Extract Jira comments and append to text
         jira_comments_text = ""
         if jira_data:
-            import logging
-            logger = logging.getLogger("app.services.vector_service")
             logger.debug(f"jira_data type: {type(jira_data)}, content: {jira_data}")
             comments = jira_data.get("comments", [])
             # Ensure comments is a list
@@ -241,6 +243,7 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
             from app.services.jira_service import get_jira_ticket
             if metadata.get('jira_ticket_id'):
                 jira_data = get_jira_ticket(metadata.get('jira_ticket_id'))
+                logger.info(f"Fetched jira_data type={type(jira_data)}, value={jira_data}")
         except Exception as e:
             logger.warning(f"Failed to fetch Jira data for ticket {metadata.get('jira_ticket_id')}: {e}")
 
