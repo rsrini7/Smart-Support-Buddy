@@ -151,6 +151,8 @@ async def ingest_msg_directory(payload: IngestDirRequest):
     import traceback
 
     directory_path = payload.directory_path
+
+    directory_path = os.path.expanduser(directory_path)
     logger.info(f"Ingesting directory: {directory_path}")
     if not directory_path or not os.path.isdir(directory_path):
         raise HTTPException(status_code=400, detail="Invalid directory path")
@@ -163,6 +165,7 @@ async def ingest_msg_directory(payload: IngestDirRequest):
             logger.info(f"Parsing file: {file_path}")
             msg_data = parse_msg_file(file_path)
             issue_id = add_issue_to_vectordb(msg_data=msg_data)
+            logger.info(f"Ingested file: {file_path}, issue_id: {issue_id}")
             results.append({"file": file_path, "status": "success", "issue_id": issue_id})
         except Exception as e:
             results.append({"file": file_path, "status": "error", "error": str(e), "traceback": traceback.format_exc()})

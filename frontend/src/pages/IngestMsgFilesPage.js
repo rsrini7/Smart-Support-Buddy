@@ -27,30 +27,27 @@ const IngestMsgFilesPage = () => {
     setLoading(true);
     setError('');
     setResults([]);
-    for (const file of files) {
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        const response = await fetch('http://localhost:9000/api/ingest-msg-dir', {
-          method: 'POST',
-          body: formData,
-        });
-        if (!response.ok) {
-          throw new Error('Failed to upload ' + file.name);
-        }
-        const data = await response.json();
-        setResults(prev => {
-          const updated = [...prev, { file: file.name, status: 'success', issue_id: data.issue_id }];
-          console.log('Updated results (success):', updated);
-          return updated;
-        });
-      } catch (err) {
-        setResults(prev => {
-          const updated = [...prev, { file: file.name, status: 'error', error: err.message }];
-          console.log('Updated results (error):', updated);
-          return updated;
-        });
+    try {
+      const response = await fetch('http://localhost:9000/api/ingest-msg-dir', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ directory_path: "/Users/srini/Downloads/msgfiles" }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to ingest directory');
       }
+      const data = await response.json();
+      console.log('Ingest directory response:', data);
+      if (data.results && Array.isArray(data.results)) {
+        setResults(data.results);
+      } else {
+        setResults([]);
+      }
+    } catch (err) {
+      console.error('Ingest directory error:', err);
+      setResults([{ file: 'Directory', status: 'error', error: err.message }]);
     }
     setLoading(false);
   };
@@ -118,7 +115,7 @@ const IngestMsgFilesPage = () => {
                   primary={result.file}
                   secondary={
                     result.status === 'success'
-                      ? `Success - Issue ID: ${result.issue_id}`
+                      ? `Success - Issue ID: ${result.issue_id ?? 'N/A'}`
                       : `Error: ${result.error}`
                   }
                 />
