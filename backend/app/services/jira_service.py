@@ -247,18 +247,7 @@ def link_msg_to_jira(msg_data: Dict[str, Any], jira_data: Dict[str, Any]) -> boo
             logger.error("No ticket key provided")
             return False
             
-        # Create a comment with MSG information
-        comment = f"""Production issue email linked:
-        
-        Subject: {msg_data.get('subject', 'No Subject')}
-        From: {msg_data.get('sender', 'Unknown')}
-        Date: {msg_data.get('received_date', 'Unknown')}
-        
-        Email Body:
-        {msg_data.get('body', 'No content')}"""  
-        
-        # Add the comment to the issue
-        jira.add_comment(ticket_key, comment)
+        # Skipping adding MSG content as Jira comment per user request
         
         # Optionally, add attachments from the MSG file
         attachments = msg_data.get("attachments", [])
