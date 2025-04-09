@@ -251,17 +251,31 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
         # Create IssueResponse object
         jira_data = None
         try:
-            from app.services.jira_service import get_jira_ticket
+            from app.services.jira_service import get_jira_ticket, extract_root_cause_solution
             if metadata.get('jira_ticket_id'):
                 jira_data = get_jira_ticket(metadata.get('jira_ticket_id'))
                 logger.info(f"Fetched jira_data type={type(jira_data)}, value={jira_data}")
+                # Extract root cause and solution from Jira data including comments
+                extracted = extract_root_cause_solution(jira_data)
+                jira_root_cause = extracted.get("root_cause", "")
+                jira_solution = extracted.get("solution", "")
+            else:
+                jira_root_cause = ""
+                jira_solution = ""
         except Exception as e:
             logger.warning(f"Failed to fetch Jira data for ticket {metadata.get('jira_ticket_id')}: {e}")
+            jira_root_cause = ""
+            jira_solution = ""
 
-        jira_root_cause = metadata.get('jira_root_cause', '')
-        jira_solution = metadata.get('jira_solution', '')
+        # These metadata fields may be empty or outdated, so prioritize freshly extracted Jira data if available
+        meta_jira_root_cause = metadata.get('jira_root_cause', '')
+        meta_jira_solution = metadata.get('jira_solution', '')
         msg_root_cause = metadata.get('msg_root_cause', '')
         msg_solution = metadata.get('msg_solution', '')
+
+        # Use the freshly extracted Jira data if available, else fallback to metadata
+        jira_root_cause = jira_root_cause or meta_jira_root_cause
+        jira_solution = jira_solution or meta_jira_solution
 
         combined_root_cause = ""
         combined_solution = ""

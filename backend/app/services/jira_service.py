@@ -328,57 +328,94 @@ def extract_root_cause_solution(jira_data: Dict[str, Any]) -> Dict[str, Any]:
                     
             if solution_lines:
                 result["solution"] = "\n".join(solution_lines).strip()
-                
-    # Extract from comments if not already found
-    # comments = jira_data.get("comments", [])
-    # for comment in comments:
-    #     comment_body = comment.get("body", "")
-    #     if not comment_body:
-    #         continue
 
-    #     # Extract root cause from comment if not already set
-    #     if not result["root_cause"] and "root cause" in comment_body.lower():
-    #         lines = comment_body.split("\n")
-    #         capture_root_cause = False
-    #         root_cause_lines = []
-
-    #         for line in lines:
-    #             if "root cause" in line.lower():
-    #                 capture_root_cause = True
-    #                 continue
-    #             elif capture_root_cause and (line.strip() == "" or any(header in line.lower() for header in ["solution", "resolution", "steps"])):
-    #                 capture_root_cause = False
-    #             elif capture_root_cause:
-    #                 root_cause_lines.append(line)
-
-    #         if root_cause_lines:
-    #             result["root_cause"] = "\n".join(root_cause_lines).strip()
-
-    #     # Extract solution from comment if not already set
-    #     if not result["solution"] and any(term in comment_body.lower() for term in ["solution", "resolution", "workaround"]):
-    #         lines = comment_body.split("\n")
-    #         capture_solution = False
-    #         solution_lines = []
-
-    #         for line in lines:
-    #             if any(term in line.lower() for term in ["solution", "resolution", "workaround"]):
-    #                 capture_solution = True
-    #                 continue
-    #             elif capture_solution and (line.strip() == "" or any(header in line.lower() for header in ["steps to reproduce", "impact"])):
-    #                 capture_solution = False
-    #             elif capture_solution:
-    #                 solution_lines.append(line)
-
-    #         if solution_lines:
-    #             result["solution"] = "\n".join(solution_lines).strip()
-
+    # Check comments for root cause and solution
+    comments = jira_data.get("comments", [])
+    comment_root_cause_lines = []
+    comment_solution_lines = []
     
+    for comment in comments:
+        if isinstance(comment, dict):
+            comment_body = comment.get("body", "")
+            if not comment_body:
+                continue
+                
+            lines = comment_body.split("\n")
+            capture_root_cause = False
+            capture_solution = False
+            
+            for line in lines:
+                lower_line = line.lower().strip()
+                
+                # Inline root cause extraction
+                if lower_line.startswith("root cause"):
+                    # Extract inline content after 'root cause' or 'root cause is'
+                    parts = line.split(":", 1)
+                    if len(parts) == 2 and parts[1].strip():
+                        comment_root_cause_lines.append(parts[1].strip())
+                        continue
+                    parts = line.split("is", 1)
+                    if len(parts) == 2 and parts[1].strip():
+                        comment_root_cause_lines.append(parts[1].strip())
+                        continue
+                    # Else, treat as header and capture following lines
+                    capture_root_cause = True
+                    capture_solution = False
+                    continue
+                elif capture_root_cause and (line.strip() == "" or any(header in lower_line for header in ["solution", "resolution", "steps"])):
+                    capture_root_cause = False
+                
+                # Inline solution extraction
+                if any(lower_line.startswith(term) for term in ["solution", "resolution", "workaround", "fix"]):
+                    # Extract inline content after ':' or 'is'
+                    parts = line.split(":", 1)
+                    if len(parts) == 2 and parts[1].strip():
+                        comment_solution_lines.append(parts[1].strip())
+                        continue
+                    parts = line.split("is", 1)
+                    if len(parts) == 2 and parts[1].strip():
+                        comment_solution_lines.append(parts[1].strip())
+                        continue
+                    # Else, treat as header and capture following lines
+                    capture_solution = True
+                    capture_root_cause = False
+                    continue
+                elif capture_solution and (line.strip() == "" or any(header in lower_line for header in ["steps to reproduce", "impact"])):
+                    capture_solution = False
+                
+                # Append lines
+                if capture_root_cause:
+                    comment_root_cause_lines.append(line)
+                elif capture_solution:
+                    comment_solution_lines.append(line)
+    
+    # Append comment findings to results
+    if comment_root_cause_lines:
+        comment_root_cause = "\n".join(comment_root_cause_lines).strip()
+        if result["root_cause"]:
+            result["root_cause"] += f"\n\nFrom Comments:\n{comment_root_cause}"
+        else:
+            result["root_cause"] = f"From Comments:\n{comment_root_cause}"
+            
+    if comment_solution_lines:
+        comment_solution = "\n".join(comment_solution_lines).strip()
+        if result["solution"]:
+            result["solution"] += f"\n\nFrom Comments:\n{comment_solution}"
+        else:
+            result["solution"] = f"From Comments:\n{comment_solution}"
+
     # Check custom fields for root cause or solution
     custom_fields = jira_data.get("custom_fields", {})
     for field_name, value in custom_fields.items():
-        if "root" in field_name.lower() and "cause" in field_name.lower() and not result["root_cause"]:
-            result["root_cause"] = value
-        elif any(term in field_name.lower() for term in ["solution", "resolution", "fix"]) and not result["solution"]:
-            result["solution"] = value
+        if "root" in field_name.lower() and "cause" in field_name.lower():
+            if result["root_cause"]:
+                result["root_cause"] += f"\n\nFrom Custom Field '{field_name}':\n{value}"
+            else:
+                result["root_cause"] = f"From Custom Field '{field_name}':\n{value}"
+        elif any(term in field_name.lower() for term in ["solution", "resolution", "fix"]):
+            if result["solution"]:
+                result["solution"] += f"\n\nFrom Custom Field '{field_name}':\n{value}"
+            else:
+                result["solution"] = f"From Custom Field '{field_name}':\n{value}"
     
     return result
