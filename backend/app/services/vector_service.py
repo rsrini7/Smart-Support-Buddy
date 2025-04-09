@@ -96,8 +96,37 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
             extracted = extract_root_cause_solution(jira_data)
             jira_root_cause = extracted.get("root_cause", "") or ""
             jira_solution = extracted.get("solution", "") or ""
-        
-        # Create the full text for embedding
+        # Extract Jira comments and append to text
+        jira_comments_text = ""
+        if jira_data:
+            import logging
+            logger = logging.getLogger("app.services.vector_service")
+            logger.debug(f"jira_data type: {type(jira_data)}, content: {jira_data}")
+            comments = jira_data.get("comments", [])
+            # Ensure comments is a list
+            if isinstance(comments, str):
+                comments = [comments]
+            elif not isinstance(comments, list):
+                comments = []
+
+            if comments:
+                formatted_comments = []
+                for comment in comments:
+                    if isinstance(comment, dict):
+                        author_field = comment.get("author", "Unknown Author")
+                        if isinstance(author_field, dict):
+                            author = author_field.get("displayName", "Unknown Author")
+                        else:
+                            author = author_field  # assume string
+                        body = comment.get("body", "")
+                        formatted_comments.append(f"{author}: {body}")
+                    else:
+                        # comment is likely a plain string
+                        formatted_comments.append(str(comment))
+                jira_comments_text = "\n".join(formatted_comments)
+
+        # Create the full text for embedding, including comments
+        full_text = f"{msg_subject}\n{msg_body}\n{jira_summary}\n{jira_description}\n{jira_root_cause}\n{jira_solution}\n{jira_comments_text}"
         full_text = f"{msg_subject}\n{msg_body}\n{jira_summary}\n{jira_description}\n{jira_root_cause}\n{jira_solution}"
         
         # Generate embedding
@@ -125,6 +154,17 @@ def add_issue_to_vectordb(msg_data: Dict[str, Any] = None, jira_data: Optional[D
             # Add current date if no received_date from MSG
             "created_date": datetime.now().isoformat() if not msg_data.get("received_date") else ""
         }
+
+        # Sanitize metadata: replace None with empty strings, convert lists to comma-separated strings
+        sanitized_metadata = {}
+        for k, v in metadata.items():
+            if v is None:
+                sanitized_metadata[k] = ""
+            elif isinstance(v, list):
+                sanitized_metadata[k] = ", ".join(str(item) for item in v)
+            else:
+                sanitized_metadata[k] = v
+        metadata = sanitized_metadata
         
         collection.add(
             ids=[issue_id],

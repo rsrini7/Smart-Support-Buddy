@@ -251,7 +251,7 @@ const IssueDetailsPage = () => {
                   From: {issue.msg_data.sender}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  To: {issue.msg_data.recipients?.join(', ')}
+                  To: {Array.isArray(issue.msg_data.recipients) ? issue.msg_data.recipients.join(', ') : issue.msg_data.recipients}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   Received: {formatDate(issue.msg_data.received_date)}
