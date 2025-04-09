@@ -35,6 +35,7 @@ JIRA_PASS=${JIRA_PASS:-"admin"}
 
 # Wait for Jira to be ready (this may take a few minutes)
 echo "Waiting for Jira to be ready..."
+sleep 10  # Initial wait time before checking Jira
 MAX_RETRIES=30
 RETRY_COUNT=0
 

@@ -15,7 +15,7 @@ router = APIRouter()
 @router.post("/upload-msg", response_model=Dict[str, Any])
 async def upload_msg_file(
     file: Optional[UploadFile] = File(None),
-    jira_ticket_id: str = Form(...)
+    jira_ticket_id: Optional[str] = Form(None)
 ):
     """Upload an MSG file and/or process a Jira ticket. Jira ticket ID is required."""
     try:
@@ -23,10 +23,11 @@ async def upload_msg_file(
         msg_data = {}
         file_path = None
         
-        # Get Jira ticket data (required)
-        jira_data = get_jira_ticket(jira_ticket_id)
-        if not jira_data:
-            raise HTTPException(status_code=404, detail=f"Jira ticket {jira_ticket_id} not found")
+        jira_data = None
+        if jira_ticket_id:
+            jira_data = get_jira_ticket(jira_ticket_id)
+            if not jira_data:
+                raise HTTPException(status_code=404, detail=f"Jira ticket {jira_ticket_id} not found")
         
         # Process file if provided
         if file:

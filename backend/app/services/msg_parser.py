@@ -101,10 +101,11 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
         logger.error(f"Error parsing MSG file: {str(e)}")
         raise
 
+import re
+
 def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Extract production issue details from MSG data.
-    This function can be enhanced with NLP to better extract structured information.
+    Extract production issue details from MSG data, including Jira ID, root cause, and solution.
     
     Args:
         msg_data: Dictionary containing MSG file data
@@ -112,43 +113,59 @@ def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with extracted issue details
     """
-    # Basic extraction - this could be enhanced with NLP/LLM processing
-    body = msg_data.get("body", "")
-    subject = msg_data.get("subject", "")
+    body = msg_data.get("body", "") or ""
+    subject = msg_data.get("subject", "") or ""
+    combined_text = f"{subject}\n{body}"
     
-    # Simple heuristic to extract potential issue details
-    # In a real implementation, this would use more sophisticated NLP
+    # Initialize result
     issue_details = {
         "title": subject,
         "description": body,
-        "potential_root_cause": None,
-        "potential_solution": None,
+        "jira_id": None,
+        "root_cause": None,
+        "solution": None,
     }
     
-    # Look for sections that might indicate root cause or solution
-    # This is a very basic approach and would be improved with NLP
-    lower_body = body.lower()
+    # --- Extract Jira ID ---
+    # Typical Jira ID pattern: ABC-1234
+    jira_pattern = r"\b[A-Z][A-Z0-9]+-\d+\b"
+    jira_matches = re.findall(jira_pattern, combined_text)
+    if jira_matches:
+        issue_details["jira_id"] = jira_matches[0]
     
-    # Look for root cause indicators
-    root_cause_indicators = ["root cause", "cause", "reason", "why this happened", "issue caused by"]
-    for indicator in root_cause_indicators:
-        if indicator in lower_body:
-            # Find the paragraph containing this indicator
-            paragraphs = body.split("\n\n")
-            for para in paragraphs:
-                if indicator in para.lower():
-                    issue_details["potential_root_cause"] = para.strip()
-                    break
+    # --- Extract root cause and solution sections ---
+    lines = combined_text.splitlines()
+    capture_root_cause = False
+    capture_solution = False
+    root_cause_lines = []
+    solution_lines = []
     
-    # Look for solution indicators
-    solution_indicators = ["solution", "resolution", "fixed by", "resolved by", "workaround"]
-    for indicator in solution_indicators:
-        if indicator in lower_body:
-            # Find the paragraph containing this indicator
-            paragraphs = body.split("\n\n")
-            for para in paragraphs:
-                if indicator in para.lower():
-                    issue_details["potential_solution"] = para.strip()
-                    break
+    for line in lines:
+        lower_line = line.lower()
+        # Start capturing root cause
+        if any(term in lower_line for term in ["root cause", "reason", "rca", "identified issue", "why this happened", "issue caused by"]):
+            capture_root_cause = True
+            capture_solution = False
+            continue
+        # Start capturing solution
+        if any(term in lower_line for term in ["solution", "resolution", "resolved", "workaround", "fix"]):
+            capture_solution = True
+            capture_root_cause = False
+            continue
+        # Stop capturing on empty line or new section header
+        if line.strip() == "" or any(h in lower_line for h in ["steps", "impact", "next steps", "action items", "summary"]):
+            capture_root_cause = False
+            capture_solution = False
+            continue
+        # Append lines
+        if capture_root_cause:
+            root_cause_lines.append(line)
+        if capture_solution:
+            solution_lines.append(line)
+    
+    if root_cause_lines:
+        issue_details["root_cause"] = "\n".join(root_cause_lines).strip()
+    if solution_lines:
+        issue_details["solution"] = "\n".join(solution_lines).strip()
     
     return issue_details
