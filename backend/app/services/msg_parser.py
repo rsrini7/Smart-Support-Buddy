@@ -1,7 +1,6 @@
 import extract_msg
 import os
-from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -92,6 +91,17 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
             "headers": headers
         }
         
+        # Extract additional issue details (Jira ID, root cause, solution)
+        extracted_details = extract_issue_details(result)
+        result.update(extracted_details)
+
+        # Log the final parsed result
+        try:
+            import json as _json
+            logger.debug("Parsed MSG file result: %s", _json.dumps(result, indent=2, default=str))
+        except Exception:
+            logger.debug("Parsed MSG file result (non-JSON): %s", str(result))
+
         # Close the MSG file
         msg.close()
         
@@ -122,6 +132,7 @@ def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
         "title": subject,
         "description": body,
         "jira_id": None,
+        "jira_url": None,
         "root_cause": None,
         "solution": None,
     }
@@ -132,6 +143,14 @@ def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
     jira_matches = re.findall(jira_pattern, combined_text)
     if jira_matches:
         issue_details["jira_id"] = jira_matches[0]
+
+        # Search for Jira URL in the text
+        jira_url_pattern = r"https?://[^\s]+/browse/[A-Z][A-Z0-9]+-\d+"
+        jira_url_match = re.search(jira_url_pattern, combined_text)
+        if jira_url_match:
+            issue_details["jira_url"] = jira_url_match.group(0)
+        else:
+            issue_details["jira_url"] = None
     
     # --- Extract root cause and solution sections ---
     lines = combined_text.splitlines()
