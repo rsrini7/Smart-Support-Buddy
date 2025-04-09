@@ -254,7 +254,6 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
             from app.services.jira_service import get_jira_ticket, extract_root_cause_solution
             if metadata.get('jira_ticket_id'):
                 jira_data = get_jira_ticket(metadata.get('jira_ticket_id'))
-                logger.info(f"Fetched jira_data type={type(jira_data)}, value={jira_data}")
                 # Extract root cause and solution from Jira data including comments
                 extracted = extract_root_cause_solution(jira_data)
                 jira_root_cause = extracted.get("root_cause", "")
