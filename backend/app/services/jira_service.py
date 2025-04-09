@@ -224,37 +224,3 @@ def get_jira_ticket(ticket_id: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Error getting Jira ticket {ticket_id}: {str(e)}")
         return None
-
-    """
-    Link an MSG file to a Jira ticket by adding a comment with the MSG information.
-    
-    Args:
-        msg_data: Dictionary containing MSG file data
-        jira_data: Dictionary containing Jira ticket data
-        
-    Returns:
-        True if successful, False otherwise
-    """
-    try:
-        jira = get_jira_client()
-        if not jira:
-            logger.warning("Jira client not available")
-            return False
-            
-        ticket_key = jira_data.get("key")
-        if not ticket_key:
-            logger.error("No ticket key provided")
-            return False
-            
-        # Skipping adding MSG content as Jira comment per user request
-        
-        # Optionally, add attachments from the MSG file
-        attachments = msg_data.get("attachments", [])
-        for attachment_path in attachments:
-            jira.add_attachment(issue=ticket_key, attachment=attachment_path)
-            
-        return True
-    
-    except Exception as e:
-        logger.error(f"Error linking MSG to Jira ticket: {str(e)}")
-        return False
