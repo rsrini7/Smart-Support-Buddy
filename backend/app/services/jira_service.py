@@ -225,7 +225,6 @@ def get_jira_ticket(ticket_id: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Error getting Jira ticket {ticket_id}: {str(e)}")
         return None
 
-def link_msg_to_jira(msg_data: Dict[str, Any], jira_data: Dict[str, Any]) -> bool:
     """
     Link an MSG file to a Jira ticket by adding a comment with the MSG information.
     

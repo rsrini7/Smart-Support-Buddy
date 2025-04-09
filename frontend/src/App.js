@@ -12,6 +12,8 @@ import UploadPage from './pages/UploadPage';
 import SearchPage from './pages/SearchPage';
 import IssueDetailsPage from './pages/IssueDetailsPage';
 
+import IngestMsgFilesPage from './pages/IngestMsgFilesPage';
+
 function App() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -22,6 +24,7 @@ function App() {
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/issues/:issueId" element={<IssueDetailsPage />} />
+          <Route path="/ingest-msg-files" element={<IngestMsgFilesPage />} />
         </Routes>
       </Container>
       <Footer />
