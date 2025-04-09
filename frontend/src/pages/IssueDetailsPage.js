@@ -204,7 +204,7 @@ const IssueDetailsPage = () => {
                     <Typography variant="h6" gutterBottom>
                       Description
                     </Typography>
-                    <Typography variant="body1">
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
                       {issue.description}
                     </Typography>
                   </CardContent>
@@ -217,7 +217,7 @@ const IssueDetailsPage = () => {
                     <Typography variant="h6" gutterBottom>
                       Root Cause
                     </Typography>
-                    <Typography variant="body1">
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
                       {issue.root_cause || 'No root cause identified'}
                     </Typography>
                   </CardContent>
@@ -230,7 +230,7 @@ const IssueDetailsPage = () => {
                     <Typography variant="h6" gutterBottom>
                       Solution
                     </Typography>
-                    <Typography variant="body1">
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
                       {issue.solution || 'No solution provided'}
                     </Typography>
                   </CardContent>
