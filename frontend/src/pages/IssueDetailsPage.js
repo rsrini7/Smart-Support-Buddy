@@ -385,7 +385,11 @@ const IssueDetailsPage = () => {
                         {issue.jira_data.comments.map((comment, index) => (
                           <ListItem key={index} alignItems="flex-start">
                             <ListItemText
-                              primary={comment.author?.displayName || 'Unknown Author'}
+                              primary={
+                                typeof comment.author === 'string'
+                                  ? comment.author
+                                  : (comment.author?.displayName || 'Unknown Author')
+                              }
                               secondary={comment.body || ''}
                             />
                           </ListItem>
