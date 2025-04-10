@@ -49,6 +49,15 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
         received_date = None
         if msg.date is not None:
             received_date = msg.date
+        elif getattr(msg, 'sent_date', None) is not None:
+            received_date = msg.sent_date
+        elif getattr(msg, 'delivery_time', None) is not None:
+            received_date = msg.delivery_time
+        else:
+            # Fallback: use current datetime if no date info found
+            from datetime import datetime as dt
+            received_date = dt.now()
+            logger.debug("[msg_parser] No date info found, using current datetime as received_date fallback")
             
         # Extract attachments
         attachments = []
