@@ -16,9 +16,20 @@ const Header = () => {
   return (
     <AppBar position="static">
       <Toolbar>
-        <Typography variant="h6" component={RouterLink} to="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'white' }}>
-          Smart Support Buddy
-        </Typography>
+        <Box
+          sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, textDecoration: 'none', color: 'white' }}
+          component={RouterLink}
+          to="/"
+        >
+          <img
+            src={`${process.env.PUBLIC_URL}/logo96.png`}
+            alt="Logo"
+            style={{ height: 40, marginRight: 8 }}
+          />
+          <Typography variant="h6" component="div">
+            Smart Support Buddy
+          </Typography>
+        </Box>
         <Box>
           <Button color="inherit" component={RouterLink} to="/">
             Home
