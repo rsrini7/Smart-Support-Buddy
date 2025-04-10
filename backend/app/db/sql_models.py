@@ -9,7 +9,7 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 class Issue(Base):
-    """SQL model for production issues"""
+    """SQL model for support issues / queries"""
     __tablename__ = "issues"
     
     id = Column(String, primary_key=True, default=generate_uuid)

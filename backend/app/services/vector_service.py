@@ -291,7 +291,7 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
 
 def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10) -> List[IssueResponse]:
     """
-    Search for similar production issues based on a query text or Jira ticket ID.
+    Search for similar support issues / queries based on a query text or Jira ticket ID.
     
     Args:
         query_text: Text to search for (optional)

@@ -17,7 +17,7 @@ const Header = () => {
     <AppBar position="static">
       <Toolbar>
         <Typography variant="h6" component={RouterLink} to="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'white' }}>
-          Production Issue Identifier
+          Support Buddy AI
         </Typography>
         <Box>
           <Button color="inherit" component={RouterLink} to="/">

@@ -29,7 +29,7 @@ class IssueResponse(BaseModel):
     similarity_score: Optional[float] = None  # Used in search results
 
 class SearchQuery(BaseModel):
-    """Schema for searching production issues"""
+    """Schema for searching support issues / queries"""
     query_text: str
     jira_ticket_id: Optional[str] = None
     limit: int = Field(default=10, ge=1, le=100)

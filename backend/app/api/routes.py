@@ -104,7 +104,7 @@ async def get_jira_ticket_info(ticket_id: str):
 
 @router.post("/search", response_model=List[IssueResponse])
 async def search_issues(query: SearchQuery):
-    """Search for similar production issues based on a query"""
+    """Search for similar support issues / queries based on a query"""
     try:
         results = search_similar_issues(query.query_text, query.jira_ticket_id, query.limit)
         return results
@@ -116,7 +116,7 @@ async def list_issues(
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0)
 ):
-    """List all stored production issues with pagination"""
+    """List all stored support issues / queries with pagination"""
     try:
         # This would be implemented to fetch issues from the database
         # For now, return a placeholder

@@ -1,10 +1,10 @@
 # Production Issue Identifier
 
-A GenAI-powered solution for handling production issues by analyzing Microsoft Outlook MSG files and Jira tickets to identify root causes and solutions.
+A GenAI-powered solution for handling support issues / queries by analyzing Microsoft Outlook MSG files and Jira tickets to identify root causes and solutions.
 
 ## Overview
 
-This application helps teams manage production issues by:
+This application helps teams manage support issues / queries by:
 
 1. Reading and parsing Microsoft Outlook MSG files containing issue details
 2. Integrating with Jira to correlate tickets with issue reports
@@ -42,7 +42,7 @@ The system consists of the following components:
 
 1. Upload MSG files through the UI or place them in the designated directory
 2. Link Jira tickets to the uploaded MSG files
-3. Query the system when similar production issues occur to find historical solutions
+3. Query the system when similar support issues / queries occur to find historical solutions
 
 ## Project Structure
 

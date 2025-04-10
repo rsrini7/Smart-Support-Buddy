@@ -39,7 +39,7 @@ const renderSearchPage = (initialState = {}) => {
 test('renders SearchPage with empty state', () => {
   renderSearchPage();
   
-  expect(screen.getByText(/Search Production Issues/i)).toBeInTheDocument();
+  expect(screen.getByText(/Search Support Issues \/ Queries/i)).toBeInTheDocument();
   expect(screen.getByPlaceholderText(/Enter keywords/i)).toBeInTheDocument();
   expect(screen.getByPlaceholderText(/e\.g\., PROD-123/i)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument();

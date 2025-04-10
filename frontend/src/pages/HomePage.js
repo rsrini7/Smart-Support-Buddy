@@ -7,10 +7,10 @@ const HomePage = () => {
     <Box>
       <Paper sx={{ p: 4, mb: 4, backgroundColor: 'primary.light', color: 'white' }}>
         <Typography variant="h4" gutterBottom>
-          Production Issue Identifier
+          Support Buddy AI
         </Typography>
         <Typography variant="subtitle1">
-          Easily manage, search, and analyze production issues using MSG files and Jira integration
+          Easily manage, search, and analyze support issues / queries using MSG files and Jira integration
         </Typography>
         <Box sx={{ mt: 3 }}>
           <Button

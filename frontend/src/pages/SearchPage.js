@@ -106,12 +106,12 @@ const SearchPage = () => {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Search Production Issues
+        Search Support Issues / Queries
       </Typography>
       
       <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="body1" gutterBottom>
-          Search for production issues by description or Jira ticket ID.
+          Search for support issues / queries by description or Jira ticket ID.
         </Typography>
         
         <Box sx={{ mt: 3 }}>
