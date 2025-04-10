@@ -355,7 +355,7 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
         # Process results
         issue_responses = []
         if results and len(results["ids"]) > 0:
-            logger.info(f"Found \n ${results} \n similar issues")
+            logger.info(f"Found  {len(results)} similar issues")
             # Determine if we're processing query results or direct get results
             is_query_result = query_text and "distances" in results
             

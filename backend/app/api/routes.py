@@ -168,7 +168,7 @@ async def ingest_msg_directory(payload: IngestDirRequest):
         raise HTTPException(status_code=400, detail="Invalid directory path")
 
     msg_files = glob.glob(os.path.join(directory_path, "*.msg"))
-    logger.info(f"Found {len(msg_files)} .msg files: {msg_files}")
+    logger.info(f"Found {len(msg_files)}")
     results = []
     for file_path in msg_files:
         try:

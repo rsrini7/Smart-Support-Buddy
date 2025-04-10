@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Typography, 
   Box, 
@@ -15,7 +15,6 @@ import {
   Chip
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
-  import { useEffect } from 'react';
 
 const SearchPage = () => {
   const navigate = useNavigate();
@@ -27,19 +26,22 @@ const SearchPage = () => {
   const [results, setResults] = useState(location.state?.searchResults || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
   useEffect(() => {
-    if ((queryText && queryText.trim() !== '') || (jiraTicketId && jiraTicketId.trim() !== '')) {
+    // Perform search if we have initial search parameters
+    if (location.state?.searchQuery || location.state?.searchJiraId) {
       handleSearch();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Run once on mount
 
   const handleQueryChange = (event) => {
     setQueryText(event.target.value);
+    setError(''); // Clear any previous errors
   };
 
   const handleJiraTicketChange = (event) => {
     setJiraTicketId(event.target.value);
+    setError(''); // Clear any previous errors
   };
 
   const handleSearch = async () => {
@@ -96,7 +98,7 @@ const SearchPage = () => {
   };
 
   const handleKeyPress = (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && (queryText || jiraTicketId)) {
       handleSearch();
     }
   };
@@ -164,7 +166,7 @@ const SearchPage = () => {
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
-                      {issue.title}
+                      {issue.title || issue.summary}
                     </Typography>
                     
                     <Box sx={{ display: 'flex', mb: 1 }}>
@@ -176,21 +178,23 @@ const SearchPage = () => {
                           sx={{ mr: 1 }}
                         />
                       )}
-                      <Chip 
-                        label={`Similarity: ${(issue.similarity_score * 100).toFixed(6)}%`}
-                        color="secondary" 
-                        size="small" 
-                        sx={{ mr: 1 }}
-                      />
+                      {issue.similarity_score !== undefined && (
+                        <Chip 
+                          label={`Similarity: ${(issue.similarity_score * 100).toFixed(2)}%`}
+                          color="secondary" 
+                          size="small" 
+                          sx={{ mr: 1 }}
+                        />
+                      )}
                       <Typography variant="body2" color="text.secondary">
-                        Received: {formatDate(issue.received_date)}
+                        Received: {formatDate(issue.received_date || issue.created_at)}
                       </Typography>
                     </Box>
                     
                     <Divider sx={{ my: 1 }} />
                     
                     <Typography variant="body2" sx={{ mb: 2 }}>
-                      {issue.description.length > 200 
+                      {issue.description?.length > 200 
                         ? `${issue.description.substring(0, 200)}...` 
                         : issue.description}
                     </Typography>
@@ -219,7 +223,7 @@ const SearchPage = () => {
       ) : loading ? null : (
         <Paper sx={{ p: 3, textAlign: 'center' }}>
           <Typography variant="body1">
-            No results found. Try a different search query.
+            {queryText || jiraTicketId ? 'No results found. Try a different search query.' : 'Enter a search query to begin.'}
           </Typography>
         </Paper>
       )}
