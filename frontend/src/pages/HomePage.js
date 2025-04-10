@@ -7,7 +7,7 @@ const HomePage = () => {
     <Box>
       <Paper sx={{ p: 4, mb: 4, backgroundColor: 'primary.light', color: 'white' }}>
         <Typography variant="h4" gutterBottom>
-          Smart Support Buddy
+          Support Buddy
         </Typography>
         <Typography variant="subtitle1">
           Easily manage, search, and analyze support issues / queries using MSG files and Jira integration

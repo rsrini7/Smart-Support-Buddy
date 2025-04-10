@@ -13,5 +13,5 @@ test('renders HomePage with expected content', () => {
   );
 
   // Example: check for a heading or unique text
-  expect(screen.getByRole('heading', { level: 4, name: /Smart Support Buddy/i })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { level: 4, name: /Support Buddy/i })).toBeInTheDocument();
 });

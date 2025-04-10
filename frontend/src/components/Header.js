@@ -27,7 +27,7 @@ const Header = () => {
             style={{ height: 40, marginRight: 8 }}
           />
           <Typography variant="h6" component="div">
-            Smart Support Buddy
+            Support Buddy
           </Typography>
         </Box>
         <Box>

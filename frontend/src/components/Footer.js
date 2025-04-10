@@ -10,7 +10,7 @@ const Footer = () => {
           {new Date().getFullYear()}
           {' '}
           <Link color="inherit" href="#">
-            Smart Support Buddy
+            Support Buddy
           </Link>
         </Typography>
       </Container>
