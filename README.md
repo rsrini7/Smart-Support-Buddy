@@ -1,4 +1,4 @@
-# Production Issue Identifier
+# Support Buddy AI
 
 A GenAI-powered solution for handling support issues / queries by analyzing Microsoft Outlook MSG files and Jira tickets to identify root causes and solutions.
 
@@ -63,3 +63,82 @@ The system consists of the following components:
 │       └── App.js         # Main application component
 └── README.md             # Project documentation
 ```
+
+## Environment Variables
+
+The backend requires a `.env` file with configuration for:
+
+- Database connection details
+- Jira API credentials
+- Vector database path
+- File upload directory
+- LLM settings
+
+A sample `.env.example` is created automatically during backend setup. Edit `.env` with your actual values. See **BACKEND_SETUP.md** for details.
+
+## Docker Setup
+
+You can run the entire system using Docker Compose:
+
+```bash
+docker-compose up --build
+```
+
+This will start:
+
+- **Backend API** at [http://localhost:9000](http://localhost:9000)
+- **Jira** at [http://localhost:9090](http://localhost:9090)
+- **Chroma Vector DB** at [http://localhost:8000](http://localhost:8000)
+- **Chroma Admin UI** at [http://localhost:4000](http://localhost:4000)
+- **PostgreSQL** database for Jira
+
+The backend container uses environment variables from `backend/.env.docker`. Jira is pre-configured via mounted files in `jira-setup-files` and `jira-config`.
+
+## Backend Setup
+
+For detailed backend setup instructions, including running with or without Docker, see **BACKEND_SETUP.md**.
+
+## Testing
+
+### Frontend
+
+Run React tests:
+
+```bash
+cd frontend
+npm test
+```
+
+### Backend
+
+## Jira Setup
+
+After starting the containers with Docker Compose, Jira will be accessible at [http://localhost:9090](http://localhost:9090).
+
+On first launch, complete the Jira setup wizard:
+
+1. **License**: Enter your Jira license key (evaluation or purchased).
+2. **Admin User**: Create the initial Jira administrator account.
+3. **Database**: The database connection is pre-configured via mounted `dbconfig.xml`.
+4. **Email & Base URL**: Configure as needed.
+5. **Projects**: Create new projects or import existing ones.
+6. **API Access**: Generate an API token or create a dedicated user for API access, and update your backend `.env` file with these credentials.
+
+Subsequent startups will skip this wizard, as the data is persisted in the Docker volume.
+
+Run backend tests:
+
+```bash
+pytest backend/tests
+```
+
+## Frontend Production Build
+
+To create an optimized production build of the frontend:
+
+```bash
+cd frontend
+npm run build
+```
+
+This outputs static files to `frontend/build/` for deployment.
