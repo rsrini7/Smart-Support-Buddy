@@ -22,7 +22,7 @@ const Header = () => {
           to="/"
         >
           <img
-            src={`${process.env.PUBLIC_URL}/logo96.png`}
+            src={`${process.env.PUBLIC_URL}/logo192.png`}
             alt="Logo"
             style={{ height: 40, marginRight: 8 }}
           />
