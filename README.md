@@ -11,6 +11,16 @@ This application helps teams manage support issues / queries by:
 3. Storing the extracted information in a vector database for semantic search
 4. Providing a simple UI to query historical issues and find relevant solutions
 
+## Features
+
+- MSG file parsing with metadata and attachment extraction
+- Jira integration with bi-directional linking
+- Semantic search using sentence transformers
+- Bulk ingestion of MSG files
+- Vector search with similarity scoring
+- Responsive Material UI interface
+- Chroma Admin UI for vector database management
+
 ## Architecture
 
 The system consists of the following components:
@@ -25,8 +35,8 @@ The system consists of the following components:
 
 - **Backend**: Python with FastAPI
 - **Frontend**: React with Material-UI
-- **Database**: PostgreSQL (for structured data) + Chroma/Qdrant (for vector embeddings)
-- **AI Components**: LangChain or LlamaIndex with an open-source LLM
+- **Vector Store**: ChromaDB with sentence-transformers
+- **Database**: PostgreSQL (for structured data)
 - **MSG Parsing**: extract-msg library
 - **Jira Integration**: Jira REST API client
 
@@ -38,11 +48,43 @@ The system consists of the following components:
 4. Run the backend with `uvicorn app.main:app --reload`
 5. Run the frontend with `npm start` in the frontend directory
 
+## Environment Variables
+
+The backend requires a `.env` file with configuration for:
+
+```bash
+# Database Settings
+DATABASE_URL=postgresql://postgres:postgres@localhost/prodissue
+
+# Jira Settings
+JIRA_URL=http://localhost:9090
+JIRA_USERNAME=admin
+JIRA_PASSWORD=admin      # For local instance
+JIRA_API_TOKEN=          # For cloud instance
+
+# Vector DB Settings
+VECTOR_DB_PATH=./data/vectordb
+EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+# File Storage
+UPLOAD_DIR=./data/uploads
+```
+
+A sample `.env.example` is created automatically during backend setup. Edit `.env` with your actual values. See **BACKEND_SETUP.md** for details.
+
 ## Usage
 
 1. Upload MSG files through the UI or place them in the designated directory
 2. Link Jira tickets to the uploaded MSG files
-3. Query the system when similar support issues / queries occur to find historical solutions
+3. Use the semantic search to find similar issues:
+   - Search by description text
+   - Filter by Jira ticket ID
+   - Sort by similarity score
+4. View detailed issue information including:
+   - Original MSG content and metadata
+   - Linked Jira ticket details
+   - Related issues based on similarity
+5. Bulk ingest MSG files using the Tools menu
 
 ## Project Structure
 
@@ -63,18 +105,6 @@ The system consists of the following components:
 │       └── App.js         # Main application component
 └── README.md             # Project documentation
 ```
-
-## Environment Variables
-
-The backend requires a `.env` file with configuration for:
-
-- Database connection details
-- Jira API credentials
-- Vector database path
-- File upload directory
-- LLM settings
-
-A sample `.env.example` is created automatically during backend setup. Edit `.env` with your actual values. See **BACKEND_SETUP.md** for details.
 
 ## Docker Setup
 
@@ -111,6 +141,12 @@ npm test
 
 ### Backend
 
+Run backend tests:
+
+```bash
+pytest backend/tests
+```
+
 ## Jira Setup
 
 After starting the containers with Docker Compose, Jira will be accessible at [http://localhost:9090](http://localhost:9090).
@@ -125,12 +161,6 @@ On first launch, complete the Jira setup wizard:
 6. **API Access**: Generate an API token or create a dedicated user for API access, and update your backend `.env` file with these credentials.
 
 Subsequent startups will skip this wizard, as the data is persisted in the Docker volume.
-
-Run backend tests:
-
-```bash
-pytest backend/tests
-```
 
 ## Frontend Production Build
 
