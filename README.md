@@ -1,4 +1,4 @@
-# Support Buddy AI
+# Smart Support Buddy
 
 A GenAI-powered solution for handling support issues / queries by analyzing Microsoft Outlook MSG files and Jira tickets to identify root causes and solutions.
 

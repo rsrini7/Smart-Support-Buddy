@@ -20,7 +20,7 @@ else:
 class Settings(BaseSettings):
     # API settings
     API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "Support Buddy AI"
+    PROJECT_NAME: str = "Smart Support Buddy"
     
     # CORS settings
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:9000"]
