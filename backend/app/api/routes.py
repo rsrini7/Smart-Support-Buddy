@@ -25,6 +25,16 @@ async def upload_msg_file(
 ):
     """Upload an MSG file and/or process a Jira ticket. Jira ticket ID is required."""
     logger.info("Entered upload_msg_file endpoint")
+    # Debug log input values
+    logger.info(f"Validation check: file={file}, jira_ticket_id={jira_ticket_id}")
+
+    # Validation: require at least one input
+    if not file and not jira_ticket_id:
+        logger.info("Validation failed: neither file nor jira_ticket_id provided")
+        raise HTTPException(status_code=422, detail="Either file or jira_ticket_id must be provided.")
+    else:
+        logger.info("Validation passed")
+
     try:
         # Initialize variables
         msg_data = {}

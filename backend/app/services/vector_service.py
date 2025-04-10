@@ -251,6 +251,11 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
         jira_data = None
         try:
             from app.services.jira_service import get_jira_ticket
+
+            # Defensive fix: if metadata is a list, convert to empty dict
+            if isinstance(metadata, list):
+                metadata = {}
+
             if metadata.get('jira_ticket_id'):
                 jira_data = get_jira_ticket(metadata.get('jira_ticket_id'))
             else:
@@ -343,6 +348,10 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
             # Query the collection
             results = collection.query(**query_params)
         
+        # Defensive fix: if results is a list, convert to empty dict structure
+        if isinstance(results, list):
+            results = {"ids": [], "metadatas": [], "documents": [], "distances": []}
+
         # Process results
         issue_responses = []
         if results and len(results["ids"]) > 0:
@@ -356,7 +365,13 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
             documents = results["documents"][0] if is_query_result else results["documents"]
             
             for i, issue_id in enumerate(ids):
+                # Defensive fix: skip invalid empty or list ids
+                if not isinstance(issue_id, str) or not issue_id:
+                    continue
                 metadata = metadatas[i]
+                # Defensive fix: if metadata is a list, convert to empty dict
+                if isinstance(metadata, list):
+                    metadata = {}
                 document = documents[i]
                 # Calculate similarity score - 1.0 for Jira ID matches, distance-based for text search
                 distance = results["distances"][0][i] if is_query_result else 0.0
