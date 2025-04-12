@@ -11,8 +11,8 @@ import HomePage from './pages/HomePage';
 import UploadPage from './pages/UploadPage';
 import SearchPage from './pages/SearchPage';
 import IssueDetailsPage from './pages/IssueDetailsPage';
-
 import IngestMsgFilesPage from './pages/IngestMsgFilesPage';
+import ConfluenceIngestPage from './pages/ConfluenceIngestPage';
 
 function App() {
   return (
@@ -25,7 +25,8 @@ function App() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/issues/:issueId" element={<IssueDetailsPage />} />
           <Route path="/ingest-msg-files" element={<IngestMsgFilesPage />} />
-        </Routes>
+            <Route path="/ingest-confluence" element={<ConfluenceIngestPage />} />
+          </Routes>
       </Container>
       <Footer />
     </Box>

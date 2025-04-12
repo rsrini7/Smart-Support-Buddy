@@ -12,29 +12,35 @@ const HomePage = () => {
         <Typography variant="subtitle1">
           Easily manage, search, and analyze support issues / queries using MSG files and Jira integration
         </Typography>
-        <Box sx={{ mt: 3 }}>
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 3 }}>
           <Button
             variant="contained"
             color="primary"
             component={RouterLink}
             to="/ingest-msg-files"
-            sx={{ mr: 2 }}
           >
             Ingest MSG
+          </Button>
+          <Button
+            variant="contained"
+            color="info"
+            component={RouterLink}
+            to="/ingest-confluence"
+          >
+            Ingest Confluence
           </Button>
           <Button
             variant="contained"
             color="secondary"
             component={RouterLink}
             to="/upload"
-            sx={{ mr: 2 }}
           >
             Upload Issue
           </Button>
-          <Button 
-            variant="outlined" 
-            color="inherit" 
-            component={RouterLink} 
+          <Button
+            variant="outlined"
+            color="inherit"
+            component={RouterLink}
             to="/search"
           >
             Search Issues
@@ -95,6 +101,23 @@ const HomePage = () => {
             </CardContent>
             <CardActions>
               <Button size="small" component={RouterLink} to="/search">
+                Try It
+              </Button>
+            </CardActions>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Confluence Ingest
+              </Typography>
+              <Typography variant="body2">
+                Ingest and analyze Confluence pages by providing a page URL. Integrate documentation and knowledge base content into the system for enhanced search and context.
+              </Typography>
+            </CardContent>
+            <CardActions>
+              <Button size="small" component={RouterLink} to="/ingest-confluence">
                 Try It
               </Button>
             </CardActions>
