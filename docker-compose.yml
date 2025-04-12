@@ -1,4 +1,3 @@
-
 services:
   backend:
     build:
@@ -51,63 +50,97 @@ services:
     image: atlassian/jira-software:10-ubuntu-jdk17 # Use a specific version
     container_name: jira
     environment:
-      # REMOVED DB specific vars as dbconfig.xml handles it now
-      # - ATL_JDBC_URL=...
-      # - ATL_JDBC_USER=...
-      # - ATL_JDBC_PASSWORD=...
-      # - ATL_DB_DRIVER=...
-      # - ATL_DB_TYPE=... # This is now in dbconfig.xml
-
-      # Keep JVM settings
       - JVM_MINIMUM_MEMORY=1024m
       - JVM_MAXIMUM_MEMORY=2048m
-
-      # (Optional) Set Timezone if needed
-      # - TZ=America/New_York
-
     volumes:
-      # Data Volume Mount (CRITICAL - Where setup files need to go)
       - jira_data:/var/atlassian/application-data/jira
-
-      # Mount setup files INTO the Jira Home Directory (within the data volume)
       - ./jira-setup-files/dbconfig.xml:/var/atlassian/application-data/jira/dbconfig.xml
       - ./jira-setup-files/jira-response.varfile:/var/atlassian/application-data/jira/jira-response.varfile:ro
       - ./jira-setup-files/jira-config.properties:/var/atlassian/application-data/jira/jira-config.properties:ro
-
-      # Mount server.xml into the Tomcat config directory (as before)
       - ./jira-config/server.xml:/opt/atlassian/jira/conf/server.xml:ro
-
     ports:
       - "9090:8080"
     networks:
       - app_network
     depends_on:
-      postgres: # Ensure postgres service definition exists
-          condition: service_healthy # Optional: Wait for DB healthcheck if defined
+      postgres:
+          condition: service_healthy
+
+  confluence:
+    image: atlassian/confluence:7.19
+    container_name: confluence
+    ports:
+      - "8090:8090"
+      - "8091:8091"
+    volumes:
+      - confluence-data:/var/atlassian/application-data/confluence
+      - ./confluence-setup-files/dbconfig.xml:/var/atlassian/application-data/confluence/dbconfig.xml
+      - ./confluence-setup-files/confluence-response.varfile:/var/atlassian/application-data/confluence/confluence-response.varfile:ro
+      - ./confluence-setup-files/confluence-config.properties:/var/atlassian/application-data/confluence/confluence-config.properties:ro
+      - ./confluence-config/server.xml:/opt/atlassian/confluence/conf/server.xml:ro
+    environment:
+      - ATL_JDBC_URL=jdbc:postgresql://postgres:5432/confluence
+      - ATL_JDBC_USER=confluence
+      - ATL_JDBC_PASSWORD=confluence
+      - ATL_DB_TYPE=postgresql
+      - JVM_MINIMUM_MEMORY=1024m
+      - JVM_MAXIMUM_MEMORY=2048m
+      - CONFLUENCE_HOME=/var/atlassian/application-data/confluence
+      - CONFLUENCE_INSTALL_DIR=/opt/atlassian/confluence
+      - ATL_PROXY_NAME=localhost
+      - ATL_PROXY_PORT=8090
+      - CATALINA_CONNECTOR_PROXYNAME=localhost
+      - CATALINA_CONNECTOR_PROXYPORT=8090
+    networks:
+      - app_network
+    depends_on:
+      confluence-postgres:
+          condition: service_healthy
+    restart: unless-stopped
 
   postgres:
-    image: postgres:13-alpine # Use a specific version
+    image: postgres:13-alpine
     container_name: postgres
     environment:
-      - POSTGRES_DB=jira
       - POSTGRES_USER=jira
-      - POSTGRES_PASSWORD=jirapass # Use secrets in production!
+      - POSTGRES_PASSWORD=jira
+      - POSTGRES_DB=jira
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
       - app_network
-    # Optional: Add healthcheck so Jira can wait for DB to be ready
     healthcheck:
         test: ["CMD-SHELL", "pg_isready -U jira -d jira"]
         interval: 10s
         timeout: 5s
         retries: 5
 
+  confluence-postgres:
+    image: postgres:13-alpine
+    container_name: confluence-postgres
+    environment:
+      - POSTGRES_USER=confluence
+      - POSTGRES_PASSWORD=confluence
+      - POSTGRES_DB=confluence
+    volumes:
+      - confluence_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U confluence -d confluence"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   jira_data:
   postgres_data:
+  confluence-data:
+  confluence_postgres_data:
 
 networks:
   app_network:

@@ -144,6 +144,8 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
 
         # Create the full text for embedding, including comments
         full_text = f"{msg_subject}\n{msg_body}\n{jira_summary}\n{jira_description}"
+        if 'jira_comments_text' in locals():
+            full_text += f"\nComments:\n{jira_comments_text}"
         
         # Generate embedding
         embedding = model.encode(full_text).tolist()
