@@ -18,6 +18,19 @@ logger.setLevel(logging.INFO)
 
 router = APIRouter()
 
+# Import Confluence service
+from app.services.confluence_service import (
+    add_confluence_page_to_vectordb,
+    search_similar_confluence_pages
+)
+
+class ConfluenceIngestRequest(BaseModel):
+    confluence_url: str
+
+class ConfluenceSearchRequest(BaseModel):
+    query_text: str
+    limit: int = 10
+
 @router.post("/upload-msg", response_model=Dict[str, Any])
 async def upload_msg_file(
     file: Optional[UploadFile] = File(None),
@@ -98,6 +111,60 @@ async def get_jira_ticket_info(ticket_id: str):
         return {
             "status": "success",
             "jira_data": jira_data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/ingest-confluence", response_model=Dict[str, Any])
+async def ingest_confluence_page(payload: ConfluenceIngestRequest):
+    """
+    Ingest a Confluence page by URL and store its embedding in the vector DB.
+    """
+    try:
+        page_id = add_confluence_page_to_vectordb(payload.confluence_url)
+        if not page_id:
+            raise HTTPException(status_code=500, detail="Failed to ingest Confluence page")
+        return {
+            "status": "success",
+            "message": "Confluence page ingested successfully",
+            "page_id": page_id
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/search-confluence", response_model=Dict[str, Any])
+async def search_confluence_pages(payload: ConfluenceSearchRequest):
+    """
+    Search for similar Confluence pages based on a query.
+    """
+    try:
+        results = search_similar_confluence_pages(payload.query_text, payload.limit)
+        if not results or not results.get("ids"):
+            return {
+                "status": "success",
+                "results": []
+            }
+        # Format results for frontend
+        formatted = []
+        ids = results["ids"][0] if "distances" in results and results["distances"] else results["ids"]
+        metadatas = results["metadatas"][0] if "distances" in results and results["distances"] else results["metadatas"]
+        documents = results["documents"][0] if "distances" in results and results["distances"] else results["documents"]
+        distances = results["distances"][0] if "distances" in results and results["distances"] else [0.0] * len(ids)
+        for i, page_id in enumerate(ids):
+            metadata = metadatas[i]
+            document = documents[i]
+            distance = distances[i]
+            similarity_score = 1.0 - min(distance / 2, 1.0)
+            formatted.append({
+                "page_id": page_id,
+                "title": metadata.get("confluence_url", "Confluence Page"),
+                "content": document,
+                "similarity_score": similarity_score,
+                "metadata": metadata
+            })
+        return {
+            "status": "success",
+            "results": formatted
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -15,7 +15,7 @@ VECTOR_DB_DIR="$DATA_DIR/vectordb"
 
 # Start Docker Compose services
 echo "Starting Docker Compose services..."
-docker compose up -d chroma postgres jira
+docker compose up -d chroma postgres jira confluence-postgres confluence
 
 # Wait for ChromaDB to be healthy
 echo "Waiting for ChromaDB to be healthy..."

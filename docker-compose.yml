@@ -79,12 +79,6 @@ services:
       - ./confluence-setup-files/confluence-config.properties:/var/atlassian/application-data/confluence/confluence-config.properties:ro
       - ./confluence-config/server.xml:/opt/atlassian/confluence/conf/server.xml:ro
     environment:
-      - ATL_JDBC_URL=jdbc:postgresql://confluence-postgres:5432/confluence
-      - ATL_JDBC_USER=confluence
-      - ATL_JDBC_PASSWORD=confluence
-      - ATL_DB_TYPE=postgresql
-      - ATL_PROXY_NAME=localhost
-      - ATL_PROXY_PORT=8090
       - CATALINA_CONNECTOR_PROXYNAME=localhost
       - CATALINA_CONNECTOR_PROXYPORT=8090
       - JVM_MINIMUM_MEMORY=1024m
