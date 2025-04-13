@@ -6,20 +6,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Try loading from .env.docker first, then fall back to .env
-docker_env = load_dotenv('.env.docker')
-if docker_env:
-    logger.info("Loaded environment variables from .env.docker")
+env_loaded = load_dotenv('.env')
+if env_loaded:
+    logger.info("Loaded environment variables from .env")
 else:
-    env_loaded = load_dotenv('.env')
-    if env_loaded:
-        logger.info("Loaded environment variables from .env")
-    else:
-        backend_env_loaded = load_dotenv('backend/.env')
-        if backend_env_loaded:
-            logger.info("Loaded environment variables from backend/.env")
-        else:
-            logger.warning("No environment file (.env.docker, .env, or backend/.env) found, using default values")
+    logger.warning("No environment file (.env) found, using default values")
 
 class Settings(BaseSettings):
     # API settings
