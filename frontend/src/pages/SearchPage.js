@@ -27,6 +27,7 @@ const SearchPage = () => {
   const [jiraTicketId, setJiraTicketId] = useState(location.state?.searchJiraId || '');
   const [issueResults, setIssueResults] = useState(location.state?.searchResults || []);
   const [confluenceResults, setConfluenceResults] = useState([]);
+  const [stackOverflowResults, setStackOverflowResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [tab, setTab] = useState(0);
@@ -63,6 +64,7 @@ const SearchPage = () => {
     setError('');
     setIssueResults([]);
     setConfluenceResults([]);
+    setStackOverflowResults([]);
 
     // Search issues
     let issues = [];
@@ -118,19 +120,54 @@ const SearchPage = () => {
       confluenceError = err.message;
     }
 
+    // Search Stack Overflow
+    let stackoverflow = [];
+    let stackoverflowError = '';
+    try {
+      const response = await fetch('http://localhost:9000/api/search-stackoverflow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query_text: queryText,
+          limit: 10
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Stack Overflow search failed');
+      }
+
+      stackoverflow = data.results || [];
+    } catch (err) {
+      stackoverflowError = err.message;
+    }
+
     setIssueResults(issues);
     setConfluenceResults(confluence);
+    setStackOverflowResults(stackoverflow);
 
-    if (issueError && confluenceError) {
+    if (issueError && confluenceError && stackoverflowError) {
+      setError(`Issues: ${issueError} | Confluence: ${confluenceError} | Stack Overflow: ${stackoverflowError}`);
+    } else if (issueError && confluenceError) {
       setError(`Issues: ${issueError} | Confluence: ${confluenceError}`);
+    } else if (issueError && stackoverflowError) {
+      setError(`Issues: ${issueError} | Stack Overflow: ${stackoverflowError}`);
+    } else if (confluenceError && stackoverflowError) {
+      setError(`Confluence: ${confluenceError} | Stack Overflow: ${stackoverflowError}`);
     } else if (issueError) {
       setError(`Issues: ${issueError}`);
     } else if (confluenceError) {
       setError(`Confluence: ${confluenceError}`);
+    } else if (stackoverflowError) {
+      setError(`Stack Overflow: ${stackoverflowError}`);
     }
 
-    setLoading(false);
-  };
+setLoading(false);
+};
 
   const handleViewIssue = (issueId) => {
     navigate(`/issues/${issueId}`, {
@@ -208,6 +245,7 @@ const SearchPage = () => {
       <Tabs value={tab} onChange={handleTabChange} sx={{ mb: 2 }}>
         <Tab label="Issues" />
         <Tab label="Confluence" />
+        <Tab label="Stack Overflow" />
       </Tabs>
 
       {/* Issues Tab */}
@@ -330,6 +368,64 @@ const SearchPage = () => {
           <Paper sx={{ p: 3, textAlign: 'center' }}>
             <Typography variant="body1">
               {queryText ? 'No Confluence results found. Try a different search query.' : 'Enter a search query to begin.'}
+            </Typography>
+          </Paper>
+        )
+      )}
+      {/* Stack Overflow Tab */}
+      {tab === 2 && (
+        stackOverflowResults.length > 0 ? (
+          <Box>
+            <Typography variant="h5" gutterBottom>
+              Stack Overflow Results ({stackOverflowResults.length})
+            </Typography>
+            <Grid container spacing={3}>
+              {stackOverflowResults.map((item, idx) => (
+                <Grid item xs={12} key={item.item_id || idx}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        {item.title}
+                      </Typography>
+                      <Box sx={{ display: 'flex', mb: 1 }}>
+                        {item.similarity_score !== undefined && (
+                          <Chip
+                            label={`Similarity: ${(item.similarity_score * 100).toFixed(2)}%`}
+                            color="secondary"
+                            size="small"
+                            sx={{ mr: 1 }}
+                          />
+                        )}
+                        <Typography variant="body2" color="text.secondary">
+                          {item.metadata?.url && (
+                            <a href={item.metadata.url} target="_blank" rel="noopener noreferrer">
+                              View on Stack Overflow
+                            </a>
+                          )}
+                        </Typography>
+                        <Chip
+                          label={item.metadata?.type === 'question' ? 'Question' : 'Answer'}
+                          color={item.metadata?.type === 'question' ? 'primary' : 'info'}
+                          size="small"
+                          sx={{ ml: 1 }}
+                        />
+                      </Box>
+                      <Divider sx={{ my: 1 }} />
+                      <Typography variant="body2" sx={{ mb: 2 }}>
+                        {item.content?.length > 200
+                          ? `${item.content.substring(0, 200)}...`
+                          : item.content}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        ) : loading ? null : (
+          <Paper sx={{ p: 3, textAlign: 'center' }}>
+            <Typography variant="body1">
+              {queryText ? 'No Stack Overflow results found. Try a different search query.' : 'Enter a search query to begin.'}
             </Typography>
           </Paper>
         )

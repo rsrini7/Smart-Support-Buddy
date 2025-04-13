@@ -31,6 +31,14 @@ const HomePage = () => {
           </Button>
           <Button
             variant="contained"
+            color="warning"
+            component={RouterLink}
+            to="/ingest-stackoverflow"
+          >
+            Ingest Stack Overflow
+          </Button>
+          <Button
+            variant="contained"
             color="secondary"
             component={RouterLink}
             to="/upload"
@@ -118,6 +126,23 @@ const HomePage = () => {
             </CardContent>
             <CardActions>
               <Button size="small" component={RouterLink} to="/ingest-confluence">
+                Try It
+              </Button>
+            </CardActions>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Stack Overflow Ingest
+              </Typography>
+              <Typography variant="body2">
+                Ingest and analyze Stack Overflow questions and answers by providing a question URL. Integrate community Q&amp;A into the system for enhanced search and context.
+              </Typography>
+            </CardContent>
+            <CardActions>
+              <Button size="small" component={RouterLink} to="/ingest-stackoverflow">
                 Try It
               </Button>
             </CardActions>

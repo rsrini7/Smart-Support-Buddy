@@ -24,10 +24,22 @@ from app.services.confluence_service import (
     search_similar_confluence_pages
 )
 
+# Import Stack Overflow service
+from app.services.stackoverflow_service import (
+    add_stackoverflow_qa_to_vectordb,
+    search_similar_stackoverflow_content
+)
+
 class ConfluenceIngestRequest(BaseModel):
     confluence_url: str
 
 class ConfluenceSearchRequest(BaseModel):
+    query_text: str
+    limit: int = 10
+class StackOverflowIngestRequest(BaseModel):
+    stackoverflow_url: str
+
+class StackOverflowSearchRequest(BaseModel):
     query_text: str
     limit: int = 10
 
@@ -128,6 +140,59 @@ async def ingest_confluence_page(payload: ConfluenceIngestRequest):
             "status": "success",
             "message": "Confluence page ingested successfully",
             "page_id": page_id
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@router.post("/ingest-stackoverflow", response_model=Dict[str, Any])
+async def ingest_stackoverflow_qa(payload: StackOverflowIngestRequest):
+    """
+    Ingest a Stack Overflow Q&A by URL and store its embedding in the vector DB.
+    """
+    try:
+        ids = add_stackoverflow_qa_to_vectordb(payload.stackoverflow_url)
+        if not ids:
+            raise HTTPException(status_code=500, detail="Failed to ingest Stack Overflow Q&A")
+        return {
+            "status": "success",
+            "message": "Stack Overflow Q&A ingested successfully",
+            "ids": ids
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/search-stackoverflow", response_model=Dict[str, Any])
+async def search_stackoverflow_qa(payload: StackOverflowSearchRequest):
+    """
+    Search for similar Stack Overflow Q&A based on a query.
+    """
+    try:
+        results = search_similar_stackoverflow_content(payload.query_text, payload.limit)
+        if not results or not results.get("ids"):
+            return {
+                "status": "success",
+                "results": []
+            }
+        # Format results for frontend
+        formatted = []
+        ids = results["ids"][0] if "distances" in results and results["distances"] else results["ids"]
+        metadatas = results["metadatas"][0] if "distances" in results and results["distances"] else results["metadatas"]
+        documents = results["documents"][0] if "distances" in results and results["distances"] else results["documents"]
+        distances = results["distances"][0] if "distances" in results and results["distances"] else [0.0] * len(ids)
+        for i, item_id in enumerate(ids):
+            metadata = metadatas[i]
+            document = documents[i]
+            distance = distances[i]
+            similarity_score = 1.0 - min(distance / 2, 1.0)
+            formatted.append({
+                "item_id": item_id,
+                "title": metadata.get("title", "Stack Overflow Q/A"),
+                "content": document,
+                "similarity_score": similarity_score,
+                "metadata": metadata
+            })
+        return {
+            "status": "success",
+            "results": formatted
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

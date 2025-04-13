@@ -13,6 +13,7 @@ import SearchPage from './pages/SearchPage';
 import IssueDetailsPage from './pages/IssueDetailsPage';
 import IngestMsgFilesPage from './pages/IngestMsgFilesPage';
 import ConfluenceIngestPage from './pages/ConfluenceIngestPage';
+import StackOverflowIngestPage from './pages/StackOverflowIngestPage';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/issues/:issueId" element={<IssueDetailsPage />} />
           <Route path="/ingest-msg-files" element={<IngestMsgFilesPage />} />
             <Route path="/ingest-confluence" element={<ConfluenceIngestPage />} />
+            <Route path="/ingest-stackoverflow" element={<StackOverflowIngestPage />} />
           </Routes>
       </Container>
       <Footer />
