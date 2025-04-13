@@ -440,6 +440,8 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                 
                 issue_responses.append(issue_response)
         
+        # Filter out results with 0.0 similarity
+        issue_responses = [resp for resp in issue_responses if resp.similarity_score > 0.0]
         return issue_responses
     
     except Exception as e:

@@ -113,6 +113,8 @@ async def search_stackoverflow_qa(payload: StackOverflowSearchRequest):
             document = documents[i]
             distance = distances[i]
             similarity_score = 1.0 - min(distance / 2, 1.0)
+            if similarity_score == 0.0:
+                continue  # Skip results with 0.00% similarity
             formatted.append({
                 "item_id": item_id,
                 "title": metadata.get("title", "Stack Overflow Q/A"),
@@ -145,14 +147,22 @@ async def search_confluence_pages(payload: ConfluenceSearchRequest):
         metadatas = results["metadatas"][0] if "distances" in results and results["distances"] else results["metadatas"]
         documents = results["documents"][0] if "distances" in results and results["distances"] else results["documents"]
         distances = results["distances"][0] if "distances" in results and results["distances"] else [0.0] * len(ids)
+        seen = set()
         for i, page_id in enumerate(ids):
             metadata = metadatas[i]
             document = documents[i]
+            confluence_url = metadata.get("confluence_url", "")
+            unique_key = (str(page_id), confluence_url, document)
+            if unique_key in seen:
+                continue
+            seen.add(unique_key)
             distance = distances[i]
             similarity_score = 1.0 - min(distance / 2, 1.0)
+            if similarity_score == 0.0:
+                continue  # Skip results with 0.00% similarity
             formatted.append({
                 "page_id": page_id,
-                "title": metadata.get("confluence_url", "Confluence Page"),
+                "title": confluence_url or "Confluence Page",
                 "content": document,
                 "similarity_score": similarity_score,
                 "metadata": metadata
@@ -215,6 +225,11 @@ async def clear_chroma_collection(collection_name: str):
     Delete all data from the specified ChromaDB collection.
     """
     from app.services.vector_service import clear_collection
+    try:
+        clear_collection(collection_name)
+        return {"status": "success", "message": f"All data cleared from collection '{collection_name}'."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to clear collection '{collection_name}': {str(e)}")
     try:
         clear_collection(collection_name)
         return {"status": "success", "message": f"All data cleared from collection '{collection_name}'."}

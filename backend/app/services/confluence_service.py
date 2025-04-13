@@ -83,6 +83,12 @@ def add_confluence_page_to_vectordb(confluence_url: str, extra_metadata: Optiona
         metadata = sanitized_metadata
 
         collection = client.get_or_create_collection("confluence_pages")
+        # Check for existing page with same confluence_url
+        existing = collection.get(include=["metadatas"])
+        for idx, meta in enumerate(existing.get("metadatas", [])):
+            if meta and meta.get("confluence_url") == confluence_url:
+                # Return existing id, skip duplicate add
+                return existing["ids"][idx]
         collection.add(
             ids=[page_id],
             embeddings=[embedding],
