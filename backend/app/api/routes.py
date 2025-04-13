@@ -223,6 +223,12 @@ async def search_issues(query: SearchQuery):
             vector_task, confluence_task, stackoverflow_task
         )
 
+        # Ensure stackoverflow_results is always a list or a consistent structure
+        if stackoverflow_results is None:
+            stackoverflow_results = []
+        elif isinstance(stackoverflow_results, dict) and "results" in stackoverflow_results:
+            stackoverflow_results = stackoverflow_results["results"]
+
         return {
             "vector_issues": vector_issues,
             "confluence_results": confluence_results,

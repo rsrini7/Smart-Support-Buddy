@@ -23,9 +23,9 @@ const SearchPage = () => {
   const location = useLocation();
 
   // Initialize state from location if available
-  const [queryText, setQueryText] = useState(location.state?.searchQuery || '');
-  const [jiraTicketId, setJiraTicketId] = useState(location.state?.searchJiraId || '');
-  const [issueResults, setIssueResults] = useState(location.state?.searchResults || []);
+  const [queryText, setQueryText] = useState(() => location.state?.searchQuery || '');
+  const [jiraTicketId, setJiraTicketId] = useState(() => location.state?.searchJiraId || '');
+  const [issueResults, setIssueResults] = useState(() => location.state?.searchResults || []);
   const [confluenceResults, setConfluenceResults] = useState([]);
   const [stackOverflowResults, setStackOverflowResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -58,8 +58,10 @@ const SearchPage = () => {
   const handleSearch = async () => {
     if (!queryText && !jiraTicketId) {
       setError('Please enter a search query or Jira ticket ID');
+      // Do NOT clear results if search is invalid
       return;
     }
+    // Only clear results if a valid search is being performed
 
     setLoading(true);
     setError('');
@@ -111,77 +113,8 @@ const SearchPage = () => {
       setLoading(false);
     }
 
-    // The separate fetches for confluence and stackoverflow are now redundant and can be removed.
-    try {
-      const response = await fetch('http://localhost:9000/api/search-confluence', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query_text: queryText,
-          limit: 10
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Confluence search failed');
-      }
-
-      confluence = data.results || [];
-    } catch (err) {
-      confluenceError = err.message;
-    }
-
-    // Search Stack Overflow
-    let stackoverflow = [];
-    let stackoverflowError = '';
-    try {
-      const response = await fetch('http://localhost:9000/api/search-stackoverflow', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query_text: queryText,
-          limit: 10
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Stack Overflow search failed');
-      }
-
-      stackoverflow = data.results || [];
-    } catch (err) {
-      stackoverflowError = err.message;
-    }
-
-    setIssueResults(issues);
-    setConfluenceResults(confluence);
-    setStackOverflowResults(stackoverflow);
-
-    if (issueError && confluenceError && stackoverflowError) {
-      setError(`Issues: ${issueError} | Confluence: ${confluenceError} | Stack Overflow: ${stackoverflowError}`);
-    } else if (issueError && confluenceError) {
-      setError(`Issues: ${issueError} | Confluence: ${confluenceError}`);
-    } else if (issueError && stackoverflowError) {
-      setError(`Issues: ${issueError} | Stack Overflow: ${stackoverflowError}`);
-    } else if (confluenceError && stackoverflowError) {
-      setError(`Confluence: ${confluenceError} | Stack Overflow: ${stackoverflowError}`);
-    } else if (issueError) {
-      setError(`Issues: ${issueError}`);
-    } else if (confluenceError) {
-      setError(`Confluence: ${confluenceError}`);
-    } else if (stackoverflowError) {
-      setError(`Stack Overflow: ${stackoverflowError}`);
-    }
-
-setLoading(false);
+    // The separate fetches for confluence and stackoverflow have been removed. All results now come from the main /api/search call.
+    setLoading(false);
 };
 
   const handleViewIssue = (issueId) => {
