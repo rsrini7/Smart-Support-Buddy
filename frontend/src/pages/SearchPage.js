@@ -92,12 +92,26 @@ const SearchPage = () => {
         throw new Error(data.detail || 'Search failed');
       }
 
-      issues = data;
+      // New backend returns { vector_issues, confluence_results, stackoverflow_results }
+      setIssueResults(data.vector_issues || []);
+      setConfluenceResults(
+        Array.isArray(data.confluence_results)
+          ? data.confluence_results
+          : data.confluence_results?.results || []
+      );
+      setStackOverflowResults(
+        Array.isArray(data.stackoverflow_results)
+          ? data.stackoverflow_results
+          : data.stackoverflow_results?.results || []
+      );
     } catch (err) {
       issueError = err.message;
+      setError(issueError);
+    } finally {
+      setLoading(false);
     }
 
-    // Search confluence
+    // The separate fetches for confluence and stackoverflow are now redundant and can be removed.
     try {
       const response = await fetch('http://localhost:9000/api/search-confluence', {
         method: 'POST',

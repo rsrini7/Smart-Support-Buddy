@@ -3,7 +3,7 @@ from app.services.vector_service import get_issue as get_issue_from_service
 from typing import List, Dict, Any
 import os
 import logging
-
+from pydantic import BaseModel
 
 from app.core.config import settings
 from app.services.msg_parser import parse_msg_file
@@ -14,6 +14,9 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+class JiraIngestRequest(BaseModel):
+    jira_ticket_id: str
 
 router = APIRouter()
 
@@ -73,6 +76,7 @@ async def ingest_confluence_page(payload: ConfluenceIngestRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
 @router.post("/ingest-stackoverflow", response_model=Dict[str, Any])
 async def ingest_stackoverflow_qa(payload: StackOverflowIngestRequest):
     """
@@ -87,6 +91,31 @@ async def ingest_stackoverflow_qa(payload: StackOverflowIngestRequest):
             "message": "Stack Overflow Q&A ingested successfully",
             "ids": ids
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/ingest-jira", response_model=Dict[str, Any])
+async def ingest_jira_ticket(payload: JiraIngestRequest):
+    """
+    Ingest a Jira ticket by ID and embed it into the Chroma vector database.
+    """
+    try:
+        from app.services.jira_service import get_jira_ticket
+        from app.services.vector_service import add_issue_to_vectordb
+
+        jira_data = get_jira_ticket(payload.jira_ticket_id)
+        if not jira_data:
+            raise HTTPException(status_code=404, detail=f"Jira ticket {payload.jira_ticket_id} not found or could not be fetched")
+
+        issue_id = add_issue_to_vectordb(jira_data=jira_data)
+        return {
+            "status": "success",
+            "message": f"Jira ticket {payload.jira_ticket_id} ingested successfully",
+            "issue_id": issue_id,
+            "jira_data": jira_data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -174,12 +203,31 @@ async def search_confluence_pages(payload: ConfluenceSearchRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/search", response_model=List[IssueResponse])
+@router.post("/search")
 async def search_issues(query: SearchQuery):
-    """Search for similar support issues / queries based on a query"""
+    """
+    Search for similar support issues / queries across vector DB, Confluence, and Stack Overflow in parallel.
+    Returns a dict with results from all sources.
+    """
+    import asyncio
+    from app.services.vector_service import search_similar_issues
+    from app.services.confluence_service import search_similar_confluence_pages
+    from app.services.stackoverflow_service import search_similar_stackoverflow_content
+
     try:
-        results = search_similar_issues(query.query_text, query.jira_ticket_id, query.limit)
-        return results
+        vector_task = asyncio.to_thread(search_similar_issues, query.query_text, query.jira_ticket_id, query.limit)
+        confluence_task = asyncio.to_thread(search_similar_confluence_pages, query.query_text, query.limit)
+        stackoverflow_task = asyncio.to_thread(search_similar_stackoverflow_content, query.query_text, query.limit)
+
+        vector_issues, confluence_results, stackoverflow_results = await asyncio.gather(
+            vector_task, confluence_task, stackoverflow_task
+        )
+
+        return {
+            "vector_issues": vector_issues,
+            "confluence_results": confluence_results,
+            "stackoverflow_results": stackoverflow_results
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

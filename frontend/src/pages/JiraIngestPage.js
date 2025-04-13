@@ -30,12 +30,12 @@ const JiraIngestPage = () => {
     }
 
     try {
-      const formData = new FormData();
-      formData.append('jira_ticket_id', jiraId);
-
-      const response = await fetch('http://localhost:9000/api/upload-msg', {
+      const response = await fetch('http://localhost:9000/api/ingest-jira', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ jira_ticket_id: jiraId }),
       });
 
       const data = await response.json();
