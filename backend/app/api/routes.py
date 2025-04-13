@@ -20,6 +20,35 @@ class JiraIngestRequest(BaseModel):
 
 router = APIRouter()
 
+# --- SIMILARITY THRESHOLD CONFIG ENDPOINTS ---
+
+from fastapi import Body
+
+class SimilarityThresholdRequest(BaseModel):
+    similarity_threshold: float
+
+@router.get("/config/similarity-threshold")
+async def get_similarity_threshold():
+    """
+    Get the current similarity threshold (user-set or fallback).
+    """
+    return {"similarity_threshold": settings.SIMILARITY_THRESHOLD}
+
+@router.post("/config/similarity-threshold")
+async def set_similarity_threshold(payload: SimilarityThresholdRequest = Body(...)):
+    """
+    Set a new similarity threshold (persists to config file).
+    """
+    try:
+        value = float(payload.similarity_threshold)
+        if not (0.0 < value < 1.0):
+            raise HTTPException(status_code=400, detail="similarity_threshold must be between 0 and 1 (exclusive)")
+        settings.set_similarity_threshold(value)
+        return {"status": "success", "similarity_threshold": value}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid value: {e}")
+
+
 # Import Confluence service
 from app.services.confluence_service import (
     add_confluence_page_to_vectordb,

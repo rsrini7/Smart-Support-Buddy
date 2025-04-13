@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings
 from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,27 @@ if env_loaded:
     logger.info("Loaded environment variables from .env")
 else:
     logger.warning("No environment file (.env) found, using default values")
+
+SIMILARITY_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "similarity_config.json")
+
+def read_similarity_threshold_from_file() -> Optional[float]:
+    try:
+        if os.path.exists(SIMILARITY_CONFIG_PATH):
+            with open(SIMILARITY_CONFIG_PATH, "r") as f:
+                data = json.load(f)
+                value = data.get("SIMILARITY_THRESHOLD")
+                if value is not None:
+                    return float(value)
+    except Exception as e:
+        logger.warning(f"Could not read similarity threshold from file: {e}")
+    return None
+
+def write_similarity_threshold_to_file(value: float):
+    try:
+        with open(SIMILARITY_CONFIG_PATH, "w") as f:
+            json.dump({"SIMILARITY_THRESHOLD": value}, f)
+    except Exception as e:
+        logger.error(f"Could not write similarity threshold to file: {e}")
 
 class Settings(BaseSettings):
     # API settings
@@ -42,8 +64,18 @@ class Settings(BaseSettings):
     
     # LLM settings
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-    SIMILARITY_THRESHOLD: float = float(os.getenv("SIMILARITY_THRESHOLD", 0.1))
+    _SIMILARITY_THRESHOLD_ENV: float = float(os.getenv("SIMILARITY_THRESHOLD", 0.1))
 
+    @property
+    def SIMILARITY_THRESHOLD(self) -> float:
+        """Return the user-set similarity threshold if present, else fallback to env/default."""
+        file_value = read_similarity_threshold_from_file()
+        if file_value is not None:
+            return file_value
+        return self._SIMILARITY_THRESHOLD_ENV
+
+    def set_similarity_threshold(self, value: float):
+        write_similarity_threshold_to_file(value)
 
     class Config:
         case_sensitive = True

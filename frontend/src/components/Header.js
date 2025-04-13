@@ -49,6 +49,9 @@ const Header = () => {
             <MenuItem component={RouterLink} to="/clear-chroma" onClick={handleClose}>
               Clear ChromaDB Collections
             </MenuItem>
+            <MenuItem component={RouterLink} to="/config" onClick={handleClose}>
+              Config
+            </MenuItem>
           </Menu>
         </Box>
       </Toolbar>

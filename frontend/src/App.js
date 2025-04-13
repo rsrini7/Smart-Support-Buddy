@@ -15,6 +15,7 @@ import ConfluenceIngestPage from './pages/ConfluenceIngestPage';
 import StackOverflowIngestPage from './pages/StackOverflowIngestPage';
 import JiraIngestPage from './pages/JiraIngestPage';
 import ClearChromaPage from './pages/ClearChromaPage';
+import ConfigPage from './pages/ConfigPage';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <Route path="/ingest-stackoverflow" element={<StackOverflowIngestPage />} />
             <Route path="/ingest-jira" element={<JiraIngestPage />} />
             <Route path="/clear-chroma" element={<ClearChromaPage />} />
+            <Route path="/config" element={<ConfigPage />} />
           </Routes>
       </Container>
       <Footer />
