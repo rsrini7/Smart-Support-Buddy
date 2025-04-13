@@ -281,7 +281,7 @@ async def list_issues(
 
 @router.get("/issues/{issue_id}", response_model=IssueResponse)
 async def get_issue(issue_id: str):
-    """Get a specific production issue by ID"""
+    """Get a specific RCA by ID"""
     try:
         issue = get_issue_from_service(issue_id)
         if not issue:
@@ -327,7 +327,7 @@ async def clear_chroma_collection(collection_name: str):
 
 @router.delete("/issues/{issue_id}")
 async def delete_production_issue(issue_id: str):
-    """Delete a production issue"""
+    """Delete a RCA"""
     try:
         success = delete_issue(issue_id)
         if not success:

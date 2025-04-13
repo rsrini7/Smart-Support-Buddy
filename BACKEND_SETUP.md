@@ -1,6 +1,6 @@
 # Backend Setup Guide
 
-This guide explains how to set up and run the backend for the Production Issue Identifier application.
+This guide explains how to set up and run the backend for the Support Buddy application.
 
 ## Available Scripts
 
@@ -30,7 +30,7 @@ This script provides more flexibility with command-line options:
 ```
 usage: run_backend.py [-h] [--host HOST] [--port PORT] [--no-reload] [--skip-deps] [--venv VENV]
 
-Production Issue Identifier Backend Runner
+Support Buddy Backend Runner
 
 options:
   -h, --help     show this help message and exit

@@ -48,7 +48,7 @@ def get_embedding_model():
 
 def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: Optional[Dict[str, Any]] = None) -> str:
     """
-    Add a production issue to the vector database.
+    Add a RCA to the vector database.
 
     Args:
         msg_data: Optional parsed MSG file data dictionary
@@ -197,7 +197,7 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
 
 def delete_issue(issue_id: str) -> bool:
     """
-    Delete a production issue from the vector database.
+    Delete a RCA from the vector database.
     
     Args:
         issue_id: ID of the issue to delete
@@ -223,7 +223,7 @@ def delete_issue(issue_id: str) -> bool:
 
 def get_issue(issue_id: str) -> Optional[IssueResponse]:
     """
-    Get a specific production issue by ID from the vector database.
+    Get a specific RCA by ID from the vector database.
     
     Args:
         issue_id: ID of the issue to retrieve

@@ -3,7 +3,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 class IssueCreate(BaseModel):
-    """Schema for creating a new production issue"""
+    """Schema for creating a new RCA"""
     title: str
     description: str
     jira_ticket_id: Optional[str] = None
@@ -13,7 +13,7 @@ class IssueCreate(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 class IssueResponse(BaseModel):
-    """Schema for returning a production issue"""
+    """Schema for returning a RCA"""
     id: str
     title: str
     description: str

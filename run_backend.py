@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 """
-Production Issue Identifier - Backend Runner Script
+Support Buddy - Backend Runner Script
 
 This script provides a convenient way to set up and run the FastAPI backend
-for the Production Issue Identifier application. It handles:
+for the Support Buddy application. It handles:
 - Virtual environment setup
 - Dependency installation
 - Environment configuration
@@ -111,7 +111,7 @@ def start_server(venv_python, backend_dir, host, port, reload):
 
 def main():
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Production Issue Identifier Backend Runner")
+    parser = argparse.ArgumentParser(description="Support Buddy Backend Runner")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind the server to (default: 0.0.0.0)")
     parser.add_argument("--port", type=int, default=8000, help="Port to bind the server to (default: 8000)")
     parser.add_argument("--no-reload", action="store_true", help="Disable auto-reload on code changes")

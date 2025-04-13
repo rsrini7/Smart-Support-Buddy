@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Typography, Paper, Button, CircularProgress, Alert, Grid } from '@mui/material';
 
 const COLLECTIONS = [
-  { name: 'production_issues', label: 'Production Issues' },
+  { name: 'production_issues', label: 'RCAs' },
   { name: 'stackoverflow_qa', label: 'Stack Overflow Q&A' },
   { name: 'confluence_pages', label: 'Confluence Pages' },
 ];

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Production Issue Identifier - Backend Startup Script
+# Support Buddy - Backend Startup Script
 # This script starts Docker services and the FastAPI backend server
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
-echo "===== Production Issue Identifier Backend Setup ====="
+echo "===== Support Buddy Backend Setup ====="
 
 # Define directories
 BACKEND_DIR="$(pwd)/backend"

@@ -126,7 +126,7 @@ import re
 
 def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Extract production issue details from MSG data, including Jira ID, root cause, and solution.
+    Extract RCA details from MSG data, including Jira ID, root cause, and solution.
     """
     body = msg_data.get("body", "") or ""
     subject = msg_data.get("subject", "") or ""

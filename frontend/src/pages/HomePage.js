@@ -10,7 +10,7 @@ const HomePage = () => {
           Support Buddy
         </Typography>
         <Typography variant="subtitle1">
-          Easily manage, search, and analyze support issues / queries using MSG files and Jira integration
+          Easily manage, search, and analyze support issues / queries using below features
         </Typography>
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 3 }}>
           <Button
@@ -68,7 +68,7 @@ const HomePage = () => {
                 MSG File Parsing
               </Typography>
               <Typography variant="body2">
-                Upload and parse Microsoft Outlook MSG files containing production issue details
+                Upload and parse Microsoft Outlook MSG files containing RCA details
               </Typography>
             </CardContent>
             <CardActions>
