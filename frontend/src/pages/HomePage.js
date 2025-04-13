@@ -1,6 +1,11 @@
 import React from 'react';
 import { Typography, Box, Paper, Grid, Button, Card, CardContent, CardActions } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import SearchIcon from '@mui/icons-material/Search';
+import MailIcon from '@mui/icons-material/Mail';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import CodeIcon from '@mui/icons-material/Code';
 
 const HomePage = () => {
   return (
@@ -15,41 +20,56 @@ const HomePage = () => {
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 3 }}>
           <Button
             variant="contained"
-            color="primary"
+            color="secondary"
+            size="large"
             component={RouterLink}
             to="/ingest-msg-files"
+            startIcon={<MailIcon />}
+            className="search-issues-btn"
           >
             Ingest MSG
           </Button>
           <Button
             variant="contained"
-            color="success"
+            color="secondary"
+            size="large"
             component={RouterLink}
             to="/ingest-jira"
+            startIcon={<BugReportIcon />}
+            className="search-issues-btn"
           >
             Ingest Jira
           </Button>
           <Button
             variant="contained"
-            color="info"
+            color="secondary"
+            size="large"
             component={RouterLink}
             to="/ingest-confluence"
+            startIcon={<LibraryBooksIcon />}
+            className="search-issues-btn"
           >
             Ingest Confluence
           </Button>
           <Button
             variant="contained"
-            color="warning"
+            color="secondary"
+            size="large"
             component={RouterLink}
             to="/ingest-stackoverflow"
+            startIcon={<CodeIcon />}
+            className="search-issues-btn"
           >
             Ingest Stack Overflow
           </Button>
           <Button
-            variant="outlined"
-            color="inherit"
+            variant="contained"
+            color="secondary"
+            size="large"
             component={RouterLink}
             to="/search"
+            startIcon={<SearchIcon />}
+            className="search-issues-btn"
           >
             Search Issues
           </Button>
@@ -62,9 +82,10 @@ const HomePage = () => {
       
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card className="feature-card">
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <MailIcon sx={{ fontSize: 28 }} />
                 MSG File Parsing
               </Typography>
               <Typography variant="body2">
@@ -72,7 +93,13 @@ const HomePage = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" component={RouterLink} to="/ingest-msg-files">
+              <Button
+                size="large"
+                component={RouterLink}
+                to="/ingest-msg-files"
+                className="search-issues-btn"
+                startIcon={<MailIcon />}
+              >
                 Try It
               </Button>
             </CardActions>
@@ -80,9 +107,10 @@ const HomePage = () => {
         </Grid>
         
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card className="feature-card">
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <BugReportIcon sx={{ fontSize: 28 }} />
                 Jira Integration
               </Typography>
               <Typography variant="body2">
@@ -90,7 +118,13 @@ const HomePage = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" component={RouterLink} to="/ingest-jira">
+              <Button
+                size="large"
+                component={RouterLink}
+                to="/ingest-jira"
+                className="search-issues-btn"
+                startIcon={<BugReportIcon />}
+              >
                 Try It
               </Button>
             </CardActions>
@@ -98,9 +132,10 @@ const HomePage = () => {
         </Grid>
         
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card className="feature-card">
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <SearchIcon sx={{ fontSize: 28 }} />
                 Semantic Search
               </Typography>
               <Typography variant="body2">
@@ -108,16 +143,23 @@ const HomePage = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" component={RouterLink} to="/search">
+              <Button
+                size="large"
+                component={RouterLink}
+                to="/search"
+                className="search-issues-btn"
+                startIcon={<SearchIcon />}
+              >
                 Try It
               </Button>
             </CardActions>
           </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card className="feature-card">
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <LibraryBooksIcon sx={{ fontSize: 28 }} />
                 Confluence Ingest
               </Typography>
               <Typography variant="body2">
@@ -125,16 +167,23 @@ const HomePage = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" component={RouterLink} to="/ingest-confluence">
+              <Button
+                size="large"
+                component={RouterLink}
+                to="/ingest-confluence"
+                className="search-issues-btn"
+                startIcon={<LibraryBooksIcon />}
+              >
                 Try It
               </Button>
             </CardActions>
           </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card className="feature-card">
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CodeIcon sx={{ fontSize: 28 }} />
                 Stack Overflow Ingest
               </Typography>
               <Typography variant="body2">
@@ -142,7 +191,13 @@ const HomePage = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" component={RouterLink} to="/ingest-stackoverflow">
+              <Button
+                size="large"
+                component={RouterLink}
+                to="/ingest-stackoverflow"
+                className="search-issues-btn"
+                startIcon={<CodeIcon />}
+              >
                 Try It
               </Button>
             </CardActions>
