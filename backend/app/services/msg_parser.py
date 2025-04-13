@@ -127,12 +127,6 @@ import re
 def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract production issue details from MSG data, including Jira ID, root cause, and solution.
-    
-    Args:
-        msg_data: Dictionary containing MSG file data
-        
-    Returns:
-        Dictionary with extracted issue details
     """
     body = msg_data.get("body", "") or ""
     subject = msg_data.get("subject", "") or ""
@@ -146,32 +140,20 @@ def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
         "jira_url": None,
     }
 
-    # --- Extract Jira ID ---
-    # Typical Jira ID pattern: ABC-1234
+    # Extract Jira ID and URL
     jira_pattern = r"\b[A-Z][A-Z0-9]+-\d+\b"
-    jira_matches = re.findall(jira_pattern, combined_text)
-    if jira_matches:
-        # If Jira IDs found directly, use the first one
-        issue_details["jira_id"] = jira_matches[0]
-        issue_details["jira_url"] = None
-        
-        # No Jira IDs found directly, try to extract from Jira URL
-        jira_url_pattern = r"https?://[^\s]+/(browse|projects/.+/issues)/[A-Z][A-Z0-9]+-\d+"
-        jira_url_match = re.search(jira_url_pattern, combined_text)
-        if jira_url_match:
-            jira_url = jira_url_match.group(0)
-            issue_details["jira_url"] = jira_url
+    jira_url_pattern = r"https?://[^\s]+/(?:browse|projects/.+/issues)/([A-Z][A-Z0-9]+-\d+)"
 
-            # Extract Jira ID from URL
-            import re as _re
-            m = _re.search(r"([A-Z][A-Z0-9]+-\d+)", jira_url)
-            if m:
-                issue_details["jira_id"] = m.group(1)
-            else:
-                issue_details["jira_id"] = None
-        else:
-            issue_details["jira_url"] = None
-            issue_details["jira_id"] = None
+    # First try to find Jira URL
+    url_match = re.search(jira_url_pattern, combined_text)
+    if url_match:
+        issue_details["jira_url"] = url_match.group(0)
+        issue_details["jira_id"] = url_match.group(1)
+    else:
+        # If no URL found, look for Jira ID directly
+        id_match = re.search(jira_pattern, combined_text)
+        if id_match:
+            issue_details["jira_id"] = id_match.group(0)
 
     return issue_details
     # - Text classification to identify root cause and solution sections
