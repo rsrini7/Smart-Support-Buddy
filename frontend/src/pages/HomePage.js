@@ -46,14 +46,6 @@ const HomePage = () => {
             Ingest Stack Overflow
           </Button>
           <Button
-            variant="contained"
-            color="secondary"
-            component={RouterLink}
-            to="/upload"
-          >
-            Upload Issue
-          </Button>
-          <Button
             variant="outlined"
             color="inherit"
             component={RouterLink}
@@ -80,7 +72,7 @@ const HomePage = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" component={RouterLink} to="/upload">
+              <Button size="small" component={RouterLink} to="/ingest-msg-files">
                 Try It
               </Button>
             </CardActions>
@@ -98,7 +90,7 @@ const HomePage = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" component={RouterLink} to="/upload?tab=jira">
+              <Button size="small" component={RouterLink} to="/ingest-jira">
                 Try It
               </Button>
             </CardActions>

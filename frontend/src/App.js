@@ -8,7 +8,6 @@ import Footer from './components/Footer';
 
 // Import pages
 import HomePage from './pages/HomePage';
-import UploadPage from './pages/UploadPage';
 import SearchPage from './pages/SearchPage';
 import IssueDetailsPage from './pages/IssueDetailsPage';
 import IngestMsgFilesPage from './pages/IngestMsgFilesPage';
@@ -24,7 +23,6 @@ function App() {
       <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/upload" element={<UploadPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/issues/:issueId" element={<IssueDetailsPage />} />
           <Route path="/ingest-msg-files" element={<IngestMsgFilesPage />} />

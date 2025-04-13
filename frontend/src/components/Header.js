@@ -35,9 +35,6 @@ const Header = () => {
           <Button color="inherit" component={RouterLink} to="/">
             Home
           </Button>
-          <Button color="inherit" component={RouterLink} to="/upload">
-            Upload
-          </Button>
           <Button color="inherit" component={RouterLink} to="/search">
             Search
           </Button>
@@ -49,9 +46,6 @@ const Header = () => {
             open={Boolean(anchorEl)}
             onClose={handleClose}
           >
-            <MenuItem component={RouterLink} to="/ingest-msg-files" onClick={handleClose}>
-              Ingest MSG Files
-            </MenuItem>
             <MenuItem component={RouterLink} to="/clear-chroma" onClick={handleClose}>
               Clear ChromaDB Collections
             </MenuItem>

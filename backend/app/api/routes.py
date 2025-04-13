@@ -1,8 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
-from fastapi.responses import JSONResponse
-from typing import List, Optional, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import List, Dict, Any
 import os
-import json
 import logging
 
 
@@ -42,75 +40,6 @@ class StackOverflowIngestRequest(BaseModel):
 class StackOverflowSearchRequest(BaseModel):
     query_text: str
     limit: int = 10
-
-@router.post("/upload-msg", response_model=Dict[str, Any])
-async def upload_msg_file(
-    file: Optional[UploadFile] = File(None),
-    jira_ticket_id: Optional[str] = Form(None)
-):
-    """Upload an MSG file and/or process a Jira ticket. Jira ticket ID is required."""
-    logger.info("Entered upload_msg_file endpoint")
-    # Debug log input values
-    logger.info(f"Validation check: file={file}, jira_ticket_id={jira_ticket_id}")
-
-    # Validation: require at least one input
-    if not file and not jira_ticket_id:
-        logger.info("Validation failed: neither file nor jira_ticket_id provided")
-        raise HTTPException(status_code=422, detail="Either file or jira_ticket_id must be provided.")
-    else:
-        logger.info("Validation passed")
-
-    try:
-        # Initialize variables
-        msg_data = {}
-        file_path = None
-        jira_data = None
-        
-        if jira_ticket_id:
-            logger.info(f"Fetching Jira ticket: {jira_ticket_id}")
-            jira_data = get_jira_ticket(jira_ticket_id)
-            logger.info(f"Fetched Jira data: {jira_data}")
-            if not jira_data:
-                raise HTTPException(status_code=404, detail=f"Jira ticket {jira_ticket_id} not found")
-        
-        # Process file if provided
-        if file:
-            file_path = os.path.join(settings.UPLOAD_DIR, file.filename)
-            upload_dir = os.path.dirname(file_path)
-            if not os.path.exists(upload_dir):
-                logger.info(f"Upload directory {upload_dir} does not exist. Creating it.")
-                os.makedirs(upload_dir, exist_ok=True)
-            logger.info(f"Saving uploaded file to: {file_path}")
-            with open(file_path, "wb") as buffer:
-                content = await file.read()
-                buffer.write(content)
-            
-            # Parse the MSG file
-            logger.info(f"Parsing MSG file: {file_path}")
-            msg_data = parse_msg_file(file_path)
-            logger.info(f"Parsed MSG data: {msg_data}")
-        
-            
-        # Add the issue to the vector database
-        logger.info("Adding issue to vector DB")
-        issue_id = add_issue_to_vectordb(msg_data if file else None, jira_data)
-        logger.info(f"Added issue to vector DB, issue_id: {issue_id}")
-        
-        # Customize success message based on what was provided
-        message = "MSG file uploaded and linked to Jira ticket successfully" if file else "Jira ticket processed successfully"
-        
-        return {
-            "status": "success",
-            "message": message,
-            "issue_id": issue_id,
-            "msg_data": msg_data,
-            "jira_data": jira_data
-        }
-    except Exception as e:
-        # import traceback
-        # print("Error in upload_msg_file:", str(e))
-        # traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/jira-ticket/{ticket_id}", response_model=Dict[str, Any])
 async def get_jira_ticket_info(ticket_id: str):
