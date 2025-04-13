@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.services.vector_service import get_issue
+from app.services.vector_service import get_issue as get_issue_from_service
 from typing import List, Dict, Any
 import os
 import logging
@@ -200,11 +200,16 @@ async def list_issues(
 async def get_issue(issue_id: str):
     """Get a specific production issue by ID"""
     try:
-        issue = get_issue(issue_id)
+        issue = get_issue_from_service(issue_id)
         if not issue:
             raise HTTPException(status_code=404, detail=f"Issue {issue_id} not found")
+        # If Jira details are unavailable, log a warning but still return the issue details
+        if hasattr(issue, "jira_data") and issue.jira_data is None:
+            import logging
+            logging.warning(f"Jira details unavailable for issue {issue_id}. Returning issue details without Jira data.")
         return issue
     except Exception as e:
+        # Only raise 500 for truly fatal errors (not for missing Jira data)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/chroma-clear")
