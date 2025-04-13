@@ -272,7 +272,12 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
             description=document,
             jira_ticket_id=metadata.get('jira_ticket_id', ''),
             received_date=metadata.get('msg_received_date', '') or metadata.get('created_date', ''),
-            created_at=datetime.now(),  # Add required created_at field
+            created_at=(
+                metadata.get('created_at')
+                or metadata.get('created_date')
+                or metadata.get('msg_received_date')
+                or datetime.now()
+            ),
             updated_at=None,
             msg_data={
                 'subject': metadata.get('msg_subject', ''),

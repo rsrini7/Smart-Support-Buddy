@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from app.services.vector_service import get_issue
 from typing import List, Dict, Any
 import os
 import logging
@@ -189,7 +190,6 @@ async def list_issues(
 async def get_issue(issue_id: str):
     """Get a specific production issue by ID"""
     try:
-        from app.services.vector_service import get_issue
         issue = get_issue(issue_id)
         if not issue:
             raise HTTPException(status_code=404, detail=f"Issue {issue_id} not found")

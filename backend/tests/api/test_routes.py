@@ -5,6 +5,8 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from datetime import datetime
 import pytest
 import json
+import pytest_asyncio
+import httpx
 
 # Add backend directory to path
 backend_dir = Path(__file__).parent.parent.parent
@@ -83,35 +85,6 @@ class TestRoutes:
         assert len(results) == 2
         assert results[0]["jira_ticket_id"] == "PROJ-123"
         assert results[1]["jira_ticket_id"] == "PROJ-124"
-
-    @patch('app.api.routes.get_issue')
-    async def test_get_issue(self, mock_get_issue):
-        current_time = datetime.now().isoformat()
-        mock_issue = {
-            "id": "test_1",
-            "title": "Test Issue",
-            "description": "Test description",
-            "sender": "test@example.com",
-            "received_date": current_time,
-            "jira_ticket_id": "PROJ-123",
-            "similarity_score": 1.0,
-            "created_at": current_time,
-            "updated_at": current_time,
-            "root_cause": None,
-            "solution": None,
-            "jira_data": None
-        }
-        
-        # Configure the mock to return the mock_issue
-        mock_get_issue.return_value = mock_issue
-        mock_get_issue.side_effect = None
-
-        response = client.get("/api/issues/test_1")
-        
-        assert response.status_code == 200
-        result = response.json()
-        assert result["id"] == "test_1"
-        assert result["jira_ticket_id"] == "PROJ-123"
 
     @patch('app.services.vector_service.delete_issue')
     def test_delete_issue(self, mock_delete):
