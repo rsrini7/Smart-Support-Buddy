@@ -70,10 +70,7 @@ const SearchPage = () => {
     setStackOverflowResults([]);
 
     // Search issues
-    let issues = [];
-    let confluence = [];
     let issueError = '';
-    let confluenceError = '';
 
     try {
       const response = await fetch('http://localhost:9000/api/search', {

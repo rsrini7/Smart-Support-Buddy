@@ -117,7 +117,45 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
         # Defensive fix: if results is a list, convert to empty dict structure
         if isinstance(results, list):
             results = {"ids": [], "metadatas": [], "documents": [], "distances": []}
-        return results
+
+        # Format results as a list of objects for the frontend
+        formatted = []
+        ids = results.get("ids", [])
+        metadatas = results.get("metadatas", [])
+        documents = results.get("documents", [])
+        distances = results.get("distances", [])
+
+        # Handle possible nested lists from ChromaDB
+        if ids and isinstance(ids[0], list):
+            ids = ids[0]
+        if metadatas and isinstance(metadatas[0], list):
+            metadatas = metadatas[0]
+        if documents and isinstance(documents[0], list):
+            documents = documents[0]
+        if distances and isinstance(distances[0], list):
+            distances = distances[0]
+
+        seen = set()
+        for i, page_id in enumerate(ids):
+            metadata = metadatas[i] if i < len(metadatas) else {}
+            document = documents[i] if i < len(documents) else ""
+            confluence_url = metadata.get("confluence_url", "")
+            unique_key = (str(page_id), confluence_url, document)
+            if unique_key in seen:
+                continue
+            seen.add(unique_key)
+            distance = distances[i] if i < len(distances) else 0.0
+            similarity_score = 1.0 - min(distance / 2, 1.0)
+            if similarity_score == 0.0:
+                continue  # Skip results with 0.00% similarity
+            formatted.append({
+                "page_id": page_id,
+                "title": confluence_url or "Confluence Page",
+                "content": document,
+                "similarity_score": similarity_score,
+                "metadata": metadata
+            })
+        return formatted
     except Exception as e:
         logger.error(f"Error searching similar Confluence pages: {str(e)}")
         return None
