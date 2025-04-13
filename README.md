@@ -122,7 +122,7 @@ This will start:
 - **Chroma Admin UI** at [http://localhost:4000](http://localhost:4000)
 - **PostgreSQL** database for Jira
 
-The backend container uses environment variables from `backend/.env.docker`. Jira is pre-configured via mounted files in `jira-setup-files` and `jira-config`.
+The backend container uses environment variables from `backend/.env`. Jira is pre-configured via mounted files in `jira-setup-files` and `jira-config`.
 
 ## Backend Setup
 

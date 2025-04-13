@@ -6,7 +6,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     env_file:
-      - ./backend/.env.docker
+      - ./backend/.env
     volumes:
       - ./backend:/app
       - ./backend/data:/app/data
