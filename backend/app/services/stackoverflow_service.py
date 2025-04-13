@@ -227,8 +227,9 @@ def search_similar_stackoverflow_content(query_text: str, limit: int = 10):
             document = documents[i] if i < len(documents) else ""
             distance = distances[i] if i < len(distances) else 0.0
             similarity_score = 1.0 - min(distance / 2, 1.0)
-            if similarity_score == 0.0:
-                continue  # Skip results with 0.00% similarity
+            logger.info(f"Similarity threshold: {settings.SIMILARITY_THRESHOLD}, Calculated similarity: {similarity_score:.6f} for StackOverflow ID: {so_id}")
+            if similarity_score < settings.SIMILARITY_THRESHOLD:
+                continue  # Skip results below threshold
             formatted.append({
                 "id": so_id,
                 "title": metadata.get("title", "Stack Overflow Q&A"),

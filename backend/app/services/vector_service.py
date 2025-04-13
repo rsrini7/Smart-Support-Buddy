@@ -402,6 +402,7 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                     distance = 0.0
                     similarity_score = 1.0  # 1.0 for exact Jira ID matches
                 logger.debug(f"Issue ID: {issue_id} | Distance: {distance:.6f} | Similarity: {similarity_score:.6f}")
+                logger.info(f"Similarity threshold: {settings.SIMILARITY_THRESHOLD}, Calculated similarity: {similarity_score:.6f} for Issue ID: {issue_id}")
                 
                 # Parse received_date if available
                 received_date = None
@@ -440,8 +441,8 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                 
                 issue_responses.append(issue_response)
         
-        # Filter out results with 0.0 similarity
-        issue_responses = [resp for resp in issue_responses if resp.similarity_score > 0.0]
+        # Filter out results below similarity threshold
+        issue_responses = [resp for resp in issue_responses if resp.similarity_score >= settings.SIMILARITY_THRESHOLD]
         return issue_responses
     
     except Exception as e:

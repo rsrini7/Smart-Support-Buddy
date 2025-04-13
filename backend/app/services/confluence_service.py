@@ -146,8 +146,9 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
             seen.add(unique_key)
             distance = distances[i] if i < len(distances) else 0.0
             similarity_score = 1.0 - min(distance / 2, 1.0)
-            if similarity_score == 0.0:
-                continue  # Skip results with 0.00% similarity
+            logger.info(f"Similarity threshold: {settings.SIMILARITY_THRESHOLD}, Calculated similarity: {similarity_score:.6f} for Page ID: {page_id}")
+            if similarity_score < settings.SIMILARITY_THRESHOLD:
+                continue  # Skip results below threshold
             formatted.append({
                 "page_id": page_id,
                 "title": confluence_url or "Confluence Page",

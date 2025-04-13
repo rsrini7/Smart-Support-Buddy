@@ -15,7 +15,11 @@ else:
     if env_loaded:
         logger.info("Loaded environment variables from .env")
     else:
-        logger.warning("No environment file (.env.docker or .env) found, using default values")
+        backend_env_loaded = load_dotenv('backend/.env')
+        if backend_env_loaded:
+            logger.info("Loaded environment variables from backend/.env")
+        else:
+            logger.warning("No environment file (.env.docker, .env, or backend/.env) found, using default values")
 
 class Settings(BaseSettings):
     # API settings
@@ -47,7 +51,9 @@ class Settings(BaseSettings):
     
     # LLM settings
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-    
+    SIMILARITY_THRESHOLD: float = float(os.getenv("SIMILARITY_THRESHOLD", 0.1))
+
+
     class Config:
         case_sensitive = True
 
