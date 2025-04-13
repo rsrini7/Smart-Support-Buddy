@@ -13,6 +13,7 @@ const Header = () => {
     setAnchorEl(null);
   };
 
+
   return (
     <AppBar position="static">
       <Toolbar>
@@ -50,6 +51,9 @@ const Header = () => {
           >
             <MenuItem component={RouterLink} to="/ingest-msg-files" onClick={handleClose}>
               Ingest MSG Files
+            </MenuItem>
+            <MenuItem component={RouterLink} to="/clear-chroma" onClick={handleClose}>
+              Clear ChromaDB Collections
             </MenuItem>
           </Menu>
         </Box>

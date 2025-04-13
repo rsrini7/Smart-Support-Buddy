@@ -421,4 +421,35 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
     
     except Exception as e:
         logger.error(f"Error searching similar issues: {str(e)}")
+# Clear all issues from the ChromaDB collection
+def clear_all_issues() -> bool:
+    """
+    Delete all documents from the 'production_issues' ChromaDB collection.
+    Returns True if successful.
+    """
+    try:
+        client = get_vector_db_client()
+        collection = client.get_or_create_collection("production_issues")
+        collection.delete(where={"id": {"$ne": ""}})  # Delete all documents
+        logger.info("All documents deleted from 'production_issues' collection.")
+        return True
+    except Exception as e:
+        logger.error(f"Error clearing all issues from ChromaDB: {str(e)}")
+        raise
+
+# Clear all documents from a specific ChromaDB collection
+def clear_collection(collection_name: str) -> bool:
+    """
+    Delete all documents from the specified ChromaDB collection.
+    Returns True if successful.
+    """
+    try:
+        client = get_vector_db_client()
+        collection = client.get_or_create_collection(collection_name)
+        collection.delete(where={"id": {"$ne": ""}})
+        logger.info(f"All documents deleted from '{collection_name}' collection.")
+        return True
+    except Exception as e:
+        logger.error(f"Error clearing collection '{collection_name}' from ChromaDB: {str(e)}")
+        raise
         raise

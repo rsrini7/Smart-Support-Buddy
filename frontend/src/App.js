@@ -14,6 +14,8 @@ import IssueDetailsPage from './pages/IssueDetailsPage';
 import IngestMsgFilesPage from './pages/IngestMsgFilesPage';
 import ConfluenceIngestPage from './pages/ConfluenceIngestPage';
 import StackOverflowIngestPage from './pages/StackOverflowIngestPage';
+import JiraIngestPage from './pages/JiraIngestPage';
+import ClearChromaPage from './pages/ClearChromaPage';
 
 function App() {
   return (
@@ -28,6 +30,8 @@ function App() {
           <Route path="/ingest-msg-files" element={<IngestMsgFilesPage />} />
             <Route path="/ingest-confluence" element={<ConfluenceIngestPage />} />
             <Route path="/ingest-stackoverflow" element={<StackOverflowIngestPage />} />
+            <Route path="/ingest-jira" element={<JiraIngestPage />} />
+            <Route path="/clear-chroma" element={<ClearChromaPage />} />
           </Routes>
       </Container>
       <Footer />

@@ -23,6 +23,14 @@ const HomePage = () => {
           </Button>
           <Button
             variant="contained"
+            color="success"
+            component={RouterLink}
+            to="/ingest-jira"
+          >
+            Ingest Jira
+          </Button>
+          <Button
+            variant="contained"
             color="info"
             component={RouterLink}
             to="/ingest-confluence"

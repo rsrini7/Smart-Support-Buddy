@@ -268,6 +268,31 @@ async def get_issue(issue_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.delete("/chroma-clear")
+async def clear_chroma_db():
+    """
+    Delete all data from the ChromaDB 'production_issues' collection.
+    """
+    from app.services.vector_service import clear_all_issues
+    try:
+        clear_all_issues()
+        return {"status": "success", "message": "All ChromaDB data cleared."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to clear ChromaDB: {str(e)}")
+
+@router.delete("/chroma-clear/{collection_name}")
+async def clear_chroma_collection(collection_name: str):
+    """
+    Delete all data from the specified ChromaDB collection.
+    """
+    from app.services.vector_service import clear_collection
+    try:
+        clear_collection(collection_name)
+        return {"status": "success", "message": f"All data cleared from collection '{collection_name}'."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to clear collection '{collection_name}': {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to clear ChromaDB: {str(e)}")
+
 @router.delete("/issues/{issue_id}")
 async def delete_production_issue(issue_id: str):
     """Delete a production issue"""
