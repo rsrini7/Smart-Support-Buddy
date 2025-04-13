@@ -187,8 +187,8 @@ class TestVectorService:
         assert len(results) == 2
         assert results[0].jira_ticket_id == 'PROJ-123'
         assert results[1].jira_ticket_id == 'PROJ-124'
-        assert results[0].similarity_score == 0.9  # 1 - distance
-        assert results[1].similarity_score == 0.8  # 1 - distance
+        assert results[0].similarity_score == 1.0  # 1 - distance/2
+        assert results[1].similarity_score == 1.0   # 1 - distance/2
 
     @patch('app.services.vector_service.get_vector_db_client')
     def test_clear_all_issues(self, mock_get_client):

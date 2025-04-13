@@ -385,7 +385,11 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                 if is_query_result:
                     # distances can be a list of floats or a list of lists
                     if isinstance(distances, list) and len(distances) > i:
-                        distance = results["distances"][0][i]
+                        # Handle both flat and nested lists for distances
+                        if isinstance(distances[0], list):
+                            distance = distances[0][i]
+                        else:
+                            distance = distances[i]
                     else:
                         distance = 0.0
                     similarity_score = 1.0 - min(distance / 2, 1.0)
