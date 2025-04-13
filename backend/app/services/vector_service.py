@@ -361,11 +361,17 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
             # Determine if we're processing query results or direct get results
             is_query_result = query_text and "distances" in results
             
-            # Get the correct indices based on result type
-            ids = results["ids"][0] if is_query_result else results["ids"]
-            metadatas = results["metadatas"][0] if is_query_result else results["metadatas"]
-            documents = results["documents"][0] if is_query_result else results["documents"]
-            
+            # Extract results, handling both nested and flat array structures
+            # Handle both flat and nested lists for ids, metadatas, documents, and distances
+            def flatten_if_nested(val):
+                return val[0] if isinstance(val, list) and len(val) > 0 and isinstance(val[0], list) else val
+
+            ids = flatten_if_nested(results.get("ids", []))
+            ids = results["ids"][0] if isinstance(results["ids"][0], list) else results["ids"]
+            metadatas = results["metadatas"][0] if isinstance(results["metadatas"][0], list) else results["metadatas"]
+            documents = results["documents"][0] if isinstance(results["documents"][0], list) else results["documents"]
+            distances = results.get("distances", [[0.0]])[0] if isinstance(results.get("distances", [[]])[0], list) else [0.0] * len(ids)
+
             for i, issue_id in enumerate(ids):
                 # Defensive fix: skip invalid empty or list ids
                 if not isinstance(issue_id, str) or not issue_id:
@@ -376,8 +382,16 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                     metadata = {}
                 document = documents[i]
                 # Calculate similarity score - 1.0 for Jira ID matches, distance-based for text search
-                distance = results["distances"][0][i] if is_query_result else 0.0
-                similarity_score = 1.0 - min(distance / 2, 1.0) if is_query_result else 1.0
+                if is_query_result:
+                    # distances can be a list of floats or a list of lists
+                    if isinstance(distances, list) and len(distances) > i:
+                        distance = results["distances"][0][i]
+                    else:
+                        distance = 0.0
+                    similarity_score = 1.0 - min(distance / 2, 1.0)
+                else:
+                    distance = 0.0
+                    similarity_score = 1.0  # 1.0 for exact Jira ID matches
                 logger.debug(f"Issue ID: {issue_id} | Distance: {distance:.6f} | Similarity: {similarity_score:.6f}")
                 
                 # Parse received_date if available
@@ -421,7 +435,9 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
     
     except Exception as e:
         logger.error(f"Error searching similar issues: {str(e)}")
-# Clear all issues from the ChromaDB collection
+        return []  # Return empty list instead of None
+
+    # Clear all issues from the ChromaDB collection
 def clear_all_issues() -> bool:
     """
     Delete all documents from the 'production_issues' ChromaDB collection.
