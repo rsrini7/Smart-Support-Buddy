@@ -10,7 +10,6 @@ echo "===== Production Issue Identifier Backend Setup ====="
 # Define directories
 BACKEND_DIR="$(pwd)/backend"
 DATA_DIR="$BACKEND_DIR/data"
-UPLOAD_DIR="$DATA_DIR/uploads"
 VECTOR_DB_DIR="$DATA_DIR/vectordb"
 
 # Start Docker Compose services
@@ -111,7 +110,6 @@ uv pip install -r requirements.txt
 
 # Create necessary directories
 echo "Setting up data directories..."
-mkdir -p "$UPLOAD_DIR"
 mkdir -p "$VECTOR_DB_DIR"
 
 # Check for .env file and create from example if it doesn't exist

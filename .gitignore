@@ -36,8 +36,6 @@ env/
 .DS_Store
 
 # Project specific
-backend/data/uploads/*
-!backend/data/uploads/.gitkeep
 backend/data/vectordb/*
 !backend/data/vectordb/.gitkeep
 

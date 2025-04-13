@@ -84,10 +84,8 @@ def setup_env_file(backend_dir):
 def create_data_directories(backend_dir):
     """Create necessary data directories"""
     data_dir = os.path.join(backend_dir, "data")
-    upload_dir = os.path.join(data_dir, "uploads")
     vector_db_dir = os.path.join(data_dir, "vectordb")
     
-    os.makedirs(upload_dir, exist_ok=True)
     os.makedirs(vector_db_dir, exist_ok=True)
     print(f"Data directories created at {data_dir}")
 

@@ -59,8 +59,6 @@ class Settings(BaseSettings):
     # Vector DB settings
     VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "./data/vectordb")
     
-    # File storage settings
-    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./data/uploads")
     
     # LLM settings
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
@@ -84,5 +82,4 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # Ensure required directories exist
-os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 os.makedirs(settings.VECTOR_DB_PATH, exist_ok=True)

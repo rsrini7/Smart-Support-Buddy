@@ -48,49 +48,194 @@ flowchart TD
 - **Integration**: Backend communicates with Jira via REST API for ticket info and linking.
 
 ### 4. Vector Database (ChromaDB)
-- **Purpose**: Stores embeddings of issue descriptions and solutions for semantic search.
-- **Admin UI**: Provided for managing vector DB.
+- **Collections**:
+  - `production_issues`: MSG files and Jira tickets
+  - `confluence_pages`: Confluence content
+  - `stackoverflow_qa`: Stack Overflow Q&A
+- **Features**:
+  - Semantic search with configurable similarity
+  - Real-time embedding and indexing
+  - Admin UI for monitoring and management
+  - Persistent storage and backup support
 
-### 5. Orchestration (Docker Compose)
-- **Services**: backend, chroma, chroma-admin, jira, postgres.
-- **Networking**: All services on a shared Docker network.
-- **Volumes**: Persistent storage for Jira and PostgreSQL data.
+### 5. Knowledge Integration
+- **Jira**:
+  - Local server or Atlassian Cloud support
+  - Bi-directional ticket linking
+  - Custom field mapping
+  - Real-time synchronization
+- **Confluence**:
+  - Page content extraction and indexing
+  - Metadata preservation
+  - Link management
+- **StackOverflow**:
+  - Q&A content ingestion
+  - Answer scoring and acceptance tracking
+  - URL-based import
+
+### 6. Orchestration (Docker Compose)
+- **Services**:
+  - Backend API (FastAPI)
+  - ChromaDB (Vector Store)
+  - ChromaDB Admin UI
+  - Jira Server
+  - PostgreSQL (Jira + Confluence)
+- **Networking**:
+  - Shared Docker network
+  - Exposed ports for services
+  - Internal service discovery
+- **Persistence**:
+  - Jira data volume
+  - PostgreSQL data volumes
+  - Vector DB storage
+  - Uploaded files storage
 
 ---
 
-## Data Flow
+## Data Flow & Processing
 
-1. **MSG File Ingestion**: User uploads MSG files via UI or bulk ingest.
-2. **Parsing**: Backend parses MSG files, extracts issue details.
-3. **Jira Linking**: Issues can be linked to Jira tickets via backend API.
-4. **Storage**: Issue data stored in PostgreSQL; embeddings stored in ChromaDB.
-5. **Semantic Search**: User queries are embedded and matched against stored vectors.
-6. **Results**: UI displays similar issues, details, and linked Jira tickets.
+### 1. Data Ingestion
+- **MSG Files**:
+  - UI upload or bulk directory import
+  - Metadata and attachment extraction
+  - Automatic Jira reference detection
+  
+- **External Knowledge**:
+  - Confluence page import via URL
+  - StackOverflow Q&A ingestion
+  - Jira ticket synchronization
+
+### 2. Processing Pipeline
+- **Text Processing**:
+  - Content extraction and cleaning
+  - Metadata organization
+  - File attachment handling
+  
+- **Vector Embedding**:
+  - Text embedding generation
+  - Metadata enhancement
+  - Collection organization
+
+### 3. Search & Retrieval
+- **Query Processing**:
+  - Text query embedding
+  - Jira ticket lookup
+  - Multi-source search
+  
+- **Result Aggregation**:
+  - Similarity score calculation
+  - Result ranking and filtering
+  - Source-specific formatting
 
 ---
 
-## Setup & Usage
+## System Operations
 
-- **Backend**: Start with `./start_backend.sh` or `./run_backend.py`.
-- **Frontend**: Start with `npm start` in the frontend directory.
-- **Docker Compose**: `docker-compose up --build` to run all services.
-- **Environment Variables**: Configure DB, Jira, vector DB, and file storage in `.env`.
+### 1. Deployment
+- **Development**:
+  ```
+  Backend: ./run_backend.py
+  Frontend: npm start
+  Vector DB: Auto-managed
+  ```
+  
+- **Production**:
+  ```
+  Docker Compose: Full stack deployment
+  Individual Services: Configurable ports
+  Data Persistence: Docker volumes
+  ```
+
+### 2. Monitoring
+- **Service Health**:
+  - API endpoint monitoring
+  - Database connection checks
+  - Vector DB collection status
+  - Integration connectivity
+
+- **Performance Metrics**:
+  - Query response times
+  - Embedding generation speed
+  - Storage utilization
+  - Cache hit rates
+
+### 3. Testing & Quality
+- **Automated Tests**:
+  - Backend: pytest coverage
+  - Frontend: React testing
+  - Integration tests
+  - Vector search validation
+
+- **Performance Testing**:
+  - Load testing
+  - Batch processing limits
+  - Search response times
+  - Memory utilization
 
 ---
 
-## Testing
+## System Management
 
-- **Backend**: `pytest backend/tests`
-- **Frontend**: `npm test` in the frontend directory
+### 1. Configuration Management
+- **Environment Configuration**:
+  - `.env` file for service settings
+  - Docker Compose for service orchestration
+  - Configurable ports and endpoints
+  - Development vs. production modes
 
----
+- **Integration Setup**:
+  - Jira: Local server (port 9090) or Cloud
+  - Confluence: Configurable instance
+  - Vector DB: Persistent storage paths
+  - File storage locations
 
-## Jira Setup
+### 2. Monitoring & Maintenance
+- **Health Monitoring**:
+  - Service status endpoints
+  - Log aggregation
+  - Performance metrics
+  - Resource utilization
 
-- Jira server runs at http://localhost:9090, configured via setup files and Docker volumes.
+- **Data Management**:
+  - Vector DB backup
+  - PostgreSQL maintenance
+  - File cleanup routines
+  - Cache management
+
+### 3. Security
+- **Authentication**:
+  - Jira API tokens/credentials
+  - Service-to-service auth
+  - Environment security
+
+- **Data Protection**:
+  - Secure file handling
+  - Database encryption
+  - Network isolation
+  - Access controls
 
 ---
 
 ## Summary
 
-Support Buddy is a full-stack GenAI solution for support issue management, integrating MSG file parsing, Jira ticketing, semantic search with vector DB, and a modern web UI. The architecture is modular, containerized, and designed for extensibility.
+Support Buddy provides a comprehensive solution for support issue management through:
+
+1. **Knowledge Integration**
+   - MSG file parsing and analysis
+   - Jira ticket synchronization
+   - Confluence knowledge base integration
+   - StackOverflow Q&A incorporation
+
+2. **Intelligent Search**
+   - Vector-based semantic search
+   - Configurable similarity matching
+   - Cross-source result aggregation
+   - Real-time result ranking
+
+3. **Modern Architecture**
+   - Containerized microservices
+   - Vector database for embeddings
+   - React-based UI
+   - Extensible API design
+
+The system is designed for scalability, maintainability, and easy extension with additional knowledge sources or capabilities.

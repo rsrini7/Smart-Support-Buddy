@@ -43,13 +43,34 @@ options:
 
 ## Environment Setup
 
-Both scripts will create a `.env` file from `.env.example` if one doesn't exist. You should edit this file with your actual configuration values:
+The backend requires several configuration parameters set through environment variables. A `.env` file will be created from `.env.example` if it doesn't exist.
 
-- Database connection details
-- Jira API credentials
-- Vector database path
-- File upload directory
-- LLM settings
+### Required Configuration
+
+1. **Database Settings**
+   ```
+   DATABASE_URL=postgresql://postgres:postgres@localhost/prodissue
+   ```
+
+2. **Jira Integration**
+   - For Local Server:
+     ```
+     JIRA_URL=http://localhost:9090
+     JIRA_USERNAME=admin
+     JIRA_PASSWORD=admin
+     ```
+   - For Atlassian Cloud:
+     ```
+     JIRA_URL=https://company.atlassian.net
+     JIRA_USERNAME=your-email
+     JIRA_API_TOKEN=your-api-token
+     ```
+
+3. **Vector Database**
+   ```
+   VECTOR_DB_PATH=./data/vectordb
+   EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+   ```
 
 ## Development vs Production
 
@@ -82,3 +103,61 @@ If you encounter issues:
 3. Verify your `.env` file has the correct configuration
 4. Make sure the necessary directories exist and are writable
 5. Check the console output for specific error messages
+
+## Monitoring & Logging
+
+### Log Configuration
+- Logs are stored in `backend/logs/`
+- Configure log levels in `backend/app/core/logging_config.py`
+- Component-specific logging enabled for:
+  - MSG parsing
+  - Jira integration
+  - Vector operations
+  - Search requests
+
+### Vector Database Management
+- ChromaDB Admin UI available at http://localhost:3500
+- Monitor collection health and statistics
+- View embedding performance metrics
+- Manage vector data directly
+
+### Health Checks
+- Backend API health: http://localhost:9000/health
+- Database connections auto-verified on startup
+- Vector DB collections validated during initialization
+- Jira connectivity tested on startup
+
+## Performance Tuning
+
+### Vector Search Optimization
+1. **Similarity Threshold**
+   - Configure in `backend/app/core/similarity_config.json`
+   - Default: 0.2 (range 0-1)
+   - Higher values = more precise matches
+   - Lower values = more results
+
+2. **Resource Management**
+   - Regular cleanup of processed files
+   - Archive old vector embeddings
+   - Monitor disk space usage
+   - Optimize batch sizes for ingestion
+
+3. **Query Performance**
+   - Use appropriate result limits
+   - Monitor response times in logs
+   - Index only relevant content
+   - Configure proper batch sizes
+
+## Security Considerations
+
+1. **API Security**
+   - CORS configuration in settings
+   - Rate limiting on endpoints
+   - Input validation for all requests
+   - Secure file handling
+
+2. **Integration Security**
+   - Jira credential management
+   - API token rotation
+   - SSL verification for cloud instances
+   - Secure environment variable handling
