@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from '@mui/material';
 import {
   Typography,
   Box,
@@ -193,7 +192,7 @@ const SearchPage = () => {
                   : 'inherit'
             }}
           >
-            All Results
+            All Results ({combinedResults.length})
           </Typography>
           <Grid container spacing={3}>
             {combinedResults.length > 0 ? (
@@ -202,7 +201,11 @@ const SearchPage = () => {
                   <Card variant="outlined">
                     <CardContent>
                       <Typography variant="h6" gutterBottom>
-                        {result.title || result.summary}
+                        {result.type === 'confluence' && result.metadata && result.metadata.display_title
+                          ? result.metadata.display_title
+                          : result.type === 'confluence' && result.metadata && result.metadata.section_text
+                            ? result.metadata.section_text.split('\n')[0].slice(0, 120)
+                            : result.title || result.summary || result.url}
                       </Typography>
                       <Box sx={{ display: 'flex', mb: 1, alignItems: 'center' }}>
                         {/* Source tag */}
@@ -222,6 +225,19 @@ const SearchPage = () => {
                           size="small"
                           sx={{ mr: 1 }}
                         />
+                        {/* Confluence section anchor if present */}
+                        {result.type === 'confluence' && result.metadata && result.metadata.section_anchor && (
+                          <Chip
+                            label={`Section: ${result.metadata.section_anchor}`}
+                            color="info"
+                            size="small"
+                            sx={{ mr: 1 }}
+                            component="a"
+                            href={`${getResultUrl(result)}#${result.metadata.section_anchor}`}
+                            target="_blank"
+                            clickable
+                          />
+                        )}
                         {/* Extra tags */}
                         {result.jira_ticket_id && (
                           <Chip
@@ -250,10 +266,29 @@ const SearchPage = () => {
                       </Box>
                       <Divider sx={{ my: 1 }} />
                       <Typography variant="body2" sx={{ mb: 2 }}>
-                        {result.description?.length > 200
-                          ? `${result.description.substring(0, 200)}...`
-                          : result.description}
+                        {result.type === 'confluence' && result.metadata && result.metadata.section_text
+                          ? (result.metadata.section_text.length > 200
+                              ? `${result.metadata.section_text.substring(0, 200)}...`
+                              : result.metadata.section_text)
+                          : result.type === 'confluence' && result.metadata && result.metadata.content
+                            ? (result.metadata.content.length > 200
+                                ? `${result.metadata.content.substring(0, 200)}...`
+                                : result.metadata.content)
+                            : (result.description?.length > 200
+                                ? `${result.description.substring(0, 200)}...`
+                                : result.description)}
                       </Typography>
+                      {/* Confluence: show section context if available */}
+                      {result.type === 'confluence' && result.metadata && result.metadata.section_text && (
+                        <Box sx={{ mb: 1 }}>
+                          <Typography variant="subtitle2">Matched Section:</Typography>
+                          <Typography variant="body2">
+                            {result.metadata.section_text.length > 200
+                              ? `${result.metadata.section_text.substring(0, 200)}...`
+                              : result.metadata.section_text}
+                          </Typography>
+                        </Box>
+                      )}
                       {result.root_cause && (
                         <Box sx={{ mb: 1 }}>
                           <Typography variant="subtitle2">Root Cause:</Typography>
@@ -385,7 +420,11 @@ const SearchPage = () => {
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom>
-                          {page.title}
+                          {page.metadata && page.metadata.display_title
+                            ? page.metadata.display_title
+                            : page.metadata && page.metadata.section_text
+                              ? page.metadata.section_text.split('\n')[0].slice(0, 120)
+                              : page.title}
                         </Typography>
                         <Box sx={{ display: 'flex', mb: 1 }}>
                           {page.similarity_score !== undefined && (
@@ -399,10 +438,29 @@ const SearchPage = () => {
                         </Box>
                         <Divider sx={{ my: 1 }} />
                         <Typography variant="body2" sx={{ mb: 2 }}>
-                          {page.description?.length > 200
-                            ? `${page.description.substring(0, 200)}...`
-                            : page.description}
+                          {page.metadata && page.metadata.section_text
+                            ? (page.metadata.section_text.length > 200
+                                ? `${page.metadata.section_text.substring(0, 200)}...`
+                                : page.metadata.section_text)
+                            : page.metadata && page.metadata.content
+                              ? (page.metadata.content.length > 200
+                                  ? `${page.metadata.content.substring(0, 200)}...`
+                                  : page.metadata.content)
+                              : (page.description?.length > 200
+                                  ? `${page.description.substring(0, 200)}...`
+                                  : page.description)}
                         </Typography>
+                        {/* Confluence: show section context if available */}
+                        {page.metadata && page.metadata.section_text && (
+                          <Box sx={{ mb: 1 }}>
+                            <Typography variant="subtitle2">Matched Section:</Typography>
+                            <Typography variant="body2">
+                              {page.metadata.section_text.length > 200
+                                ? `${page.metadata.section_text.substring(0, 200)}...`
+                                : page.metadata.section_text}
+                            </Typography>
+                          </Box>
+                        )}
                       </CardContent>
                       <CardActions>
                         {getResultUrl(page) && (
