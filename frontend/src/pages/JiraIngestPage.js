@@ -136,7 +136,10 @@ const JiraIngestPage = () => {
                       padding: 8,
                       marginTop: 8,
                       fontSize: 12,
-                      color: theme.palette.text.primary
+                      color: theme.palette.text.primary,
+                      maxWidth: '100%',
+                      overflowX: 'auto',
+                      whiteSpace: 'pre'
                     }}
                   >
                     {JSON.stringify(res.jira_data, null, 2)}

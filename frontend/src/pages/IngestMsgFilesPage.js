@@ -132,6 +132,24 @@ const IngestMsgFilesPage = () => {
                       }
                     />
                   </ListItem>
+                  {result.status === 'success' && result.msg_data && (
+                    <pre
+                      style={{
+                        background: theme.palette.mode === 'dark'
+                          ? theme.palette.background.paper
+                          : '#f5f5f5',
+                        padding: 8,
+                        marginTop: 8,
+                        fontSize: 12,
+                        color: theme.palette.text.primary,
+                        maxWidth: '100%',
+                        overflowX: 'auto',
+                        whiteSpace: 'pre'
+                      }}
+                    >
+                      {JSON.stringify(result.msg_data, null, 2)}
+                    </pre>
+                  )}
                 </Paper>
               ))}
             </List>
