@@ -120,9 +120,15 @@ const IngestMsgFilesPage = () => {
                       secondary={
                         <span
                           style={{
-                            color: result.status === 'success'
-                              ? theme.palette.success.main
-                              : theme.palette.error.main
+                            color:
+                              theme.palette.mode === 'dark'
+                                ? (result.status === 'success'
+                                    ? theme.palette.success.light
+                                    : theme.palette.error.light)
+                                : (result.status === 'success'
+                                    ? theme.palette.success.main
+                                    : theme.palette.error.main),
+                            fontWeight: 'bold'
                           }}
                         >
                           {result.status === 'success'

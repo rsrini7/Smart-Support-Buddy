@@ -119,9 +119,15 @@ const StackOverflowIngestPage = () => {
                 <Typography
                   variant="body2"
                   sx={{
-                    color: res.status === 'success'
-                      ? theme.palette.success.main
-                      : theme.palette.error.main
+                    color:
+                      theme.palette.mode === 'dark'
+                        ? (res.status === 'success'
+                            ? theme.palette.success.light
+                            : theme.palette.error.light)
+                        : (res.status === 'success'
+                            ? theme.palette.success.main
+                            : theme.palette.error.main),
+                    fontWeight: 'bold'
                   }}
                 >
                   {res.status === 'success' ? res.message : `Error: ${res.message}`}
