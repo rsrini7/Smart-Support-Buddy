@@ -55,6 +55,13 @@ code {
   border: none;
   position: relative;
   overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.feature-card .MuiCardContent-root {
+  flex: 1;
 }
 
 .feature-card:hover, .feature-card:focus-within {

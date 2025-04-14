@@ -80,7 +80,7 @@ const HomePage = () => {
         Features
       </Typography>
       
-      <Grid container spacing={3}>
+      <Grid container spacing={3} alignItems="stretch">
         <Grid item xs={12} md={4}>
           <Card className="feature-card">
             <CardContent>
@@ -89,7 +89,7 @@ const HomePage = () => {
                 MSG File Ingest
               </Typography>
               <Typography variant="body2">
-                Ingest Microsoft Outlook MSG files and parse them to extract RCA details and save into the vector database.
+                Ingest Microsoft Outlook MSG files and parse them to extract RCA details and save them into the vector database.
               </Typography>
             </CardContent>
             <CardActions>
@@ -139,7 +139,7 @@ const HomePage = () => {
                 Semantic Search
               </Typography>
               <Typography variant="body2">
-                Find similar issues using vector search to quickly identify solutions
+                Find similar content from the msg file content, jira, confluence and stackoverflow using vector search to quickly identify solutions
               </Typography>
             </CardContent>
             <CardActions>
