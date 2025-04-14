@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, Button, List, ListItem, ListItemText, Alert, CircularProgress, Paper } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { BACKEND_API_BASE } from '../settings';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,6 +10,7 @@ const IngestMsgFilesPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const theme = useTheme();
 
   const handleFolderSelect = (event) => {
     const selectedFiles = Array.from(event.target.files).filter(file => file.name.endsWith('.msg'));
@@ -95,21 +97,42 @@ const IngestMsgFilesPage = () => {
           </Alert>
         )}
 
-        {results.length > 0 && (
+        {results.length > 0 && !error && (
           <Box sx={{ mt: 3 }}>
+            <Alert severity="success">Ingestion complete. See results below.</Alert>
             <Typography variant="h6">Ingestion Results:</Typography>
             <List>
               {results.map((result, index) => (
-                <ListItem key={index}>
-                  <ListItemText
-                    primary={result.file}
-                    secondary={
-                      result.status === 'success'
-                        ? `Success - Issue ID: ${result.issue_id ?? 'N/A'}`
-                        : `Error: ${result.error}`
-                    }
-                  />
-                </ListItem>
+                <Paper
+                  key={index}
+                  sx={{
+                    p: 2,
+                    mb: 2,
+                    backgroundColor: result.status === 'success'
+                      ? (theme.palette.mode === 'dark' ? theme.palette.success.dark : '#e8f5e9')
+                      : (theme.palette.mode === 'dark' ? theme.palette.error.dark : '#ffebee')
+                  }}
+                  elevation={2}
+                >
+                  <ListItem disableGutters>
+                    <ListItemText
+                      primary={result.file}
+                      secondary={
+                        <span
+                          style={{
+                            color: result.status === 'success'
+                              ? theme.palette.success.main
+                              : theme.palette.error.main
+                          }}
+                        >
+                          {result.status === 'success'
+                            ? `Success - Issue ID: ${result.issue_id ?? 'N/A'}`
+                            : `Error: ${result.error}`}
+                        </span>
+                      }
+                    />
+                  </ListItem>
+                </Paper>
               ))}
             </List>
           </Box>
