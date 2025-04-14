@@ -33,6 +33,7 @@ flowchart TD
 
 ### 1. Backend (Python/FastAPI)
 - **API Endpoints**: For uploading MSG files, searching issues, linking Jira tickets, ingesting Confluence pages, and importing StackOverflow Q&A.
+- **Unified Search Aggregation**: `/search` endpoint combines and sorts results from all sources by similarity percentage, returning a single `results` array with a `type` field for each result. Legacy arrays are deprecated for UI use.
 - **Services**:
   - `msg_parser.py`: Parses MSG files, extracts metadata and attachments.
   - `jira_service.py`: Connects to Jira API, fetches ticket info.
@@ -46,6 +47,7 @@ flowchart TD
 ### 2. Frontend (React/Material-UI)
 - **Pages**:
   - Home, Upload, Ingest MSG Files, Ingest Confluence Pages, Ingest StackOverflow Q&A, Search, Issue Details.
+- **Unified Results Rendering**: All search views (single-page and tabbed) now use the unified, similarity-sorted `results` array. Legacy arrays are deprecated for UI use.
 - **Components**:
   - Header, Footer, and shared UI elements.
 - **Functionality**:
@@ -152,6 +154,24 @@ flowchart TD
   - Similarity score calculation
   - Result ranking and filtering
   - Source-specific formatting
+
+---
+
+## 2025 Search & UI Refactor
+
+### Backend
+- `/search` endpoint aggregates and sorts results from vector DB, Confluence, and Stack Overflow by similarity percentage.
+- Returns a unified `results` array with a `type` field for each result.
+- Legacy arrays are retained for compatibility but are not used by the new frontend.
+
+### Frontend
+- All search views (single-page and tabbed) now use the unified, similarity-sorted `results` array.
+- Each result card displays consistent actions at the bottom (e.g., View Details, View Page).
+- Issue results (Jira/MSG) have "View Details" for navigation; source links are shown for other types.
+
+### Benefits
+- Fully consistent and relevance-ordered search experience for users.
+- Simpler frontend logic and easier future enhancements.
 
 ---
 

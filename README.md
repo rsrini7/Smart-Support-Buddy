@@ -18,6 +18,7 @@ This application helps teams manage support issues / queries by:
 - Jira integration with bi-directional linking
 - Confluence integration: ingest and search Confluence pages
 - **StackOverflow integration: ingest, index, and search StackOverflow Q&A**
+- **Unified search results: All sources (Issues, Confluence, Stack Overflow) are now combined and sorted by similarity percentage in a single backend response for the frontend to display.**
 - **Automatic deduplication for all sources (MSG, Jira, Confluence, StackOverflow) using content-based hashing to prevent duplicate entries in the vector database**
 - Semantic search using sentence transformers
 - Bulk ingestion of MSG files, Confluence pages, and StackOverflow Q&A
@@ -35,6 +36,7 @@ This application helps teams manage support issues / queries by:
    - Confluence Service: Manages Confluence page ingestion and search
    - **StackOverflow Service: Handles ingestion, indexing, and semantic search of StackOverflow Q&A**
    - Vector Service: Manages ChromaDB operations, semantic search, and deduplication for all sources
+   - **Unified Search Aggregation: Combines and sorts all results by similarity percentage before returning to the frontend. Legacy result arrays are deprecated for UI use.**
 
 2. **Vector Database** (ChromaDB)
    - Stores embeddings for semantic search
@@ -249,6 +251,18 @@ For detailed backend setup instructions, including running with or without Docke
 │       └── App.js         # Main application component
 └── README.md             # Project documentation
 ```
+
+## Recent Enhancements
+
+### Unified Search Results & Similarity Sorting (2025)
+- The search functionality now returns a single, unified list of results from issues, Confluence, and Stack Overflow, sorted by similarity percentage (highest first).
+- The backend combines and sorts all results, so the frontend simply displays them in the order received.
+- The UI now supports both a single-page result view and tabbed views, all powered by the same unified, sorted data.
+- All action buttons (e.g., "View Details", "View Page", "View on Stack Overflow") are now consistently placed at the bottom of each result card.
+
+### Navigation Improvements
+- "View Details" button for issues (Jira, MSG) navigates to the Issue Details page.
+- Source links (Jira, Confluence, Stack Overflow) are clearly shown for each result type.
 
 ## Testing
 

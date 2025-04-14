@@ -304,7 +304,31 @@ async def search_issues(query: SearchQuery):
         elif isinstance(stackoverflow_results, dict) and "results" in stackoverflow_results:
             stackoverflow_results = stackoverflow_results["results"]
 
+        # Combine all results for single page result
+        combined_results = []
+        for item in vector_issues:
+            combined_results.append({
+                "type": "vector_issue",
+                **item.dict(),
+                "similarity_score": getattr(item, "similarity_score", 0)
+            })
+        for item in confluence_results:
+            combined_results.append({
+                "type": "confluence",
+                **item,
+                "similarity_score": item.get("similarity_score", 0)
+            })
+        for item in stackoverflow_results:
+            combined_results.append({
+                "type": "stackoverflow",
+                **item,
+                "similarity_score": item.get("similarity_score", 0)
+            })
+        # Sort combined results by similarity_score descending
+        combined_results.sort(key=lambda x: x.get("similarity_score", 0), reverse=True)
+
         return {
+            "results": combined_results,
             "vector_issues": vector_issues,
             "confluence_results": confluence_results,
             "stackoverflow_results": stackoverflow_results
@@ -411,6 +435,10 @@ async def ingest_msg_directory(payload: IngestDirRequest):
         try:
             logger.info(f"Parsing file: {file_path}")
             msg_data = parse_msg_file(file_path)
+            # If parser returns error, do NOT add to vectordb, just append error result
+            if isinstance(msg_data, dict) and msg_data.get("status") == "error":
+                results.append({"file": file_path, **msg_data})
+                continue
             issue_id = add_issue_to_vectordb(msg_data=msg_data)
             logger.info(f"Ingested file: {file_path}, issue_id: {issue_id}")
             results.append({"file": file_path, "status": "success", "issue_id": issue_id})

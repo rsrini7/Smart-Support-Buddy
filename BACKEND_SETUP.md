@@ -106,6 +106,30 @@ For production, use:
 
 This disables auto-reload for better performance and stability in production environments.
 
+## Unified Search Result API (2025 Update)
+
+- The `/search` endpoint now returns a single `results` array, where all items are sorted by similarity percentage, regardless of source.
+- The original arrays (`vector_issues`, `confluence_results`, `stackoverflow_results`) are deprecated and retained only for backward compatibility.
+- **Frontend and all new integrations must use the unified `results` array.**
+- Each result includes a `type` field (e.g., `jira`, `msg`, `confluence`, `stackoverflow`) to identify its source.
+
+### Example Response
+```json
+{
+  "results": [
+    { "type": "jira", "id": "...", "similarity_score": 0.91, ... },
+    { "type": "confluence", "id": "...", "similarity_score": 0.87, ... },
+    { "type": "stackoverflow", "id": "...", "similarity_score": 0.85, ... }
+  ],
+  "vector_issues": [...],
+  "confluence_results": [...],
+  "stackoverflow_results": [...]
+}
+```
+
+- The frontend now expects and uses only the `results` array for all views.
+- **Legacy result arrays are deprecated and will be removed in a future release.**
+
 ## Troubleshooting
 
 If you encounter issues:
