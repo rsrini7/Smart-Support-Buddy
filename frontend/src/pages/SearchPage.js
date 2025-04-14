@@ -347,7 +347,17 @@ const SearchPage = () => {
           {/* Issues Tab */}
           {tab === 0 && (
             <Box>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h5" gutterBottom sx={{
+                color: (theme) => theme.palette.mode === 'dark'
+                  ? theme.palette.text.primary
+                  : 'inherit',
+                background: (theme) => theme.palette.mode === 'dark'
+                  ? theme.palette.background.paper
+                  : 'transparent',
+                p: 1,
+                borderRadius: 1,
+                mb: 1
+              }}>
                 Issue Results ({combinedResults.filter((result) => result.type === 'jira' || result.type === 'msg' || result.type === 'vector_issue').length})
               </Typography>
               <Grid container spacing={3}>
@@ -411,7 +421,17 @@ const SearchPage = () => {
           {/* Confluence Tab */}
           {tab === 1 && (
             <Box>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h5" gutterBottom sx={{
+                color: (theme) => theme.palette.mode === 'dark'
+                  ? theme.palette.text.primary
+                  : 'inherit',
+                background: (theme) => theme.palette.mode === 'dark'
+                  ? theme.palette.background.paper
+                  : 'transparent',
+                p: 1,
+                borderRadius: 1,
+                mb: 1
+              }}>
                 Confluence Results ({combinedResults.filter((result) => result.type === 'confluence').length})
               </Typography>
               <Grid container spacing={3}>
@@ -485,7 +505,17 @@ const SearchPage = () => {
           {/* Stack Overflow Tab */}
           {tab === 2 && (
             <Box>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h5" gutterBottom sx={{
+                color: (theme) => theme.palette.mode === 'dark'
+                  ? theme.palette.text.primary
+                  : 'inherit',
+                background: (theme) => theme.palette.mode === 'dark'
+                  ? theme.palette.background.paper
+                  : 'transparent',
+                p: 1,
+                borderRadius: 1,
+                mb: 1
+              }}>
                 Stack Overflow Results ({combinedResults.filter((result) => result.type === 'stackoverflow').length})
               </Typography>
               <Grid container spacing={3}>
