@@ -61,7 +61,7 @@ const AdminChromaPage = () => {
         <Alert severity="info">No collections found.</Alert>
       )}
       {!loading && !error && collections.map((col) => (
-        <Accordion key={col.collection_name} defaultExpanded>
+        <Accordion key={col.collection_name} defaultCollapsed>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography variant="h6">
               {col.collection_name} ({col.records.length} records)
