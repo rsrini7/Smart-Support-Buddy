@@ -144,6 +144,9 @@ const SearchPage = () => {
       </Typography>
 
       <Paper sx={{ p: 3, mb: 4 }}>
+        <Button variant="outlined" onClick={() => navigate(-1)} sx={{ mb: 2 }}>
+          Back
+        </Button>
         <Typography variant="body1" gutterBottom>
           Search for support issues / queries by description or Jira ticket ID.
         </Typography>

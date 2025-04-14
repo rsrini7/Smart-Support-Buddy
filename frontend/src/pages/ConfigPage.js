@@ -64,6 +64,9 @@ const ConfigPage = () => {
   return (
     <Box maxWidth={500} mx="auto" mt={4}>
       <Paper elevation={3} sx={{ p: 3 }}>
+        <Button variant="outlined" onClick={() => window.history.back()} sx={{ mb: 2 }}>
+          Back
+        </Button>
         <Typography variant="h5" gutterBottom>
           Config
         </Typography>

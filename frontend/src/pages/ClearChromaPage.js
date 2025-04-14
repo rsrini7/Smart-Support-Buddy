@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Typography, Paper, Button, CircularProgress, Alert, Grid } from '@mui/material';
 
 const COLLECTIONS = [
-  { name: 'production_issues', label: 'RCAs' },
+  { name: 'production_issues', label: 'Issues' },
   { name: 'stackoverflow_qa', label: 'Stack Overflow Q&A' },
   { name: 'confluence_pages', label: 'Confluence Pages' },
 ];
@@ -37,6 +37,9 @@ const ClearChromaPage = () => {
   return (
     <Box>
       <Paper sx={{ p: 4, mb: 4, maxWidth: 600, mx: 'auto', mt: 6 }}>
+        <Button variant="outlined" onClick={() => window.history.back()} sx={{ mb: 2 }}>
+          Back
+        </Button>
         <Typography variant="h5" gutterBottom>
           Clear ChromaDB Collections
         </Typography>
