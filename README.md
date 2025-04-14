@@ -63,7 +63,7 @@ This application helps teams manage support issues / queries by:
 
 - MSG file parsing with metadata and attachment extraction
 - Jira integration with bi-directional linking
-- Confluence integration: ingest and search Confluence pages
+- Confluence integration: ingest and search Confluence pages (supports Basic Auth with username/password for Server/DC)
 - StackOverflow integration: ingest, index, and search StackOverflow Q&A
 - Unified search results: All sources (Issues, Confluence, Stack Overflow) are combined and sorted by similarity percentage in a single backend response for the frontend to display
 - Automatic deduplication for all sources using content-based hashing
@@ -72,6 +72,7 @@ This application helps teams manage support issues / queries by:
 - Vector search with configurable similarity threshold
 - Responsive Material UI interface and configuration management
 - Chroma Admin UI for vector database management
+- **Jira ID search boost:** Searching for a Jira ID will always return the exact match as the top result (similarity score 1.0)
 
 ## System Architecture
 
@@ -129,6 +130,18 @@ This application helps teams manage support issues / queries by:
    npm install
    ```
 4. Configure environment variables (see Environment Variables section)
+   - For **Confluence Server**, set these in `backend/.env`:
+     ```env
+     CONFLUENCE_USERNAME=your-confluence-username
+     CONFLUENCE_PASSWORD=your-confluence-password
+     ```
+   - For **Jira**, use:
+     ```env
+     JIRA_USERNAME=your-jira-username
+     JIRA_PASSWORD=your-jira-password
+     # Or, for Jira Cloud:
+     # JIRA_API_TOKEN=your-jira-api-token
+     ```
 5. Start the services:
    - Development mode:
      ```bash
@@ -143,25 +156,26 @@ This application helps teams manage support issues / queries by:
 
 ## Environment Variables
 The backend requires a `.env` file with configuration for:
-```bash
+```env
 # Database Settings
 DATABASE_URL=postgresql://postgres:postgres@localhost/prodissue
 # Jira Settings
 JIRA_URL=http://localhost:9090
 JIRA_USERNAME=admin
-JIRA_PASSWORD=admin      # For local instance
+JIRA_PASSWORD=admin      # For local/server instance
 JIRA_API_TOKEN=          # For cloud instance
+# Confluence Settings
+CONFLUENCE_USERNAME=your-confluence-username
+CONFLUENCE_PASSWORD=your-confluence-password
 # Vector DB Settings
 VECTOR_DB_PATH=./data/vectordb
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 # (No special StackOverflow credentials required for public Q&A ingestion)
 ```
 
-## Backend Startup & Orchestration
-- Start backend with `./start_backend.sh` (starts Docker Compose services, waits for ChromaDB, Jira, and Confluence)
-- Virtual environment and dependencies setup
-- FastAPI server runs on port 9000
-- Script exits if Jira or Confluence fail to start
+## Backend Search Logic
+- When searching for a Jira ID (e.g., `PROJ-123`), the backend will always boost the exact match to the top of the results (similarity score 1.0), regardless of embedding similarity.
+- Jira ticket IDs are always included in the embedded text for accurate matching.
 
 ## Unified Search Result API
 - `/search` endpoint returns a single `results` array, sorted by similarity percentage, with a `type` field for each result (`jira`, `msg`, `confluence`, `stackoverflow`)
