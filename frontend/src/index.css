@@ -63,6 +63,28 @@ code {
 .feature-card .MuiCardContent-root {
   flex: 1;
 }
+html[data-mui-color-scheme="dark"] .feature-card:hover,
+html[data-mui-color-scheme="dark"] .feature-card:focus-within {
+  background: linear-gradient(135deg, #23272a 0%, #181a1b 100%) !important;
+  color: #fff !important;
+}
+html[data-mui-color-scheme="dark"] .feature-card:hover .MuiTypography-root,
+html[data-mui-color-scheme="dark"] .feature-card:hover .MuiSvgIcon-root,
+html[data-mui-color-scheme="dark"] .feature-card:hover .MuiButton-root,
+html[data-mui-color-scheme="dark"] .feature-card:hover .MuiCardContent-root,
+html[data-mui-color-scheme="dark"] .feature-card:focus-within .MuiTypography-root,
+html[data-mui-color-scheme="dark"] .feature-card:focus-within .MuiSvgIcon-root,
+html[data-mui-color-scheme="dark"] .feature-card:focus-within .MuiButton-root,
+html[data-mui-color-scheme="dark"] .feature-card:focus-within .MuiCardContent-root {
+  color: #fff !important;
+  fill: #fff !important;
+}
+html[data-mui-color-scheme="dark"] .feature-card:hover *,
+html[data-mui-color-scheme="dark"] .feature-card:focus-within * {
+  color: #fff !important;
+  fill: #fff !important;
+  text-shadow: none !important;
+}
 
 .feature-card:hover, .feature-card:focus-within {
   box-shadow: 0 12px 36px 0 rgba(40, 80, 200, 0.18), 0 3px 8px 0 rgba(40, 80, 200, 0.12);

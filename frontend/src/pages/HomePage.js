@@ -82,7 +82,24 @@ const HomePage = () => {
       
       <Grid container spacing={3} alignItems="stretch">
         <Grid item xs={12} md={4}>
-          <Card className="feature-card">
+          <Card
+            className="feature-card"
+            sx={{
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #23272a 0%, #181a1b 100%)'
+                  : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+              color: (theme) => theme.palette.text.primary,
+              transition: 'background 0.3s, color 0.3s',
+              '&:hover, &:focus-within': {
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #181a1b 0%, #23272a 100%)'
+                    : 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)',
+                color: (theme) => theme.palette.text.primary,
+              },
+            }}
+          >
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <MailIcon sx={{ fontSize: 28 }} />
@@ -107,7 +124,24 @@ const HomePage = () => {
         </Grid>
         
         <Grid item xs={12} md={4}>
-          <Card className="feature-card">
+          <Card
+            className="feature-card"
+            sx={{
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #23272a 0%, #181a1b 100%)'
+                  : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+              color: (theme) => theme.palette.text.primary,
+              transition: 'background 0.3s, color 0.3s',
+              '&:hover, &:focus-within': {
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #181a1b 0%, #23272a 100%)'
+                    : 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)',
+                color: (theme) => theme.palette.text.primary,
+              },
+            }}
+          >
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <BugReportIcon sx={{ fontSize: 28 }} />
@@ -132,7 +166,24 @@ const HomePage = () => {
         </Grid>
         
         <Grid item xs={12} md={4}>
-          <Card className="feature-card">
+          <Card
+            className="feature-card"
+            sx={{
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #23272a 0%, #181a1b 100%)'
+                  : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+              color: (theme) => theme.palette.text.primary,
+              transition: 'background 0.3s, color 0.3s',
+              '&:hover, &:focus-within': {
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #181a1b 0%, #23272a 100%)'
+                    : 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)',
+                color: (theme) => theme.palette.text.primary,
+              },
+            }}
+          >
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <SearchIcon sx={{ fontSize: 28 }} />
@@ -156,7 +207,24 @@ const HomePage = () => {
           </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Card className="feature-card">
+          <Card
+            className="feature-card"
+            sx={{
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #23272a 0%, #181a1b 100%)'
+                  : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+              color: (theme) => theme.palette.text.primary,
+              transition: 'background 0.3s, color 0.3s',
+              '&:hover, &:focus-within': {
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #181a1b 0%, #23272a 100%)'
+                    : 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)',
+                color: (theme) => theme.palette.text.primary,
+              },
+            }}
+          >
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <LibraryBooksIcon sx={{ fontSize: 28 }} />
@@ -180,7 +248,24 @@ const HomePage = () => {
           </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Card className="feature-card">
+          <Card
+            className="feature-card"
+            sx={{
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #23272a 0%, #181a1b 100%)'
+                  : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+              color: (theme) => theme.palette.text.primary,
+              transition: 'background 0.3s, color 0.3s',
+              '&:hover, &:focus-within': {
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #181a1b 0%, #23272a 100%)'
+                    : 'linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%)',
+                color: (theme) => theme.palette.text.primary,
+              },
+            }}
+          >
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CodeIcon sx={{ fontSize: 28 }} />

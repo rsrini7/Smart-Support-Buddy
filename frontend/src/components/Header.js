@@ -1,13 +1,15 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, Menu, MenuItem } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, Menu, MenuItem, IconButton, Tooltip } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
 import SearchIcon from '@mui/icons-material/Search';
 import BuildIcon from '@mui/icons-material/Build';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import SettingsIcon from '@mui/icons-material/Settings';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
 
-const Header = () => {
+const Header = ({ mode, toggleTheme }) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
 
   const handleToolsClick = (event) => {
@@ -108,13 +110,15 @@ const Header = () => {
             open={Boolean(anchorEl)}
             onClose={handleClose}
             PaperProps={{
-              sx: {
+              sx: (theme) => ({
                 borderRadius: 2,
                 minWidth: 220,
-                boxShadow: '0 8px 32px 0 rgba(40,80,200,0.18)',
-                background: 'rgba(255,255,255,0.95)',
+                boxShadow: theme.shadows[8],
+                backgroundColor: theme.palette.background.paper,
+                color: theme.palette.text.primary,
+                border: `1px solid ${theme.palette.divider}`,
                 backdropFilter: 'blur(8px)'
-              }
+              })
             }}
             MenuListProps={{
               sx: {
@@ -161,6 +165,13 @@ const Header = () => {
               Config
             </MenuItem>
           </Menu>
+        </Box>
+        <Box sx={{ ml: 2 }}>
+          <Tooltip title={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
+            <IconButton color="inherit" onClick={toggleTheme} size="large">
+              {mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}
+            </IconButton>
+          </Tooltip>
         </Box>
       </Toolbar>
     </AppBar>

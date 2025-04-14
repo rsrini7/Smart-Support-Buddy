@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from '@mui/material';
 import {
   Typography,
   Box,
@@ -138,7 +139,7 @@ const SearchPage = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom color="text.primary">
         Search Support Issues / Queries
       </Typography>
 
@@ -327,16 +328,16 @@ const SearchPage = () => {
                         )}
                         {result.type === 'confluence' && result.url && (
                           <Typography variant="body2" color="text.secondary">
-                            <a href={result.url} target="_blank" rel="noopener noreferrer">
+                            <Link href={result.url} target="_blank" rel="noopener noreferrer" color="primary" underline="hover">
                               View Page
-                            </a>
+                            </Link>
                           </Typography>
                         )}
                         {result.type === 'stackoverflow' && result.url && (
                           <Typography variant="body2" color="text.secondary">
-                            <a href={result.url} target="_blank" rel="noopener noreferrer">
+                            <Link href={result.url} target="_blank" rel="noopener noreferrer" color="primary" underline="hover">
                               View on Stack Overflow
-                            </a>
+                            </Link>
                           </Typography>
                         )}
                         {result.type === 'stackoverflow' && (
@@ -494,9 +495,9 @@ const SearchPage = () => {
                             )}
                             <Typography variant="body2" color="text.secondary">
                               {page.metadata?.confluence_url && (
-                                <a href={page.metadata.confluence_url} target="_blank" rel="noopener noreferrer">
+                                <Link href={page.metadata.confluence_url} target="_blank" rel="noopener noreferrer" color="primary" underline="hover">
                                   View Page
-                                </a>
+                                </Link>
                               )}
                             </Typography>
                           </Box>
@@ -546,9 +547,9 @@ const SearchPage = () => {
                             )}
                             <Typography variant="body2" color="text.secondary">
                               {item.metadata?.url && (
-                                <a href={item.metadata.url} target="_blank" rel="noopener noreferrer">
+                                <Link href={item.metadata.url} target="_blank" rel="noopener noreferrer" color="primary" underline="hover">
                                   View on Stack Overflow
-                                </a>
+                                </Link>
                               )}
                             </Typography>
                             <Chip
