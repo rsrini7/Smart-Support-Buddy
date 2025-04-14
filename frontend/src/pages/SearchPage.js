@@ -18,6 +18,7 @@ import {
   Tab
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 import { BACKEND_API_BASE } from '../settings';
 
 const SearchPage = () => {
@@ -210,7 +211,16 @@ const SearchPage = () => {
       {singlePageResult ? (
         // Unified single result tab
         <Box>
-          <Typography variant="h5" gutterBottom>
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{
+              color: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? theme.palette.text.primary
+                  : 'inherit'
+            }}
+          >
             All Results
           </Typography>
           <Grid container spacing={3}>
