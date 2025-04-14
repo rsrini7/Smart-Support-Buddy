@@ -7,6 +7,8 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import chromadb
 from chromadb.utils import embedding_functions
+import hashlib
+
 
 from app.core.config import settings
 from app.db.models import IssueResponse
@@ -70,7 +72,7 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
         if jira_data is None:
             jira_data = {}
 
-         # Ensure at least one of msg_data or jira_data is provided
+        # Ensure at least one of msg_data or jira_data is provided
         if not msg_data and not jira_data:
             raise ValueError("Either MSG data or Jira data must be provided")
 
@@ -86,8 +88,7 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
                         jira_data = fetched_jira_data
                 except Exception as e:
                     logger.warning(f"Failed to fetch Jira data for ID {jira_id_from_msg}: {e}")
-       
-            
+
         # Get vector DB client
         client = get_vector_db_client()
         
@@ -96,28 +97,49 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
 
         msg_subject = ""
         msg_body = ""
-        
-        # Prepare the text to be embedded
-        if(msg_data):
-            msg_subject = msg_data.get("subject", "")
-            msg_body = msg_data.get("body", "")
-
-        # Create a unique ID for the issue
-        file_path = msg_data.get('file_path', '') if msg_data else ''
-        suffix = os.path.basename(file_path) if file_path else 'no_msgfile'
-        issue_id = f"issue_{datetime.now().strftime('%Y%m%d%H%M%S')}_{suffix}"
-        
-        
-        # Combine with Jira data if available
         jira_summary = ""
         jira_description = ""
         jira_ticket_id = None
-        
-        if jira_data:
+
+        # Prepare the text to be embedded and deduplication hash
+        if msg_data:
+            msg_subject = msg_data.get("subject", "")
+            msg_body = msg_data.get("body", "")
+            # Compute deduplication hash (subject + body)
+            dedup_str = (msg_subject or "") + (msg_body or "")
+            content_hash = hashlib.sha256(dedup_str.encode("utf-8")).hexdigest()
+        elif jira_data:
             jira_ticket_id = jira_data.get("key")
             jira_summary = jira_data.get("summary", "")
             jira_description = jira_data.get("description", "") or ""
-            
+            # Compute deduplication hash (summary + description + ticket_id)
+            dedup_str = (jira_summary or "") + (jira_description or "") + (jira_ticket_id or "")
+            content_hash = hashlib.sha256(dedup_str.encode("utf-8")).hexdigest()
+        else:
+            # Should not reach here due to earlier check
+            content_hash = ""
+
+        # Get or create the collection
+        collection = client.get_or_create_collection("production_issues")
+
+        # Check for existing entry with the same hash
+        existing = collection.get(where={"content_hash": content_hash})
+        if existing and existing.get("ids"):
+            # Duplicate found, return existing ID
+            return existing["ids"][0]
+
+        # Create a unique ID for the issue
+        if msg_data:
+            file_path = msg_data.get('file_path', '') if msg_data else ''
+            suffix = os.path.basename(file_path) if file_path else 'no_msgfile'
+            issue_id = f"issue_{datetime.now().strftime('%Y%m%d%H%M%S')}_{suffix}"
+        elif jira_data:
+            suffix = jira_ticket_id or 'no_jiraid'
+            issue_id = f"issue_{datetime.now().strftime('%Y%m%d%H%M%S')}_{suffix}"
+        else:
+            issue_id = f"issue_{datetime.now().strftime('%Y%m%d%H%M%S')}_unknown"
+
+        # Jira comments handling
         if jira_data:
             comments = jira_data.get("comments", [])
             # Ensure comments is a list
@@ -125,7 +147,6 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
                 comments = [comments]
             elif not isinstance(comments, list):
                 comments = []
-
             if comments:
                 formatted_comments = []
                 for comment in comments:
@@ -150,23 +171,21 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
         # Generate embedding
         embedding = model.encode(full_text).tolist()
         
-        # Get or create the collection
-        collection = client.get_or_create_collection("production_issues")
-        
         # Add the document to the collection
         metadata = {
             "msg_subject": msg_subject,
             "msg_body": msg_body,
-            "msg_sender": msg_data.get("sender", ""),
-            "msg_received_date": msg_data.get("received_date", "").isoformat() if msg_data.get("received_date") else "",
-            "msg_jira_id": msg_data.get("jira_id", ""),
-            "msg_jira_url": msg_data.get("jira_url", ""),
-            "recipients": msg_data.get("recipients", []),
-            "attachments": msg_data.get("attachments", []),
+            "msg_sender": msg_data.get("sender", "") if msg_data else "",
+            "msg_received_date": msg_data.get("received_date", "").isoformat() if msg_data and msg_data.get("received_date") else "",
+            "msg_jira_id": msg_data.get("jira_id", "") if msg_data else "",
+            "msg_jira_url": msg_data.get("jira_url", "") if msg_data else "",
+            "recipients": msg_data.get("recipients", []) if msg_data else [],
+            "attachments": msg_data.get("attachments", []) if msg_data else [],
             "jira_ticket_id": jira_ticket_id or "",
             "jira_summary": jira_summary,
             # Add current date if no received_date from MSG
-            "created_date": datetime.now().isoformat() if not msg_data.get("received_date") else ""
+            "created_date": datetime.now().isoformat() if not (msg_data and msg_data.get("received_date")) else "",
+            "content_hash": content_hash
         }
 
         # Sanitize metadata: replace None with empty strings, convert lists to comma-separated strings
@@ -190,7 +209,7 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
         # Note: persist() is no longer needed with PersistentClient as it automatically handles persistence
         
         return issue_id
-    
+
     except Exception as e:
         logger.error(f"Error adding issue to vector database: {str(e)}")
         raise

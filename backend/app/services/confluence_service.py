@@ -1,4 +1,5 @@
 import logging
+import hashlib
 import requests
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -60,13 +61,24 @@ def add_confluence_page_to_vectordb(confluence_url: str, extra_metadata: Optiona
         client = get_vector_db_client()
         model = get_embedding_model()
 
+        # Compute deduplication hash (content only, since title is not available)
+        content_hash = hashlib.sha256((content or "").encode("utf-8")).hexdigest()
+
+        collection = client.get_or_create_collection("confluence_pages")
+        # Check for existing page with same content hash
+        existing = collection.get(where={"content_hash": content_hash})
+        if existing and existing.get("ids"):
+            # Return existing id, skip duplicate add
+            return existing["ids"][0]
+
         # Create a unique ID for the page
         page_id = f"confluence_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         embedding = model.encode(content).tolist()
 
         metadata = {
             "confluence_url": confluence_url,
-            "created_date": datetime.now().isoformat()
+            "created_date": datetime.now().isoformat(),
+            "content_hash": content_hash
         }
         if extra_metadata:
             metadata.update(extra_metadata)
@@ -82,13 +94,6 @@ def add_confluence_page_to_vectordb(confluence_url: str, extra_metadata: Optiona
                 sanitized_metadata[k] = v
         metadata = sanitized_metadata
 
-        collection = client.get_or_create_collection("confluence_pages")
-        # Check for existing page with same confluence_url
-        existing = collection.get(include=["metadatas"])
-        for idx, meta in enumerate(existing.get("metadatas", [])):
-            if meta and meta.get("confluence_url") == confluence_url:
-                # Return existing id, skip duplicate add
-                return existing["ids"][idx]
         collection.add(
             ids=[page_id],
             embeddings=[embedding],

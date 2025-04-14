@@ -1,4 +1,5 @@
 import logging
+import hashlib
 import requests
 from typing import Optional, Dict, Any, List
 from datetime import datetime
@@ -124,54 +125,73 @@ def add_stackoverflow_qa_to_vectordb(stackoverflow_url: str, extra_metadata: Opt
         embeddings = []
         documents = []
 
-        # Add question
+        # Add question with deduplication
         q_id = f"stackoverflow_q_{content['question_id']}"
-        q_metadata = {
-            "type": "question",
-            "question_id": content["question_id"],
-            "title": content["question_title"],
-            "url": content["question_url"],
-            "created_date": datetime.now().isoformat()
-        }
-        if extra_metadata:
-            q_metadata.update(extra_metadata)
-        q_metadata = sanitize_metadata(q_metadata)
-        q_embedding = model.encode(content["question_text"]).tolist()
-
-        ids.append(q_id)
-        metadatas.append(q_metadata)
-        embeddings.append(q_embedding)
-        documents.append(content["question_text"])
-
-        # Add answers
-        for ans in content["answers"]:
-            a_id = f"stackoverflow_a_{ans['answer_id']}"
-            a_metadata = {
-                "type": "answer",
+        q_hash_str = (content["question_title"] or "") + (content["question_text"] or "")
+        q_content_hash = hashlib.sha256(q_hash_str.encode("utf-8")).hexdigest()
+        # Check for existing question with same hash
+        existing_q = collection.get(where={"content_hash": q_content_hash})
+        if not (existing_q and existing_q.get("ids")):
+            q_metadata = {
+                "type": "question",
                 "question_id": content["question_id"],
-                "answer_id": ans["answer_id"],
                 "title": content["question_title"],
                 "url": content["question_url"],
-                "is_accepted": ans["is_accepted"],
-                "score": ans["score"],
-                "created_date": datetime.now().isoformat()
+                "created_date": datetime.now().isoformat(),
+                "content_hash": q_content_hash
             }
             if extra_metadata:
-                a_metadata.update(extra_metadata)
-            a_metadata = sanitize_metadata(a_metadata)
-            a_embedding = model.encode(ans["text"]).tolist()
+                q_metadata.update(extra_metadata)
+            q_metadata = sanitize_metadata(q_metadata)
+            q_embedding = model.encode(content["question_text"]).tolist()
 
-            ids.append(a_id)
-            metadatas.append(a_metadata)
-            embeddings.append(a_embedding)
-            documents.append(ans["text"])
+            ids.append(q_id)
+            metadatas.append(q_metadata)
+            embeddings.append(q_embedding)
+            documents.append(content["question_text"])
+        else:
+            # If duplicate, return existing question ID
+            ids.append(existing_q["ids"][0])
 
-        collection.add(
-            ids=ids,
-            embeddings=embeddings,
-            metadatas=metadatas,
-            documents=documents
-        )
+        # Add answers with deduplication
+        for ans in content["answers"]:
+            a_id = f"stackoverflow_a_{ans['answer_id']}"
+            a_hash_str = (ans["text"] or "") + str(content["question_id"])
+            a_content_hash = hashlib.sha256(a_hash_str.encode("utf-8")).hexdigest()
+            existing_a = collection.get(where={"content_hash": a_content_hash})
+            if not (existing_a and existing_a.get("ids")):
+                a_metadata = {
+                    "type": "answer",
+                    "question_id": content["question_id"],
+                    "answer_id": ans["answer_id"],
+                    "title": content["question_title"],
+                    "url": content["question_url"],
+                    "is_accepted": ans["is_accepted"],
+                    "score": ans["score"],
+                    "created_date": datetime.now().isoformat(),
+                    "content_hash": a_content_hash
+                }
+                if extra_metadata:
+                    a_metadata.update(extra_metadata)
+                a_metadata = sanitize_metadata(a_metadata)
+                a_embedding = model.encode(ans["text"]).tolist()
+
+                ids.append(a_id)
+                metadatas.append(a_metadata)
+                embeddings.append(a_embedding)
+                documents.append(ans["text"])
+            else:
+                # If duplicate, return existing answer ID
+                ids.append(existing_a["ids"][0])
+
+        # Only add if there are new documents to add
+        if embeddings:
+            collection.add(
+                ids=ids,
+                embeddings=embeddings,
+                metadatas=metadatas,
+                documents=documents
+            )
         return ids
     except Exception as e:
         logger.error(f"Error adding Stack Overflow Q&A to vector database: {str(e)}")

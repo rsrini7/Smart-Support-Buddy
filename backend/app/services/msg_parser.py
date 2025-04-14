@@ -156,9 +156,3 @@ def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
             issue_details["jira_id"] = id_match.group(0)
 
     return issue_details
-    # - Text classification to identify root cause and solution sections
-    # - Named Entity Recognition (NER) to extract relevant entities
-    # - Summarization models to generate concise root cause and solution summaries
-    # This would improve accuracy beyond simple keyword or fallback heuristics.
-
-    return issue_details

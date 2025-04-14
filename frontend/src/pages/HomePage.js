@@ -162,7 +162,7 @@ const HomePage = () => {
                 Jira Details Ingest
               </Typography>
               <Typography variant="body2">
-                Ingest Jira ticket details into the vector database by providing either the Jira ID or Jira URL to enable information correlation and resolution tracking.
+                Ingest Jira ticket details into the vector database by providing the Jira IDs to enable information correlation and resolution tracking.
               </Typography>
             </CardContent>
             <CardActions>
