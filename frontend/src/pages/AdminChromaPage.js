@@ -18,12 +18,14 @@ import {
   Tooltip,
   IconButton
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 const API_URL = 'http://localhost:9000/api/chroma-collections';
 
 const AdminChromaPage = () => {
+  const theme = useTheme();
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,8 +53,15 @@ const AdminChromaPage = () => {
   };
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
+    <Box
+      sx={{
+        bgcolor: theme.palette.background.default,
+        color: theme.palette.text.primary,
+        minHeight: '100vh',
+        p: { xs: 1, sm: 2, md: 3 }
+      }}
+    >
+      <Typography variant="h4" gutterBottom sx={{ color: theme.palette.text.primary }}>
         Admin Chroma: View ChromaDB Collections
       </Typography>
       {loading && <CircularProgress />}
