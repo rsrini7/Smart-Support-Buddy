@@ -1,5 +1,6 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, Menu, MenuItem, IconButton, Tooltip } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
 import { useLocation } from 'react-router-dom';
@@ -13,11 +14,16 @@ import AttachEmailIcon from '@mui/icons-material/AttachEmail';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import CodeIcon from '@mui/icons-material/Code';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 const Header = ({ mode, toggleTheme }) => {
+  const theme = useTheme();
   const location = useLocation();
   const pathname = location.pathname;
   const [anchorEl, setAnchorEl] = React.useState(null);
+
+  // State for Ingest submenu
+  const [anchorElIngest, setAnchorElIngest] = React.useState(null);
 
   const handleToolsClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -25,8 +31,16 @@ const Header = ({ mode, toggleTheme }) => {
 
   const handleClose = () => {
     setAnchorEl(null);
+    setAnchorElIngest(null);
   };
 
+  const handleIngestMenuOpen = (event) => {
+    setAnchorElIngest(event.currentTarget);
+  };
+
+  const handleIngestMenuClose = () => {
+    setAnchorElIngest(null);
+  };
 
   return (
     <AppBar
@@ -83,90 +97,6 @@ const Header = ({ mode, toggleTheme }) => {
             Home
           </Button>
           <Button
-            color={pathname.startsWith("/ingest-msg-files") ? "primary" : "inherit"}
-            variant={pathname.startsWith("/ingest-msg-files") ? "contained" : "text"}
-            component={RouterLink}
-            to="/ingest-msg-files"
-            startIcon={<AttachEmailIcon />}
-            sx={{
-              borderRadius: 2,
-              mx: 0.5,
-              px: 2,
-              fontWeight: 600,
-              textTransform: 'none',
-              transition: 'background 0.2s, box-shadow 0.2s',
-              '&:hover': {
-                background: 'rgba(255,255,255,0.10)',
-                boxShadow: '0 2px 8px rgba(40,80,200,0.10)'
-              }
-            }}
-          >
-            Ingest Msg
-          </Button>
-          <Button
-            color={pathname.startsWith("/ingest-jira") ? "primary" : "inherit"}
-            variant={pathname.startsWith("/ingest-jira") ? "contained" : "text"}
-            component={RouterLink}
-            to="/ingest-jira"
-            startIcon={<BugReportIcon />}
-            sx={{
-              borderRadius: 2,
-              mx: 0.5,
-              px: 2,
-              fontWeight: 600,
-              textTransform: 'none',
-              transition: 'background 0.2s, box-shadow 0.2s',
-              '&:hover': {
-                background: 'rgba(255,255,255,0.10)',
-                boxShadow: '0 2px 8px rgba(40,80,200,0.10)'
-              }
-            }}
-          >
-            Ingest Jira
-          </Button>
-          <Button
-            color={pathname.startsWith("/ingest-confluence") ? "primary" : "inherit"}
-            variant={pathname.startsWith("/ingest-confluence") ? "contained" : "text"}
-            component={RouterLink}
-            to="/ingest-confluence"
-            startIcon={<LibraryBooksIcon />}
-            sx={{
-              borderRadius: 2,
-              mx: 0.5,
-              px: 2,
-              fontWeight: 600,
-              textTransform: 'none',
-              transition: 'background 0.2s, box-shadow 0.2s',
-              '&:hover': {
-                background: 'rgba(255,255,255,0.10)',
-                boxShadow: '0 2px 8px rgba(40,80,200,0.10)'
-              }
-            }}
-          >
-            Ingest Confluence
-          </Button>
-          <Button
-            color={pathname.startsWith("/ingest-stackoverflow") ? "primary" : "inherit"}
-            variant={pathname.startsWith("/ingest-stackoverflow") ? "contained" : "text"}
-            component={RouterLink}
-            to="/ingest-stackoverflow"
-            startIcon={<CodeIcon />}
-            sx={{
-              borderRadius: 2,
-              mx: 0.5,
-              px: 2,
-              fontWeight: 600,
-              textTransform: 'none',
-              transition: 'background 0.2s, box-shadow 0.2s',
-              '&:hover': {
-                background: 'rgba(255,255,255,0.10)',
-                boxShadow: '0 2px 8px rgba(40,80,200,0.10)'
-              }
-            }}
-          >
-            Ingest StackOverflow
-          </Button>
-          <Button
             color={pathname.startsWith("/search") ? "primary" : "inherit"}
             variant={pathname.startsWith("/search") ? "contained" : "text"}
             component={RouterLink}
@@ -187,6 +117,89 @@ const Header = ({ mode, toggleTheme }) => {
           >
             Search
           </Button>
+          {/* Ingest menu */}
+          <Button
+            color="inherit"
+            onClick={handleIngestMenuOpen}
+            startIcon={<CloudUploadIcon />}
+            sx={{
+              borderRadius: 2,
+              mx: 0.5,
+              px: 2,
+              fontWeight: 600,
+              textTransform: 'none',
+              transition: 'background 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                background: 'rgba(255,255,255,0.10)',
+                boxShadow: '0 2px 8px rgba(40,80,200,0.10)'
+              }
+            }}
+          >
+            Ingest
+          </Button>
+          <Menu
+            anchorEl={anchorElIngest}
+            open={Boolean(anchorElIngest)}
+            onClose={handleIngestMenuClose}
+            PaperProps={{
+              sx: (theme) => ({
+                borderRadius: 2,
+                minWidth: 220,
+                boxShadow: theme.shadows[8],
+                backgroundColor: theme.palette.background.paper,
+                color: theme.palette.text.primary,
+                border: `1px solid ${theme.palette.divider}`,
+                backdropFilter: 'blur(8px)'
+              })
+            }}
+            MenuListProps={{
+              sx: {
+                py: 1
+              }
+            }}
+          >
+            <MenuItem
+              component={RouterLink}
+              to="/ingest-msg-files"
+              onClick={handleClose}
+            >
+              <Box component="span" sx={{ minWidth: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AttachEmailIcon sx={{ color: theme.palette.primary.main }} />
+              </Box>
+              Ingest Msg
+            </MenuItem>
+            <MenuItem
+              component={RouterLink}
+              to="/ingest-jira"
+              onClick={handleClose}
+            >
+              <Box component="span" sx={{ minWidth: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <BugReportIcon sx={{ color: theme.palette.secondary.main }} />
+              </Box>
+              Ingest Jira
+            </MenuItem>
+            <MenuItem
+              component={RouterLink}
+              to="/ingest-confluence"
+              onClick={handleClose}
+            >
+              <Box component="span" sx={{ minWidth: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <LibraryBooksIcon sx={{ color: theme.palette.primary.main }} />
+              </Box>
+              Ingest Confluence
+            </MenuItem>
+            <MenuItem
+              component={RouterLink}
+              to="/ingest-stackoverflow"
+              onClick={handleClose}
+            >
+              <Box component="span" sx={{ minWidth: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CodeIcon sx={{ color: theme.palette.secondary.main }} />
+              </Box>
+              Ingest StackOverflow
+            </MenuItem>
+          </Menu>
+          {/* Tools menu */}
           <Button
             color="inherit"
             onClick={handleToolsClick}
@@ -242,8 +255,10 @@ const Header = ({ mode, toggleTheme }) => {
                   background: 'linear-gradient(90deg, #6a11cb22 0%, #2575fc22 100%)'
                 }
               }}
-              startIcon={<DeleteSweepIcon sx={{ color: '#6a11cb' }} />}
             >
+              <Box component="span" sx={{ minWidth: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <DeleteSweepIcon sx={{ color: theme.palette.primary.main }} />
+              </Box>
               Clear ChromaDB Collections
             </MenuItem>
             <MenuItem
@@ -261,8 +276,10 @@ const Header = ({ mode, toggleTheme }) => {
                   background: 'linear-gradient(90deg, #6a11cb22 0%, #2575fc22 100%)'
                 }
               }}
-              startIcon={<SettingsIcon sx={{ color: '#2575fc' }} />}
             >
+              <Box component="span" sx={{ minWidth: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <SettingsIcon sx={{ color: theme.palette.secondary.main }} />
+              </Box>
               Config
             </MenuItem>
           </Menu>
