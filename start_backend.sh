@@ -88,6 +88,36 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     exit 1
 fi
 
+# Wait for Confluence to be ready (similar to Jira)
+echo "Waiting for Confluence to be ready..."
+sleep 10  # Initial wait time before checking Confluence
+MAX_RETRIES=30
+RETRY_COUNT=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8090/status")
+    if [ "$HTTP_CODE" -eq 200 ]; then
+        echo "Confluence is ready!"
+        break
+    else
+        echo "Confluence is still starting up... (HTTP $HTTP_CODE)"
+    fi
+
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+        echo "Retrying in 10 seconds... (Attempt $RETRY_COUNT/$MAX_RETRIES)"
+        sleep 10
+    fi
+done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "Error: Confluence failed to start after $MAX_RETRIES attempts"
+    echo "Please check:
+    1. Docker containers are running (docker ps)
+    2. Confluence is running on port 8090"
+    exit 1
+fi
+
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then
     echo "Error: Python 3 is not installed. Please install Python 3 and try again."

@@ -1,6 +1,6 @@
 # Support Buddy
 
-A GenAI-powered solution for handling support issues / queries by analyzing Microsoft Outlook MSG files and Jira tickets to identify root causes and solutions.
+A GenAI-powered solution for handling support issues / queries by analyzing Microsoft Outlook MSG files, Jira tickets, Confluence pages, and StackOverflow Q&A to identify root causes and solutions.
 
 ## Overview
 
@@ -17,7 +17,7 @@ This application helps teams manage support issues / queries by:
 - MSG file parsing with metadata and attachment extraction
 - Jira integration with bi-directional linking
 - Confluence integration: ingest and search Confluence pages
-- StackOverflow integration: ingest and search StackOverflow Q&A
+- **StackOverflow integration: ingest, index, and search StackOverflow Q&A**
 - Semantic search using sentence transformers
 - Bulk ingestion of MSG files, Confluence pages, and StackOverflow Q&A
 - Vector search with configurable similarity threshold (0-1 range, default 0.2)
@@ -32,7 +32,7 @@ This application helps teams manage support issues / queries by:
    - MSG Parser: Extracts data from Outlook MSG files including metadata and attachments
    - Jira Service: Handles Jira ticket integration and synchronization
    - Confluence Service: Manages Confluence page ingestion and search
-   - StackOverflow Service: Handles Q&A ingestion and search
+   - **StackOverflow Service: Handles ingestion, indexing, and semantic search of StackOverflow Q&A**
    - Vector Service: Manages ChromaDB operations and semantic search
 
 2. **Vector Database** (ChromaDB)
@@ -41,14 +41,14 @@ This application helps teams manage support issues / queries by:
      - Support issues (MSG files)
      - Jira tickets
      - Confluence pages
-     - StackOverflow Q&A
+     - **StackOverflow Q&A**
    - Configurable similarity threshold
    - Admin UI for monitoring
 
 3. **Knowledge Integration**
    - Bi-directional Jira ticket linking
    - Confluence page ingestion and search
-   - StackOverflow Q&A integration
+   - **StackOverflow Q&A ingestion, indexing, and search**
    - Unified search across all sources
 
 4. **Frontend** (React/Material-UI)
@@ -79,8 +79,8 @@ This application helps teams manage support issues / queries by:
    - Search by similarity
 
 4. **StackOverflow**
-   - Q&A content ingestion
-   - Answer scoring and ranking
+   - **Q&A content ingestion via question URL**
+   - **Answer scoring, ranking, and acceptance status**
    - Metadata preservation
    - Semantic similarity search
 
@@ -104,6 +104,8 @@ This application helps teams manage support issues / queries by:
 - Node.js and npm
 - Docker and Docker Compose (for containerized setup)
 - Jira instance (local or cloud)
+- Confluence instance (local, via Docker Compose)
+- **Internet access for StackOverflow Q&A ingestion**
 - PostgreSQL (or use containerized version)
 
 ### Development Setup
@@ -142,6 +144,21 @@ This application helps teams manage support issues / queries by:
      cd frontend && npm run build
      ```
 
+## Backend Startup & Orchestration
+
+- The backend can be started using the shell script:
+  ```bash
+  ./start_backend.sh
+  ```
+- This script:
+  - Starts Docker Compose services (ChromaDB, PostgreSQL, Jira, Confluence, etc.)
+  - Waits for ChromaDB to be healthy
+  - Waits for Jira to be ready (via REST API)
+  - **Waits for Confluence to be ready** (via HTTP status endpoint)
+  - Sets up the Python virtual environment and dependencies
+  - Starts the FastAPI server on port **9000**
+- The script will exit with an error if Jira or Confluence fail to start after multiple attempts.
+
 ## Environment Variables
 
 The backend requires a `.env` file with configuration for:
@@ -160,6 +177,7 @@ JIRA_API_TOKEN=          # For cloud instance
 VECTOR_DB_PATH=./data/vectordb
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 
+# (No special StackOverflow credentials required for public Q&A ingestion)
 ```
 
 Configuration Options:
@@ -176,86 +194,7 @@ Configuration Options:
    - Lower values (closer to 0) return more results
    - Changes persist across server restarts
 
-## Usage Guide
-
-### Data Ingestion
-1. **MSG Files**
-   - Upload via UI: Single file upload with preview
-   - Auto-extraction of: metadata, body, attachments, Jira references
-
-2. **Knowledge Sources**
-   - Confluence: Ingest pages via URL
-   - StackOverflow: Import Q&A via question URL
-   - Jira: Link tickets by ID or auto-detection
-
-### Unified Search
-1. **Search Methods**
-   - Text-based semantic search
-   - Jira ticket ID lookup
-   - Combined search across all sources
-
-2. **Result Types**
-   - Support Issues (MSG + Jira)
-     - Content: Original message, metadata, attachments
-     - Jira: Ticket details, status, comments
-     - Similarity: Vector-based matching score
-   
-   - Confluence Results
-     - Title and content
-     - URL and metadata
-     - Similarity score
-   
-   - StackOverflow Results
-     - Question title and body
-     - Answers with acceptance status
-     - Score and similarity ranking
-
-3. **Configuration**
-   - Adjust similarity threshold (0-1)
-   - Filter by source type
-   - Sort by relevance or date
-   - Configure result limits per source
-
-## Project Structure
-
-```
-├── backend/               # Python FastAPI backend
-│   ├── app/
-│   │   ├── api/           # API endpoints
-│   │   ├── core/          # Core application logic and config (e.g., similarity_config.json)
-│   │   ├── db/            # Database models and connections
-│   │   ├── services/      # Business logic services:
-│   │   │   ├── vector_service.py         # Vector DB operations
-│   │   │   ├── confluence_service.py     # Confluence integration
-│   │   │   ├── stackoverflow_service.py  # StackOverflow integration
-│   │   │   ├── jira_service.py           # Jira integration
-│   │   │   └── msg_parser.py             # MSG file parsing
-│   │   └── main.py        # Application entry point
-├── frontend/              # React frontend
-│   ├── public/
-│   └── src/
-│       ├── components/    # UI components
-│       ├── pages/         # Application pages (including ConfigPage.js for settings)
-│       ├── services/      # API service connections
-│       └── App.js         # Main application component
-└── README.md             # Project documentation
-```
-
-## Vector Search Configuration
-
-### ChromaDB Setup
-- **Persistent Storage**: Data stored in `./data/vectordb`
-- **Collections**:
-  - `production_issues`: MSG files and Jira tickets
-  - `confluence_pages`: Confluence content
-  - `stackoverflow_qa`: Stack Overflow Q&A
-- **Embedding Model**: sentence-transformers/all-MiniLM-L6-v2
-- **Similarity Threshold**: 
-  - Configurable via UI or config file
-  - Range: 0.0-1.0 (default: 0.2)
-  - Higher values = stricter matching
-
-### Docker Deployment
+## Docker Deployment
 
 Run the complete system using Docker Compose:
 
@@ -266,6 +205,7 @@ docker-compose up --build
 Services and Ports:
 - Backend API: [http://localhost:9000](http://localhost:9000)
 - Jira Server: [http://localhost:9090](http://localhost:9090)
+- Confluence: [http://localhost:8090](http://localhost:8090)
 - ChromaDB: [http://localhost:8000](http://localhost:8000)
 - Chroma Admin UI: [http://localhost:3500](http://localhost:3500)
 - PostgreSQL: 
@@ -280,7 +220,32 @@ Volumes:
 
 ## Backend Setup
 
-For detailed backend setup instructions, including running with or without Docker, see **BACKEND_SETUP.md**.
+For detailed backend setup instructions, including running with or without Docker, and details on the new Confluence startup wait logic, see **BACKEND_SETUP.md**.
+
+## Project Structure
+
+```
+├── backend/               # Python FastAPI backend
+│   ├── app/
+│   │   ├── api/           # API endpoints
+│   │   ├── core/          # Core application logic and config (e.g., similarity_config.json)
+│   │   ├── db/            # Database models and connections
+│   │   ├── services/      # Business logic services:
+│   │   │   ├── vector_service.py         # Vector DB operations
+│   │   │   ├── confluence_service.py     # Confluence integration
+│   │   │   ├── stackoverflow_service.py  # **StackOverflow integration**
+│   │   │   ├── jira_service.py           # Jira integration
+│   │   │   └── msg_parser.py             # MSG file parsing
+│   │   └── main.py        # Application entry point
+├── frontend/              # React frontend
+│   ├── public/
+│   └── src/
+│       ├── components/    # UI components
+│       ├── pages/         # Application pages (including ConfigPage.js for settings)
+│       ├── services/      # API service connections
+│       └── App.js         # Main application component
+└── README.md             # Project documentation
+```
 
 ## Testing
 
@@ -301,97 +266,28 @@ Run backend tests:
 pytest backend/tests
 ```
 
-## Jira Integration Setup
-
-The system supports both local Jira Server and Atlassian Cloud instances:
-
-### Local Jira Server
-- Accessible at [http://localhost:9090](http://localhost:9090) when using Docker Compose
-- Uses basic authentication (username/password)
-- Pre-configured database connection via mounted `dbconfig.xml`
-- Initial setup steps:
-  1. Enter Jira license key (evaluation or purchased)
-  2. Create administrator account
-  3. Configure email and base URL
-  4. Create or import projects
-
-### Atlassian Cloud
-- Requires Jira Cloud instance URL (e.g., company.atlassian.net)
-- Uses API token authentication
-- Generate API token from Atlassian account settings
-
-### Configuration
-Update `.env` file with appropriate credentials:
-- For local server: Set `JIRA_USERNAME` and `JIRA_PASSWORD`
-- For cloud: Set `JIRA_USERNAME` and `JIRA_API_TOKEN`
-- Set `JIRA_URL` to your instance URL
-
-Subsequent startups will skip this wizard, as the data is persisted in the Docker volume.
-
-## Frontend Production Build
-
-To create an optimized production build of the frontend:
-
-```bash
-cd frontend
-npm run build
-```
-
-This outputs static files to `frontend/build/` for deployment.
-
 ## Monitoring & Maintenance
 
-### Vector Database
-- Access ChromaDB Admin UI at http://localhost:3500 to:
-  - Monitor collection sizes and health
-  - View embedding statistics
-  - Check search performance
-  - Manage vector data
+- ChromaDB Admin UI: [http://localhost:3500](http://localhost:3500)
+- Backend logs: `backend/logs`
+- Log levels configurable in `backend/app/core/logging_config.py`
+- Component-specific logging for:
+  - MSG parsing
+  - Jira integration
+  - Confluence integration
+  - **StackOverflow integration**
+  - Vector operations
+  - Search requests
 
-### System Health
-1. **Backend Logs**
-   - Check `backend/logs` for detailed logs
-   - Log levels configurable in `backend/app/core/logging_config.py`
-   - Component-specific logging for:
-     - MSG parsing
-     - Jira integration
-     - Vector operations
-     - Search requests
+## Troubleshooting
 
-2. **Database Maintenance**
-   - PostgreSQL backup recommended for production
-   - Vector DB persistence in `data/vectordb`
-
-### Troubleshooting
-
-1. **Vector Search Issues**
-   - Verify similarity threshold configuration
-   - Check ChromaDB collection consistency
-   - Validate embedding model availability
-   - Review search query logs
-
-2. **Integration Problems**
-   - Jira: Check credentials and network access
-   - Confluence: Verify page permissions
-   - StackOverflow: Check API rate limits
-   - MSG Files: Validate file format and encoding
-
-3. **Common Solutions**
-   - Clear browser cache for UI issues
-   - Restart backend for embedding model issues
-   - Check disk space for vector storage
-   - Verify network connectivity for integrations
+- If Jira or Confluence fail to start, check Docker container logs and ensure ports 9090 (Jira) and 8090 (Confluence) are available.
+- **If StackOverflow Q&A ingestion fails, check internet connectivity and ensure the question URL is valid.**
+- The backend startup script will exit with an error if either service is not ready after multiple attempts.
 
 ## Performance Optimization
 
-1. **Search Performance**
-   - Adjust similarity threshold based on result quality
-   - Configure appropriate result limits
-   - Monitor query response times
-   - Index only relevant content
-
-2. **Resource Usage**
-   - Monitor vector DB size growth
-   - Clean up processed MSG files
-   - Archive old vector embeddings
-   - Optimize batch ingestion sizes
+- Adjust similarity threshold for search quality
+- Monitor vector DB size and clean up as needed
+- Archive old vector embeddings
+- Optimize batch ingestion sizes

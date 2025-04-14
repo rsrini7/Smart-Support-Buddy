@@ -1,7 +1,7 @@
 # Support Buddy – Comprehensive Project Overview
 
 ## Purpose
-A GenAI-powered solution for handling support issues/queries by analyzing Microsoft Outlook MSG files and Jira tickets to identify root causes and solutions.
+A GenAI-powered solution for handling support issues/queries by analyzing Microsoft Outlook MSG files, Jira tickets, Confluence pages, and StackOverflow Q&A to identify root causes and solutions.
 
 ---
 
@@ -13,12 +13,18 @@ flowchart TD
     B --> C[Backend API (FastAPI)]
     C --> D[MSG Parser]
     C --> E[Jira Integration]
+    C --> H[Confluence Integration]
+    C --> I[StackOverflow Integration]
     C --> F[Vector DB (ChromaDB)]
     C --> G[PostgreSQL]
     D --> F
     E --> G
+    H --> G
+    I --> F
     F --> B
     E --> B
+    H --> B
+    I --> B
 ```
 
 ---
@@ -26,10 +32,12 @@ flowchart TD
 ## Components
 
 ### 1. Backend (Python/FastAPI)
-- **API Endpoints**: For uploading MSG files, searching issues, linking Jira tickets, and managing issues.
+- **API Endpoints**: For uploading MSG files, searching issues, linking Jira tickets, ingesting Confluence pages, and importing StackOverflow Q&A.
 - **Services**:
   - `msg_parser.py`: Parses MSG files, extracts metadata and attachments.
   - `jira_service.py`: Connects to Jira API, fetches ticket info.
+  - `confluence_service.py`: Handles Confluence page ingestion and search.
+  - `stackoverflow_service.py`: Handles StackOverflow Q&A ingestion, indexing, and semantic search.
   - `vector_service.py`: Handles vector DB operations, semantic search, and embeddings.
 - **Database**:
   - SQLAlchemy models for issues, Jira tickets, and vector embeddings.
@@ -37,17 +45,25 @@ flowchart TD
 
 ### 2. Frontend (React/Material-UI)
 - **Pages**:
-  - Home, Upload, Ingest MSG Files, Search, Issue Details.
+  - Home, Upload, Ingest MSG Files, Ingest Confluence Pages, Ingest StackOverflow Q&A, Search, Issue Details.
 - **Components**:
   - Header, Footer, and shared UI elements.
 - **Functionality**:
-  - Upload MSG files, link Jira tickets, perform semantic search, view and manage issues.
+  - Upload MSG files, link Jira tickets, ingest Confluence pages, import StackOverflow Q&A, perform semantic search, view and manage issues.
 
 ### 3. Jira Integration
 - **Jira Server**: Runs in Docker, configured via setup files.
 - **Integration**: Backend communicates with Jira via REST API for ticket info and linking.
 
-### 4. Vector Database (ChromaDB)
+### 4. Confluence Integration
+- **Confluence Server**: Runs in Docker, configured via setup files.
+- **Integration**: Backend communicates with Confluence for page ingestion and search.
+
+### 5. StackOverflow Integration
+- **StackOverflow Q&A**: Ingested via question URL, indexed, and made available for semantic search.
+- **Integration**: Backend fetches Q&A content, scores and ranks answers, and stores them in the vector database for unified search.
+
+### 6. Vector Database (ChromaDB)
 - **Collections**:
   - `production_issues`: MSG files and Jira tickets
   - `confluence_pages`: Confluence content
@@ -58,7 +74,7 @@ flowchart TD
   - Admin UI for monitoring and management
   - Persistent storage and backup support
 
-### 5. Knowledge Integration
+### 7. Knowledge Integration
 - **Jira**:
   - Local server or Atlassian Cloud support
   - Bi-directional ticket linking
@@ -69,23 +85,32 @@ flowchart TD
   - Metadata preservation
   - Link management
 - **StackOverflow**:
-  - Q&A content ingestion
-  - Answer scoring and acceptance tracking
-  - URL-based import
+  - Q&A content ingestion via URL
+  - Answer scoring, ranking, and acceptance tracking
+  - Semantic similarity search
 
-### 6. Orchestration (Docker Compose)
+### 8. Orchestration (Docker Compose & Startup Script)
 - **Services**:
-  - Backend API (FastAPI)
+  - Backend API (FastAPI, port 9000)
   - ChromaDB (Vector Store)
   - ChromaDB Admin UI
   - Jira Server
+  - Confluence Server
   - PostgreSQL (Jira + Confluence)
+- **Startup Sequence**:
+  - The backend startup script (`start_backend.sh`) starts all services via Docker Compose.
+  - The script waits for ChromaDB to be healthy.
+  - The script waits for Jira to be ready (via REST API).
+  - **The script waits for Confluence to be ready (via HTTP status endpoint).**
+  - Only after both Jira and Confluence are ready does the FastAPI server start.
+  - **StackOverflow Q&A ingestion is available on demand via API endpoints.**
 - **Networking**:
   - Shared Docker network
   - Exposed ports for services
   - Internal service discovery
 - **Persistence**:
   - Jira data volume
+  - Confluence data volume
   - PostgreSQL data volumes
   - Vector DB storage
   - Uploaded files storage
@@ -102,7 +127,7 @@ flowchart TD
   
 - **External Knowledge**:
   - Confluence page import via URL
-  - StackOverflow Q&A ingestion
+  - **StackOverflow Q&A ingestion via question URL**
   - Jira ticket synchronization
 
 ### 2. Processing Pipeline
@@ -120,7 +145,7 @@ flowchart TD
 - **Query Processing**:
   - Text query embedding
   - Jira ticket lookup
-  - Multi-source search
+  - Multi-source search (MSG, Jira, Confluence, StackOverflow)
   
 - **Result Aggregation**:
   - Similarity score calculation
@@ -145,14 +170,17 @@ flowchart TD
   Individual Services: Configurable ports
   Data Persistence: Docker volumes
   ```
+- **Backend Startup**:
+  - Use `./start_backend.sh` to orchestrate all services and ensure both Jira and Confluence are ready before backend launch.
+  - **StackOverflow Q&A ingestion is available after backend startup and requires internet access.**
 
 ### 2. Monitoring
 - **Service Health**:
   - API endpoint monitoring
   - Database connection checks
   - Vector DB collection status
-  - Integration connectivity
-
+  - Jira and Confluence integration connectivity (checked at startup)
+  - **StackOverflow Q&A ingestion monitored via logs and API responses**
 - **Performance Metrics**:
   - Query response times
   - Embedding generation speed
@@ -185,7 +213,8 @@ flowchart TD
 
 - **Integration Setup**:
   - Jira: Local server (port 9090) or Cloud
-  - Confluence: Configurable instance
+  - Confluence: Local server (port 8090) or Cloud
+  - **StackOverflow: No credentials required for public Q&A ingestion**
   - Vector DB: Persistent storage paths
   - File storage locations
 
@@ -195,6 +224,8 @@ flowchart TD
   - Log aggregation
   - Performance metrics
   - Resource utilization
+  - **Jira and Confluence readiness checked at backend startup**
+  - **StackOverflow Q&A ingestion monitored via logs**
 
 - **Data Management**:
   - Vector DB backup
@@ -205,6 +236,8 @@ flowchart TD
 ### 3. Security
 - **Authentication**:
   - Jira API tokens/credentials
+  - Confluence credentials (if required)
+  - **StackOverflow: Public Q&A ingestion does not require authentication**
   - Service-to-service auth
   - Environment security
 
@@ -224,7 +257,7 @@ Support Buddy provides a comprehensive solution for support issue management thr
    - MSG file parsing and analysis
    - Jira ticket synchronization
    - Confluence knowledge base integration
-   - StackOverflow Q&A incorporation
+   - **StackOverflow Q&A ingestion, indexing, and semantic search**
 
 2. **Intelligent Search**
    - Vector-based semantic search

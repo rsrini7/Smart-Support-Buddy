@@ -13,11 +13,18 @@ Two scripts are provided for running the backend:
 ```
 
 This script:
+- Starts Docker Compose services (ChromaDB, PostgreSQL, Jira, Confluence, etc.)
+- Waits for ChromaDB to be healthy
+- Waits for Jira to be ready (via REST API)
+- **Waits for Confluence to be ready** (via HTTP status endpoint)
 - Creates a virtual environment if it doesn't exist
 - Installs dependencies from requirements.txt
 - Sets up necessary data directories
 - Creates a .env file from .env.example if needed
-- Starts the FastAPI server on port 8000
+- Starts the FastAPI server on port **9000**
+- **Enables StackOverflow Q&A ingestion and search via the backend service**
+
+If Jira or Confluence fail to start after multiple attempts, the script will exit with an error.
 
 ### 2. Python Script (Cross-platform)
 
@@ -35,7 +42,7 @@ Support Buddy Backend Runner
 options:
   -h, --help     show this help message and exit
   --host HOST    Host to bind the server to (default: 0.0.0.0)
-  --port PORT    Port to bind the server to (default: 8000)
+  --port PORT    Port to bind the server to (default: 9000)
   --no-reload    Disable auto-reload on code changes
   --skip-deps    Skip dependency installation
   --venv VENV    Path to virtual environment (default: venv)
@@ -72,6 +79,10 @@ The backend requires several configuration parameters set through environment va
    EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
    ```
 
+4. **StackOverflow Integration**
+   - No special credentials required for public Q&A ingestion.
+   - **Internet access is required for StackOverflow Q&A ingestion.**
+
 ## Development vs Production
 
 ### Development
@@ -89,7 +100,7 @@ This will start the server with auto-reload enabled, so changes to the code will
 For production, use:
 
 ```bash
-./run_backend.py --no-reload --host 0.0.0.0 --port 8000
+./run_backend.py --no-reload --host 0.0.0.0 --port 9000
 ```
 
 This disables auto-reload for better performance and stability in production environments.
@@ -103,6 +114,12 @@ If you encounter issues:
 3. Verify your `.env` file has the correct configuration
 4. Make sure the necessary directories exist and are writable
 5. Check the console output for specific error messages
+6. If the backend script fails with an error about Jira or Confluence not being ready, check:
+   - Docker containers are running (`docker ps`)
+   - Jira is accessible at [http://localhost:9090](http://localhost:9090)
+   - Confluence is accessible at [http://localhost:8090](http://localhost:8090)
+   - Ports 9090 (Jira) and 8090 (Confluence) are not in use by other processes
+7. **If StackOverflow Q&A ingestion fails, check your internet connection and ensure the StackOverflow question URL is valid.**
 
 ## Monitoring & Logging
 
@@ -112,6 +129,8 @@ If you encounter issues:
 - Component-specific logging enabled for:
   - MSG parsing
   - Jira integration
+  - Confluence integration
+  - **StackOverflow integration**
   - Vector operations
   - Search requests
 
@@ -126,6 +145,8 @@ If you encounter issues:
 - Database connections auto-verified on startup
 - Vector DB collections validated during initialization
 - Jira connectivity tested on startup
+- **Confluence connectivity tested on startup (via /status endpoint)**
+- **StackOverflow Q&A ingestion tested on demand (via API endpoints)**
 
 ## Performance Tuning
 
