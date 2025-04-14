@@ -23,6 +23,7 @@ This script:
 - Creates a .env file from .env.example if needed
 - Starts the FastAPI server on port **9000**
 - **Enables StackOverflow Q&A ingestion and search via the backend service**
+- **Prevents duplicate entries for all sources (MSG, Jira, Confluence, StackOverflow) using content-based hashing**
 
 If Jira or Confluence fail to start after multiple attempts, the script will exit with an error.
 
@@ -131,6 +132,7 @@ If you encounter issues:
   - Jira integration
   - Confluence integration
   - **StackOverflow integration**
+  - **Deduplication for all sources (MSG, Jira, Confluence, StackOverflow)**
   - Vector operations
   - Search requests
 
@@ -147,6 +149,7 @@ If you encounter issues:
 - Jira connectivity tested on startup
 - **Confluence connectivity tested on startup (via /status endpoint)**
 - **StackOverflow Q&A ingestion tested on demand (via API endpoints)**
+- **Deduplication logic tested on demand (via API endpoints)**
 
 ## Performance Tuning
 

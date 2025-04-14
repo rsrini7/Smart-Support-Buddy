@@ -71,6 +71,7 @@ flowchart TD
 - **Features**:
   - Semantic search with configurable similarity
   - Real-time embedding and indexing
+  - **Automatic deduplication for all sources (MSG, Jira, Confluence, StackOverflow) using content-based SHA256 hashes**
   - Admin UI for monitoring and management
   - Persistent storage and backup support
 
@@ -258,6 +259,7 @@ Support Buddy provides a comprehensive solution for support issue management thr
    - Jira ticket synchronization
    - Confluence knowledge base integration
    - **StackOverflow Q&A ingestion, indexing, and semantic search**
+   - **Automatic deduplication for all sources (MSG, Jira, Confluence, StackOverflow) using content-based hashing**
 
 2. **Intelligent Search**
    - Vector-based semantic search

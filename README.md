@@ -18,6 +18,7 @@ This application helps teams manage support issues / queries by:
 - Jira integration with bi-directional linking
 - Confluence integration: ingest and search Confluence pages
 - **StackOverflow integration: ingest, index, and search StackOverflow Q&A**
+- **Automatic deduplication for all sources (MSG, Jira, Confluence, StackOverflow) using content-based hashing to prevent duplicate entries in the vector database**
 - Semantic search using sentence transformers
 - Bulk ingestion of MSG files, Confluence pages, and StackOverflow Q&A
 - Vector search with configurable similarity threshold (0-1 range, default 0.2)
@@ -33,10 +34,11 @@ This application helps teams manage support issues / queries by:
    - Jira Service: Handles Jira ticket integration and synchronization
    - Confluence Service: Manages Confluence page ingestion and search
    - **StackOverflow Service: Handles ingestion, indexing, and semantic search of StackOverflow Q&A**
-   - Vector Service: Manages ChromaDB operations and semantic search
+   - Vector Service: Manages ChromaDB operations, semantic search, and deduplication for all sources
 
 2. **Vector Database** (ChromaDB)
    - Stores embeddings for semantic search
+   - Content-based deduplication for all sources (MSG, Jira, Confluence, StackOverflow) using SHA256 hashes
    - Collections for:
      - Support issues (MSG files)
      - Jira tickets
@@ -49,6 +51,7 @@ This application helps teams manage support issues / queries by:
    - Bi-directional Jira ticket linking
    - Confluence page ingestion and search
    - **StackOverflow Q&A ingestion, indexing, and search**
+   - Automatic deduplication for all sources (MSG, Jira, Confluence, StackOverflow)
    - Unified search across all sources
 
 4. **Frontend** (React/Material-UI)
@@ -291,3 +294,9 @@ pytest backend/tests
 - Monitor vector DB size and clean up as needed
 - Archive old vector embeddings
 - Optimize batch ingestion sizes
+
+## Deduplication Logic
+
+- All ingestion endpoints (MSG, Jira, Confluence, StackOverflow) now prevent duplicate entries in the vector database.
+- Deduplication is performed using a SHA256 hash of the main content fields (e.g., subject+body for MSG, summary+description+ID for Jira, content for Confluence, question/answer text for StackOverflow).
+- Before insertion, the system checks for an existing entry with the same hash and skips insertion if a duplicate is found.
