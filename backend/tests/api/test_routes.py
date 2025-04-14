@@ -13,7 +13,7 @@ backend_dir = Path(__file__).parent.parent.parent
 sys.path.append(str(backend_dir))
 
 from app.main import app
-from app.db.models import SearchQuery, IssueResponse
+from app.models import SearchQuery, IssueResponse
 
 client = TestClient(app)
 

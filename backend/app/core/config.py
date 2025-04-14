@@ -42,9 +42,6 @@ class Settings(BaseSettings):
     # CORS settings
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:9000"]
     
-    # Database settings
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost/prodissue")
-    
     # Jira settings
     JIRA_URL: str = os.getenv("JIRA_URL", "http://localhost:9090")
     JIRA_USERNAME: str = os.getenv("JIRA_USERNAME", "admin")

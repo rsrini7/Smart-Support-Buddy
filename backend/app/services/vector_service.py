@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional
 import logging
-from app.db.models import IssueResponse
+from app.models import IssueResponse
 
 # Refactored imports
 from app.services.chroma_client import get_vector_db_client, get_collection

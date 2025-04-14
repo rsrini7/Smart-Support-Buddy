@@ -157,8 +157,6 @@ This application helps teams manage support issues / queries by:
 ## Environment Variables
 The backend requires a `.env` file with configuration for:
 ```env
-# Database Settings
-DATABASE_URL=postgresql://postgres:postgres@localhost/prodissue
 # Jira Settings
 JIRA_URL=http://localhost:9090
 JIRA_USERNAME=admin

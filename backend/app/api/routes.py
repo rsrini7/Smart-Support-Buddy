@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.services.msg_parser import parse_msg_file
 from app.services.jira_service import get_jira_ticket
 from app.services.vector_service import search_similar_issues, add_issue_to_vectordb, delete_issue, get_all_chroma_collections_data
-from app.db.models import IssueCreate, IssueResponse, SearchQuery
+from app.models import IssueCreate, IssueResponse, SearchQuery
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)

@@ -6,7 +6,6 @@ pydantic>=1.10.7
 pydantic-settings>=2.0.0  # For BaseSettings functionality
 extract-msg>=0.41.0  # For parsing Outlook MSG files
 jira>=3.5.0  # Python Jira REST API client
-sqlalchemy>=2.0.0  # SQL ORM
 psycopg2-binary>=2.9.6  # PostgreSQL adapter
 python-dotenv>=1.0.0  # Environment variable management
 langchain>=0.0.267  # LLM framework

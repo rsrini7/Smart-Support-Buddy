@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 from app.services.chroma_client import get_collection
-from app.db.models import IssueResponse
+from app.models import IssueResponse
 from datetime import datetime
 import logging
 import re
