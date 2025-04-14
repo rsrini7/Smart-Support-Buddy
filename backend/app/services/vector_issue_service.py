@@ -73,7 +73,10 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
                 jira_comments_text = "\n".join(formatted_comments)
 
         # Prepare full text for embedding
+        # Ensure Jira ticket ID is present in the embedding text if available
         full_text = f"{msg_subject}\n{msg_body}\n{jira_summary}\n{jira_description}"
+        if jira_ticket_id and jira_ticket_id not in full_text:
+            full_text = f"{jira_ticket_id}\n" + full_text
         if jira_comments_text:
             full_text += f"\nComments:\n{jira_comments_text}"
         embedding = get_embedding(full_text)

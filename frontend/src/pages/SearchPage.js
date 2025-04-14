@@ -29,7 +29,7 @@ const SearchPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [tab, setTab] = useState(0);
-  const [singlePageResult, setSinglePageResult] = useState(false);
+  const [singlePageResult, setSinglePageResult] = useState(true);
 
   useEffect(() => {
     // Perform search if we have initial search parameters

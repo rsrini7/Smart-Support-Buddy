@@ -3,6 +3,7 @@ from app.services.chroma_client import get_collection
 from app.db.models import IssueResponse
 from datetime import datetime
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,18 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                 if isinstance(metadata, list):
                     metadata = {}
                 document = documents[i]
+                # --- JIRA ID BOOST LOGIC ---
+                # If query is a JIRA ID and matches this record, set similarity_score to 1.0
+                boost_jira_id = False
+                if query_text:
+                    jira_id_pattern = r"^[A-Z][A-Z0-9]+-\d+$"
+                    if re.match(jira_id_pattern, query_text.strip(), re.IGNORECASE):
+                        match_ids = [
+                            (metadata.get("jira_ticket_id") or "").upper(),
+                            (metadata.get("msg_jira_id") or "").upper()
+                        ]
+                        if query_text.strip().upper() in match_ids:
+                            boost_jira_id = True
                 if is_query_result:
                     if isinstance(distances, list) and len(distances) > i:
                         if isinstance(distances[0], list):
@@ -126,6 +139,8 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                     else:
                         distance = 0.0
                     similarity_score = 1.0 - min(distance / 2, 1.0)
+                    if boost_jira_id:
+                        similarity_score = 1.0
                 else:
                     distance = 0.0
                     similarity_score = 1.0
