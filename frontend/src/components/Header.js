@@ -2,6 +2,7 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, Menu, MenuItem, IconButton, Tooltip } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
+import { useLocation } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
 import BuildIcon from '@mui/icons-material/Build';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
@@ -14,6 +15,8 @@ import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import CodeIcon from '@mui/icons-material/Code';
 
 const Header = ({ mode, toggleTheme }) => {
+  const location = useLocation();
+  const pathname = location.pathname;
   const [anchorEl, setAnchorEl] = React.useState(null);
 
   const handleToolsClick = (event) => {
@@ -59,7 +62,8 @@ const Header = ({ mode, toggleTheme }) => {
         </Box>
         <Box>
           <Button
-            color="inherit"
+            color={pathname === "/" ? "primary" : "inherit"}
+            variant={pathname === "/" ? "contained" : "text"}
             component={RouterLink}
             to="/"
             startIcon={<HomeIcon />}
@@ -79,7 +83,8 @@ const Header = ({ mode, toggleTheme }) => {
             Home
           </Button>
           <Button
-            color="inherit"
+            color={pathname.startsWith("/ingest-msg-files") ? "primary" : "inherit"}
+            variant={pathname.startsWith("/ingest-msg-files") ? "contained" : "text"}
             component={RouterLink}
             to="/ingest-msg-files"
             startIcon={<AttachEmailIcon />}
@@ -99,7 +104,8 @@ const Header = ({ mode, toggleTheme }) => {
             Ingest Msg
           </Button>
           <Button
-            color="inherit"
+            color={pathname.startsWith("/ingest-jira") ? "primary" : "inherit"}
+            variant={pathname.startsWith("/ingest-jira") ? "contained" : "text"}
             component={RouterLink}
             to="/ingest-jira"
             startIcon={<BugReportIcon />}
@@ -119,7 +125,8 @@ const Header = ({ mode, toggleTheme }) => {
             Ingest Jira
           </Button>
           <Button
-            color="inherit"
+            color={pathname.startsWith("/ingest-confluence") ? "primary" : "inherit"}
+            variant={pathname.startsWith("/ingest-confluence") ? "contained" : "text"}
             component={RouterLink}
             to="/ingest-confluence"
             startIcon={<LibraryBooksIcon />}
@@ -139,7 +146,8 @@ const Header = ({ mode, toggleTheme }) => {
             Ingest Confluence
           </Button>
           <Button
-            color="inherit"
+            color={pathname.startsWith("/ingest-stackoverflow") ? "primary" : "inherit"}
+            variant={pathname.startsWith("/ingest-stackoverflow") ? "contained" : "text"}
             component={RouterLink}
             to="/ingest-stackoverflow"
             startIcon={<CodeIcon />}
@@ -159,7 +167,8 @@ const Header = ({ mode, toggleTheme }) => {
             Ingest StackOverflow
           </Button>
           <Button
-            color="inherit"
+            color={pathname.startsWith("/search") ? "primary" : "inherit"}
+            variant={pathname.startsWith("/search") ? "contained" : "text"}
             component={RouterLink}
             to="/search"
             startIcon={<SearchIcon />}

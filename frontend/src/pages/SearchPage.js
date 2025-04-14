@@ -18,6 +18,7 @@ import {
   Tab
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { BACKEND_API_BASE } from '../settings';
 
 const SearchPage = () => {
   const navigate = useNavigate();
@@ -74,7 +75,7 @@ const SearchPage = () => {
     let issueError = '';
 
     try {
-      const response = await fetch('http://localhost:9000/api/search', {
+      const response = await fetch(`${BACKEND_API_BASE}/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

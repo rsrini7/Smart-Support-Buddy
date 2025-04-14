@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, Paper, Button, CircularProgress, Alert, Grid } from '@mui/material';
+import { BACKEND_API_BASE } from '../settings';
 
 const COLLECTIONS = [
   { name: 'production_issues', label: 'Issues' },
@@ -19,7 +20,7 @@ const ClearChromaPage = () => {
     setError((prev) => ({ ...prev, [collection.name]: '' }));
 
     try {
-      const response = await fetch(`http://localhost:9000/api/chroma-clear/${collection.name}`, {
+      const response = await fetch(`${BACKEND_API_BASE}/chroma-clear/${collection.name}`, {
         method: 'DELETE',
       });
       const data = await response.json();

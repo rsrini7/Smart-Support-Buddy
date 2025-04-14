@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, Button, List, ListItem, ListItemText, Alert, CircularProgress, Paper } from '@mui/material';
+import { BACKEND_API_BASE } from '../settings';
 import { useNavigate } from 'react-router-dom';
 
 const IngestMsgFilesPage = () => {
@@ -21,7 +22,7 @@ const IngestMsgFilesPage = () => {
     setError('');
     setResults([]);
     try {
-      const response = await fetch('http://localhost:9000/api/ingest-msg-dir', {
+      const response = await fetch(`${BACKEND_API_BASE}/ingest-msg-dir`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

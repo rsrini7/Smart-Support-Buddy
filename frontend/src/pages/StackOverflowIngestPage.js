@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert } from '@mui/material';
+import { BACKEND_API_BASE } from '../settings';
 import { useNavigate } from 'react-router-dom';
 
 const StackOverflowIngestPage = () => {
@@ -37,7 +38,7 @@ const StackOverflowIngestPage = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:9000/api/ingest-stackoverflow', {
+      const response = await fetch(`${BACKEND_API_BASE}/ingest-stackoverflow`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

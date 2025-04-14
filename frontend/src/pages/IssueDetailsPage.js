@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { BACKEND_API_BASE } from '../settings';
 import {
   Typography,
   Box,
@@ -52,7 +53,7 @@ const IssueDetailsPage = () => {
     const fetchIssueDetails = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:9000/api/issues/${issueId}`);
+        const response = await fetch(`${BACKEND_API_BASE}/issues/${issueId}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch issue details');
@@ -85,7 +86,7 @@ const IssueDetailsPage = () => {
   const handleDeleteConfirm = async () => {
     setDeleteLoading(true);
     try {
-      const response = await fetch(`http://localhost:9000/api/issues/${issueId}`, {
+      const response = await fetch(`${BACKEND_API_BASE}/issues/${issueId}`, {
         method: 'DELETE',
       });
 
