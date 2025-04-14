@@ -39,7 +39,15 @@ const Header = ({ mode, toggleTheme }) => {
           <img
             src={`${process.env.PUBLIC_URL}/logo192.png`}
             alt="Logo"
-            style={{ height: 40, marginRight: 8, borderRadius: 8, boxShadow: '0 2px 8px rgba(40,80,200,0.10)' }}
+            style={{
+              height: 40,
+              marginRight: 8,
+              borderRadius: 8,
+              boxShadow: '0 2px 8px rgba(40,80,200,0.10)',
+              filter: mode === 'dark' ? 'invert(1)' : 'none',
+              background: mode === 'dark' ? '#23272a' : 'transparent',
+              padding: 2
+            }}
           />
           <Typography variant="h6" component="div" sx={{ fontWeight: 700, letterSpacing: '0.04em' }}>
             Support Buddy

@@ -47,6 +47,15 @@ function App() {
     [mode]
   );
 
+  React.useEffect(() => {
+    const light = '#f5f7fa';
+    const dark = '#181a1b';
+    document.documentElement.style.backgroundColor = mode === 'dark' ? dark : light;
+    document.body.style.backgroundColor = mode === 'dark' ? dark : light;
+    const root = document.getElementById('root');
+    if (root) root.style.backgroundColor = mode === 'dark' ? dark : light;
+  }, [mode]);
+
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>

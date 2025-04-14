@@ -10,7 +10,21 @@ import CodeIcon from '@mui/icons-material/Code';
 const HomePage = () => {
   return (
     <Box>
-      <Paper sx={{ p: 4, mb: 4, backgroundColor: 'primary.light', color: 'white' }}>
+      <Paper
+        sx={{
+          p: 4,
+          mb: 4,
+          background: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, #23272a 0%, #181a1b 100%)'
+              : theme.palette.primary.light,
+          color: (theme) =>
+            theme.palette.mode === 'dark'
+              ? theme.palette.text.primary
+              : 'white',
+          boxShadow: 3,
+        }}
+      >
         <Typography variant="h4" gutterBottom>
           Support Buddy
         </Typography>
