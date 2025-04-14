@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { BACKEND_API_BASE } from '../settings';
+import { BACKEND_API_BASE, CONFLUENCE_URL_PATTERN } from '../settings';
 import { useNavigate } from 'react-router-dom';
 
 const ConfluenceIngestPage = () => {
@@ -35,6 +35,14 @@ const ConfluenceIngestPage = () => {
 
     if (confluenceUrls.length === 0) {
       setError('Please enter at least one Confluence page URLs, separated by commas or new lines');
+      setLoading(false);
+      return;
+    }
+
+    // Validate URLs: must contain configured CONFLUENCE_URL_PATTERN
+    const invalidUrls = confluenceUrls.filter(url => !url.includes(CONFLUENCE_URL_PATTERN));
+    if (invalidUrls.length > 0) {
+      setError('Only URLs containing "' + CONFLUENCE_URL_PATTERN + '" are allowed. Invalid URL(s): ' + invalidUrls.join(', '));
       setLoading(false);
       return;
     }
@@ -137,24 +145,24 @@ const ConfluenceIngestPage = () => {
                     Page ID: {res.page_id}
                   </Typography>
                 )}
-              {res.status === 'success' && res.page_data && (
-                <pre
-                  style={{
-                    background: theme.palette.mode === 'dark'
-                      ? theme.palette.background.paper
-                      : '#f5f5f5',
-                    padding: 8,
-                    marginTop: 8,
-                    fontSize: 12,
-                    color: theme.palette.text.primary,
-                    maxWidth: '100%',
-                    overflowX: 'auto',
-                    whiteSpace: 'pre'
-                  }}
-                >
-                  {JSON.stringify(res.page_data, null, 2)}
-                </pre>
-              )}
+                {res.status === 'success' && res.page_data && (
+                  <pre
+                    style={{
+                      background: theme.palette.mode === 'dark'
+                        ? theme.palette.background.paper
+                        : '#f5f5f5',
+                      padding: 8,
+                      marginTop: 8,
+                      fontSize: 12,
+                      color: theme.palette.text.primary,
+                      maxWidth: '100%',
+                      overflowX: 'auto',
+                      whiteSpace: 'pre'
+                    }}
+                  >
+                    {JSON.stringify(res.page_data, null, 2)}
+                  </pre>
+                )}
               </Paper>
             ))}
           </Box>

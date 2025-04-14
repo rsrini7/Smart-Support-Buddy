@@ -2,10 +2,10 @@ import extract_msg
 import os
 from typing import Dict, Any
 import logging
+import datetime
 
 logger = logging.getLogger(__name__)
 
-import logging
 
 def parse_msg_file(file_path: str) -> Dict[str, Any]:
     """
@@ -73,9 +73,8 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
         
         # Extract headers
         headers = {}
+        # Restore original logic: attempt string split, fallback to str(msg.header), but never attempt to iterate or serialize objects
         if hasattr(msg, "header") and msg.header:
-            # Parse headers into a dictionary
-            # Check if header is a string before attempting to split
             if isinstance(msg.header, str):
                 header_lines = msg.header.split("\n")
                 for line in header_lines:
@@ -83,19 +82,11 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
                         key, value = line.split(": ", 1)
                         headers[key.strip()] = value.strip()
             else:
-                # If header is not a string, try to convert it to string or extract header data another way
-                logger.warning(f"MSG header is not a string type: {type(msg.header)}")
-                # Add header as is if it's a dictionary or try to convert to string
-                if isinstance(msg.header, dict):
-                    headers = msg.header
-                else:
-                    try:
-                        # Try to convert to string if possible
-                        header_str = str(msg.header)
-                        headers["raw_header"] = header_str
-                    except:
-                        # If conversion fails, just log and continue
-                        logger.warning("Could not process header data")
+                # Fallback: just store the string representation, never the object itself
+                try:
+                    headers["raw_header"] = str(msg.header)
+                except Exception as e:
+                    headers["header_error"] = f"Could not convert header to string: {e}"
         
         # Create result dictionary
         result = {
@@ -113,13 +104,44 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
         extracted_details = extract_issue_details(result)
         result.update(extracted_details)
 
+        def make_json_safe(obj):
+            """Recursively convert any object to a JSON-safe primitive."""
+            if isinstance(obj, (str, int, float, bool)) or obj is None:
+                return obj
+            elif isinstance(obj, dict):
+                return {str(k): make_json_safe(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [make_json_safe(v) for v in obj]
+            elif isinstance(obj, tuple):
+                return tuple(make_json_safe(v) for v in obj)
+            elif isinstance(obj, (datetime.datetime, datetime.date)):
+                return obj.isoformat()
+            # PATCH: if someone already called isoformat() on a date and it's a string, just return it
+            elif isinstance(obj, str) and obj.count('-') >= 2 and 'T' in obj:
+                return obj
+            else:
+                # Fallback: just show the type
+                return f"<non-serializable: {type(obj).__name__}>"
+
+        # FINAL PATCH: sanitize all output for JSON serialization
+        result = make_json_safe(result)
+
     except Exception as e:
         logger.error(f"Error inside parse_msg_file for file_path {file_path}: {e}")
-        raise e  # Re-raise the exception for further handling
+        # Always return a JSON-safe error result to the caller, never raise
+        return {
+            "file_path": file_path,
+            "status": "error",
+            "error": str(e),
+            "error_type": type(e).__name__,
+        }
     finally:
         # Close the MSG file
         if 'msg' in locals():
-            msg.close()
+            try:
+                msg.close()
+            except Exception as close_err:
+                logger.warning(f"Error closing MSG file: {close_err}")
     return result
 
 import re

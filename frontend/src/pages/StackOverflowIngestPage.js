@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { BACKEND_API_BASE } from '../settings';
+import { BACKEND_API_BASE, STACKOVERFLOW_URL_PATTERN } from '../settings';
 import { useNavigate } from 'react-router-dom';
 
 const StackOverflowIngestPage = () => {
@@ -35,6 +35,14 @@ const StackOverflowIngestPage = () => {
 
     if (stackoverflowUrls.length === 0) {
       setError('Please enter at least one Stack Overflow question URL');
+      setLoading(false);
+      return;
+    }
+
+    // Validate URLs: must contain configured STACKOVERFLOW_URL_PATTERN
+    const invalidUrls = stackoverflowUrls.filter(url => !url.includes(STACKOVERFLOW_URL_PATTERN));
+    if (invalidUrls.length > 0) {
+      setError('Only URLs containing "' + STACKOVERFLOW_URL_PATTERN + '" are allowed. Invalid URL(s): ' + invalidUrls.join(', '));
       setLoading(false);
       return;
     }
@@ -137,24 +145,24 @@ const StackOverflowIngestPage = () => {
                     IDs: {Array.isArray(res.ids) ? res.ids.join(', ') : res.ids}
                   </Typography>
                 )}
-              {res.status === 'success' && res.stack_data && (
-                <pre
-                  style={{
-                    background: theme.palette.mode === 'dark'
-                      ? theme.palette.background.paper
-                      : '#f5f5f5',
-                    padding: 8,
-                    marginTop: 8,
-                    fontSize: 12,
-                    color: theme.palette.text.primary,
-                    maxWidth: '100%',
-                    overflowX: 'auto',
-                    whiteSpace: 'pre'
-                  }}
-                >
-                  {JSON.stringify(res.stack_data, null, 2)}
-                </pre>
-              )}
+                {res.status === 'success' && res.stack_data && (
+                  <pre
+                    style={{
+                      background: theme.palette.mode === 'dark'
+                        ? theme.palette.background.paper
+                        : '#f5f5f5',
+                      padding: 8,
+                      marginTop: 8,
+                      fontSize: 12,
+                      color: theme.palette.text.primary,
+                      maxWidth: '100%',
+                      overflowX: 'auto',
+                      whiteSpace: 'pre'
+                    }}
+                  >
+                    {JSON.stringify(res.stack_data, null, 2)}
+                  </pre>
+                )}
               </Paper>
             ))}
           </Box>

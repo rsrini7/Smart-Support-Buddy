@@ -135,6 +135,11 @@ const IssueDetailsPage = () => {
     );
   }
 
+  // Helper: Is MSG data actually meaningful?
+  const hasMsgDetails = issue.msg_data && (
+    issue.msg_data.subject || issue.msg_data.sender || (Array.isArray(issue.msg_data.recipients) ? issue.msg_data.recipients.length > 0 : !!issue.msg_data.recipients) || issue.msg_data.body
+  );
+
   return (
     <Box>
       <Box sx={{ mb: 2 }}>
@@ -192,65 +197,57 @@ const IssueDetailsPage = () => {
         
         <Divider sx={{ my: 2 }} />
         
-        <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
-          <Tab label="Overview" />
-          <Tab label="MSG Details" />
-          <Tab label="Jira Details" />
-        </Tabs>
-        
-        {tabValue === 0 && (
-          <Box>
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Description
-                    </Typography>
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                      {issue.description}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              
-
-            </Grid>
-          </Box>
+        {/* Only show tabs if both MSG and Jira data are present and MSG data is meaningful */}
+        {hasMsgDetails && issue.jira_data && (
+          <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
+            <Tab label="MSG Details" />
+            <Tab label="Jira Details" />
+          </Tabs>
         )}
-        
-        {tabValue === 1 && issue.msg_data && (
+
+        {/* Show MSG Details ONLY if there is meaningful MSG data, and either no Jira or the MSG tab is selected */}
+        {hasMsgDetails && (!issue.jira_data || (issue.jira_data && tabValue === 0)) && (
           <Box>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              MSG Details
+            </Typography>
             <Card variant="outlined">
               <CardContent>
-                <Typography variant="subtitle1" gutterBottom>
-                  Subject: {issue.msg_data.subject}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  From: {issue.msg_data.sender}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  To: {Array.isArray(issue.msg_data.recipients) ? issue.msg_data.recipients.join(', ') : issue.msg_data.recipients}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Received: {formatDate(issue.msg_data.received_date)}
-                </Typography>
-                
+                {issue.msg_data.subject && (
+                  <Typography variant="subtitle1" gutterBottom>
+                    Subject: {issue.msg_data.subject}
+                  </Typography>
+                )}
+                {issue.msg_data.sender && (
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    From: {issue.msg_data.sender}
+                  </Typography>
+                )}
+                {(Array.isArray(issue.msg_data.recipients) ? issue.msg_data.recipients.length > 0 : !!issue.msg_data.recipients) && (
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    To: {Array.isArray(issue.msg_data.recipients) ? issue.msg_data.recipients.join(', ') : issue.msg_data.recipients}
+                  </Typography>
+                )}
+                {issue.msg_data.received_date && (
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Received: {formatDate(issue.msg_data.received_date)}
+                  </Typography>
+                )}
                 <Divider sx={{ my: 2 }} />
-                
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                  {issue.msg_data.body}
-                </Typography>
-                
+                {issue.msg_data.body && (
+                  <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                    {issue.msg_data.body}
+                  </Typography>
+                )}
                 {issue.msg_data.attachments && issue.msg_data.attachments.length > 0 && (
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>
-                      Attachments:
+                      Attachments
                     </Typography>
                     <List dense>
-                      {issue.msg_data.attachments.map((attachment, index) => (
-                        <ListItem key={index}>
-                          <ListItemText primary={attachment} />
+                      {issue.msg_data.attachments.map((att, idx) => (
+                        <ListItem key={idx}>
+                          <ListItemText primary={att.fileName} />
                         </ListItem>
                       ))}
                     </List>
@@ -260,9 +257,13 @@ const IssueDetailsPage = () => {
             </Card>
           </Box>
         )}
-        
-        {tabValue === 2 && issue.jira_data && (
+
+        {/* Show Jira Details if present and either no MSG or the Jira tab is selected */}
+        {issue.jira_data && (!hasMsgDetails || (hasMsgDetails && tabValue === 1)) && (
           <Box>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Jira Details
+            </Typography>
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Card variant="outlined">
@@ -293,7 +294,6 @@ const IssueDetailsPage = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              
               <Grid item xs={12} md={6}>
                 <Card variant="outlined">
                   <CardContent>
@@ -308,7 +308,6 @@ const IssueDetailsPage = () => {
                         <ListItemText primary="Reporter" secondary={issue.jira_data.reporter || 'Unknown'} />
                       </ListItem>
                     </List>
-                    
                     <Typography variant="h6" sx={{ mt: 2 }} gutterBottom>
                       Classification
                     </Typography>
@@ -335,7 +334,6 @@ const IssueDetailsPage = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              
               <Grid item xs={12}>
                 <Card variant="outlined">
                   <CardContent>
@@ -352,7 +350,6 @@ const IssueDetailsPage = () => {
                   </CardContent>
                 </Card>
               </Grid>
-
               {issue.jira_data?.comments && issue.jira_data.comments.length > 0 && (
                 <Grid item xs={12}>
                   <Card variant="outlined">
