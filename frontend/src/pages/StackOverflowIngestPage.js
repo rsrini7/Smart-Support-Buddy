@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { BACKEND_API_BASE } from '../settings';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,6 +11,7 @@ const StackOverflowIngestPage = () => {
   const [success, setSuccess] = useState(false);
   const [result, setResult] = useState(null);
   const navigate = useNavigate();
+  const theme = useTheme();
 
   // Accepts comma or newline separated URLs
   const handleUrlChange = (event) => {
@@ -101,11 +103,27 @@ const StackOverflowIngestPage = () => {
           <Box sx={{ mt: 2 }}>
             <Alert severity="success">Ingestion complete. See results below.</Alert>
             {result.results.map((res, idx) => (
-              <Paper key={idx} sx={{ p: 2, mt: 2, background: res.status === 'success' ? '#e8f5e9' : '#ffebee' }}>
+              <Paper
+                key={idx}
+                sx={{
+                  p: 2,
+                  mt: 2,
+                  backgroundColor: res.status === 'success'
+                    ? (theme.palette.mode === 'dark' ? theme.palette.success.dark : '#e8f5e9')
+                    : (theme.palette.mode === 'dark' ? theme.palette.error.dark : '#ffebee')
+                }}
+              >
                 <Typography variant="subtitle1">
                   URL: {res.stackoverflow_url}
                 </Typography>
-                <Typography variant="body2" color={res.status === 'success' ? 'green' : 'red'}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: res.status === 'success'
+                      ? theme.palette.success.main
+                      : theme.palette.error.main
+                  }}
+                >
                   {res.status === 'success' ? res.message : `Error: ${res.message}`}
                 </Typography>
                 {res.status === 'success' && res.ids && (
