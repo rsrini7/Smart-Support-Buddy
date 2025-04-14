@@ -95,12 +95,18 @@ MAX_RETRIES=30
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8090/status")
-    if [ "$HTTP_CODE" -eq 200 ]; then
-        echo "Confluence is ready!"
+    RESPONSE=$(curl -s "http://localhost:8090/status")
+    STATE=$(echo "$RESPONSE" | grep -o '"state":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+    if [ "$STATE" = "RUNNING" ]; then
+        echo "Confluence is ready and running!"
         break
+    elif [ "$STATE" = "FAILED" ]; then
+        echo "Confluence state is FAILED. Restarting confluence container..."
+        docker compose restart confluence
+        echo "Waiting 15 seconds for Confluence to restart..."
+        sleep 15
     else
-        echo "Confluence is still starting up... (HTTP $HTTP_CODE)"
+        echo "Confluence is still starting up or in unknown state: $STATE"
     fi
 
     RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -111,7 +117,7 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
 done
 
 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-    echo "Error: Confluence failed to start after $MAX_RETRIES attempts"
+    echo "Error: Confluence failed to reach RUNNING state after $MAX_RETRIES attempts"
     echo "Please check:
     1. Docker containers are running (docker ps)
     2. Confluence is running on port 8090"
