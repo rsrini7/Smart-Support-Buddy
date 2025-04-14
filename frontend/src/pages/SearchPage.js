@@ -144,7 +144,7 @@ const SearchPage = () => {
 
       <Paper sx={{ p: 3, mb: 4 }}>
         <Typography variant="body1" gutterBottom>
-          Search for support issues / queries by description or Jira ticket ID. Confluence results are shown in a separate tab.
+          Search for support issues / queries by description or Jira ticket ID.
         </Typography>
 
         <Box sx={{ mt: 3 }}>

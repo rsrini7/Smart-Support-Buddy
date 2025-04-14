@@ -86,10 +86,10 @@ const HomePage = () => {
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <MailIcon sx={{ fontSize: 28 }} />
-                MSG File Parsing
+                MSG File Ingest
               </Typography>
               <Typography variant="body2">
-                Upload and parse Microsoft Outlook MSG files containing RCA details
+                Ingest Microsoft Outlook MSG files and parse them to extract RCA details and save into the vector database.
               </Typography>
             </CardContent>
             <CardActions>
@@ -111,10 +111,10 @@ const HomePage = () => {
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <BugReportIcon sx={{ fontSize: 28 }} />
-                Jira Integration
+                Jira Details Ingest
               </Typography>
               <Typography variant="body2">
-                Link issues with Jira tickets to correlate information and track resolution
+                Ingest Jira ticket details into the vector database by providing either the Jira ID or Jira URL to enable information correlation and resolution tracking.
               </Typography>
             </CardContent>
             <CardActions>
