@@ -15,8 +15,10 @@ from pydantic import BaseModel
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+from typing import List
+
 class JiraIngestRequest(BaseModel):
-    jira_ticket_id: str
+    jira_ticket_ids: List[str]
 
 router = APIRouter()
 
@@ -61,14 +63,16 @@ from app.services.stackoverflow_service import (
     search_similar_stackoverflow_content
 )
 
+from typing import List
+
 class ConfluenceIngestRequest(BaseModel):
-    confluence_url: str
+    confluence_urls: List[str]
 
 class ConfluenceSearchRequest(BaseModel):
     query_text: str
     limit: int = 10
 class StackOverflowIngestRequest(BaseModel):
-    stackoverflow_url: str
+    stackoverflow_urls: List[str]
 
 class StackOverflowSearchRequest(BaseModel):
     query_text: str
@@ -92,61 +96,103 @@ async def get_jira_ticket_info(ticket_id: str):
 @router.post("/ingest-confluence", response_model=Dict[str, Any])
 async def ingest_confluence_page(payload: ConfluenceIngestRequest):
     """
-    Ingest a Confluence page by URL and store its embedding in the vector DB.
+    Ingest multiple Confluence pages by URL and store their embeddings in the vector DB.
     """
-    try:
-        page_id = add_confluence_page_to_vectordb(payload.confluence_url)
-        if not page_id:
-            raise HTTPException(status_code=500, detail="Failed to ingest Confluence page")
-        return {
-            "status": "success",
-            "message": "Confluence page ingested successfully",
-            "page_id": page_id
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    results = []
+    for url in payload.confluence_urls:
+        try:
+            page_id = add_confluence_page_to_vectordb(url)
+            if not page_id:
+                results.append({
+                    "confluence_url": url,
+                    "status": "error",
+                    "message": "Failed to ingest Confluence page"
+                })
+                continue
+            results.append({
+                "confluence_url": url,
+                "status": "success",
+                "message": "Confluence page ingested successfully",
+                "page_id": page_id
+            })
+        except Exception as e:
+            results.append({
+                "confluence_url": url,
+                "status": "error",
+                "message": str(e)
+            })
+    return {
+        "results": results
+    }
     
 @router.post("/ingest-stackoverflow", response_model=Dict[str, Any])
 async def ingest_stackoverflow_qa(payload: StackOverflowIngestRequest):
     """
-    Ingest a Stack Overflow Q&A by URL and store its embedding in the vector DB.
+    Ingest multiple Stack Overflow Q&A by URL and store their embeddings in the vector DB.
     """
-    try:
-        ids = add_stackoverflow_qa_to_vectordb(payload.stackoverflow_url)
-        if not ids:
-            raise HTTPException(status_code=500, detail="Failed to ingest Stack Overflow Q&A")
-        return {
-            "status": "success",
-            "message": "Stack Overflow Q&A ingested successfully",
-            "ids": ids
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    results = []
+    for url in payload.stackoverflow_urls:
+        try:
+            ids = add_stackoverflow_qa_to_vectordb(url)
+            if not ids:
+                results.append({
+                    "stackoverflow_url": url,
+                    "status": "error",
+                    "message": "Failed to ingest Stack Overflow Q&A"
+                })
+                continue
+            results.append({
+                "stackoverflow_url": url,
+                "status": "success",
+                "message": "Stack Overflow Q&A ingested successfully",
+                "ids": ids
+            })
+        except Exception as e:
+            results.append({
+                "stackoverflow_url": url,
+                "status": "error",
+                "message": str(e)
+            })
+    return {
+        "results": results
+    }
 
 @router.post("/ingest-jira", response_model=Dict[str, Any])
 async def ingest_jira_ticket(payload: JiraIngestRequest):
     """
-    Ingest a Jira ticket by ID and embed it into the Chroma vector database.
+    Ingest multiple Jira tickets by ID and embed them into the Chroma vector database.
     """
-    try:
-        from app.services.jira_service import get_jira_ticket
-        from app.services.vector_service import add_issue_to_vectordb
+    from app.services.jira_service import get_jira_ticket
+    from app.services.vector_service import add_issue_to_vectordb
 
-        jira_data = get_jira_ticket(payload.jira_ticket_id)
-        if not jira_data:
-            raise HTTPException(status_code=404, detail=f"Jira ticket {payload.jira_ticket_id} not found or could not be fetched")
-
-        issue_id = add_issue_to_vectordb(jira_data=jira_data)
-        return {
-            "status": "success",
-            "message": f"Jira ticket {payload.jira_ticket_id} ingested successfully",
-            "issue_id": issue_id,
-            "jira_data": jira_data
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    results = []
+    for jira_id in payload.jira_ticket_ids:
+        try:
+            jira_data = get_jira_ticket(jira_id)
+            if not jira_data:
+                results.append({
+                    "jira_ticket_id": jira_id,
+                    "status": "error",
+                    "message": f"Jira ticket {jira_id} not found or could not be fetched"
+                })
+                continue
+            issue_id = add_issue_to_vectordb(jira_data=jira_data)
+            results.append({
+                "jira_ticket_id": jira_id,
+                "status": "success",
+                "message": f"Jira ticket {jira_id} ingested successfully",
+                "issue_id": issue_id,
+                "jira_data": jira_data
+            })
+        except Exception as e:
+            results.append({
+                "jira_ticket_id": jira_id,
+                "status": "error",
+                "message": str(e)
+            })
+    return {
+        "results": results
+    }
 
 @router.post("/search-stackoverflow", response_model=Dict[str, Any])
 async def search_stackoverflow_qa(payload: StackOverflowSearchRequest):

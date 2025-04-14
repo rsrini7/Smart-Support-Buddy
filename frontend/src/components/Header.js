@@ -8,6 +8,10 @@ import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
+import AttachEmailIcon from '@mui/icons-material/AttachEmail';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import CodeIcon from '@mui/icons-material/Code';
 
 const Header = ({ mode, toggleTheme }) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -73,6 +77,86 @@ const Header = ({ mode, toggleTheme }) => {
             }}
           >
             Home
+          </Button>
+          <Button
+            color="inherit"
+            component={RouterLink}
+            to="/ingest-msg-files"
+            startIcon={<AttachEmailIcon />}
+            sx={{
+              borderRadius: 2,
+              mx: 0.5,
+              px: 2,
+              fontWeight: 600,
+              textTransform: 'none',
+              transition: 'background 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                background: 'rgba(255,255,255,0.10)',
+                boxShadow: '0 2px 8px rgba(40,80,200,0.10)'
+              }
+            }}
+          >
+            Ingest Msg
+          </Button>
+          <Button
+            color="inherit"
+            component={RouterLink}
+            to="/ingest-jira"
+            startIcon={<BugReportIcon />}
+            sx={{
+              borderRadius: 2,
+              mx: 0.5,
+              px: 2,
+              fontWeight: 600,
+              textTransform: 'none',
+              transition: 'background 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                background: 'rgba(255,255,255,0.10)',
+                boxShadow: '0 2px 8px rgba(40,80,200,0.10)'
+              }
+            }}
+          >
+            Ingest Jira
+          </Button>
+          <Button
+            color="inherit"
+            component={RouterLink}
+            to="/ingest-confluence"
+            startIcon={<LibraryBooksIcon />}
+            sx={{
+              borderRadius: 2,
+              mx: 0.5,
+              px: 2,
+              fontWeight: 600,
+              textTransform: 'none',
+              transition: 'background 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                background: 'rgba(255,255,255,0.10)',
+                boxShadow: '0 2px 8px rgba(40,80,200,0.10)'
+              }
+            }}
+          >
+            Ingest Confluence
+          </Button>
+          <Button
+            color="inherit"
+            component={RouterLink}
+            to="/ingest-stackoverflow"
+            startIcon={<CodeIcon />}
+            sx={{
+              borderRadius: 2,
+              mx: 0.5,
+              px: 2,
+              fontWeight: 600,
+              textTransform: 'none',
+              transition: 'background 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                background: 'rgba(255,255,255,0.10)',
+                boxShadow: '0 2px 8px rgba(40,80,200,0.10)'
+              }
+            }}
+          >
+            Ingest StackOverflow
           </Button>
           <Button
             color="inherit"
