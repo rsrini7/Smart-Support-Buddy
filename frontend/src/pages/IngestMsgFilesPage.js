@@ -50,7 +50,7 @@ const IngestMsgFilesPage = () => {
 
   return (
     <Box>
-      <Paper sx={{ p: 4, mb: 4, maxWidth: 600, mx: 'auto', mt: 6 }}>
+      <Paper sx={{ p: 4, mb: 4, maxWidth: '70vw', mx: 'auto', mt: 6 }}>
         <Button variant="outlined" onClick={() => navigate(-1)} sx={{ mb: 2 }}>
           Back
         </Button>
