@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from app.core.config import settings
 from app.services.msg_parser import parse_msg_file
 from app.services.jira_service import get_jira_ticket
-from app.services.vector_service import search_similar_issues, add_issue_to_vectordb, delete_issue
+from app.services.vector_service import search_similar_issues, add_issue_to_vectordb, delete_issue, get_all_chroma_collections_data
 from app.db.models import IssueCreate, IssueResponse, SearchQuery
 from pydantic import BaseModel
 
@@ -360,17 +360,19 @@ async def clear_chroma_collection(collection_name: str):
     """
     from app.services.vector_service import clear_collection
     try:
-        clear_collection(collection_name)
-        return {"status": "success", "message": f"All data cleared from collection '{collection_name}'."}
+        result = clear_collection(collection_name)
+        return {"success": result}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to clear collection '{collection_name}': {str(e)}")
-    try:
-        clear_collection(collection_name)
-        return {"status": "success", "message": f"All data cleared from collection '{collection_name}'."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to clear collection '{collection_name}': {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to clear ChromaDB: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/chroma-collections")
+async def get_chroma_collections():
+    """
+    Get all ChromaDB collections and their documents.
+    """
+    data = get_all_chroma_collections_data()
+    return {"collections": data}
+    
 @router.delete("/issues/{issue_id}")
 async def delete_production_issue(issue_id: str):
     """Delete a RCA"""

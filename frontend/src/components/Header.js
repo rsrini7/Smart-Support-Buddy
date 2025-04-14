@@ -15,6 +15,7 @@ import BugReportIcon from '@mui/icons-material/BugReport';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import CodeIcon from '@mui/icons-material/Code';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import TableChartIcon from '@mui/icons-material/TableChart';
 
 const Header = ({ mode, toggleTheme }) => {
   const theme = useTheme();
@@ -282,7 +283,28 @@ const Header = ({ mode, toggleTheme }) => {
               </Box>
               Config
             </MenuItem>
-          </Menu>
+          <MenuItem
+            component={RouterLink}
+            to="/admin-chroma"
+            onClick={handleClose}
+            sx={{
+              borderRadius: 1.5,
+              fontWeight: 500,
+              gap: 1,
+              px: 2,
+              my: 0.5,
+              transition: 'background 0.2s',
+              '&:hover': {
+                background: 'linear-gradient(90deg, #6a11cb22 0%, #2575fc22 100%)'
+              }
+            }}
+          >
+            <Box component="span" sx={{ minWidth: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <TableChartIcon sx={{ color: theme.palette.primary.main }} />
+            </Box>
+            Admin Chroma
+          </MenuItem>
+        </Menu>
         </Box>
         <Box sx={{ ml: 2 }}>
           <Tooltip title={mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>

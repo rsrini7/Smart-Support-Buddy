@@ -9,11 +9,12 @@ import chromadb
 from chromadb.utils import embedding_functions
 import hashlib
 
+logger = logging.getLogger(__name__)
+
 
 from app.core.config import settings
 from app.db.models import IssueResponse
 
-logger = logging.getLogger(__name__)
 
 # Initialize the vector database client
 def get_vector_db_client():
@@ -31,6 +32,52 @@ def get_vector_db_client():
         return client
     except Exception as e:
         logger.error(f"Error initializing vector database client: {str(e)}")
+def get_all_chroma_collections_data() -> list:
+    """
+    Get all ChromaDB collections and their documents.
+    Returns:
+        List of dicts, each with collection name and documents.
+    """
+    try:
+        client = get_vector_db_client()
+        collections = client.list_collections()
+        logger.info(f"ChromaDB list_collections() returned: {collections}")
+        all_data = []
+        for col_name in collections:
+            collection = client.get_collection(col_name)
+            # Get all documents in the collection
+            docs = collection.get()
+            if docs is None:
+                logger.error(f"ChromaDB collection.get() returned None for collection: {col_name}")
+                all_data.append({
+                    "collection_name": col_name,
+                    "records": []
+                })
+                continue
+            # docs is a dict with keys: ids, embeddings, documents, metadatas
+            # We'll combine these into a list of dicts per record
+            ids = docs.get("ids") or []
+            embeddings = docs.get("embeddings") or [None] * len(ids)
+            documents = docs.get("documents") or [None] * len(ids)
+            metadatas = docs.get("metadatas") or [None] * len(ids)
+            num_records = len(ids)
+            records = []
+            for i in range(num_records):
+                record = {
+                    "id": ids[i],
+                    "embedding": embeddings[i] if i < len(embeddings) else None,
+                    "document": documents[i] if i < len(documents) else None,
+                    "metadata": metadatas[i] if i < len(metadatas) else None,
+                }
+                records.append(record)
+            all_data.append({
+                "collection_name": col_name,
+                "records": records
+            })
+        return all_data
+    except Exception as e:
+        logging.error(f"Error fetching ChromaDB collections data: {str(e)}")
+        return []
         raise
 
 # Initialize the embedding model

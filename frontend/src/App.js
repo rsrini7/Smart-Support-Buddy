@@ -16,6 +16,7 @@ import StackOverflowIngestPage from './pages/StackOverflowIngestPage';
 import JiraIngestPage from './pages/JiraIngestPage';
 import ClearChromaPage from './pages/ClearChromaPage';
 import ConfigPage from './pages/ConfigPage';
+import AdminChromaPage from './pages/AdminChromaPage';
 
 function App() {
   const [mode, setMode] = useState('light');
@@ -71,6 +72,7 @@ function App() {
             <Route path="/ingest-jira" element={<JiraIngestPage />} />
             <Route path="/clear-chroma" element={<ClearChromaPage />} />
             <Route path="/config" element={<ConfigPage />} />
+           <Route path="/admin-chroma" element={<AdminChromaPage />} />
           </Routes>
         </Container>
         <Footer />
