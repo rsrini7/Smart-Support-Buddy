@@ -415,46 +415,12 @@ async def delete_production_issue(issue_id: str):
 class IngestDirRequest(BaseModel):
     directory_path: str
 
-@router.post("/ingest-msg-dir", response_model=Dict[str, Any])
-async def ingest_msg_directory(payload: IngestDirRequest):
-    """
-    Ingest all .msg files from a directory path.
-    """
-    import glob
-    import traceback
 
-    directory_path = payload.directory_path
-
-    directory_path = os.path.expanduser(directory_path)
-    logger.info(f"Ingesting directory: {directory_path}")
-    if not directory_path or not os.path.isdir(directory_path):
-        raise HTTPException(status_code=400, detail="Invalid directory path")
-
-    msg_files = glob.glob(os.path.join(directory_path, "*.msg"))
-    logger.info(f"Found {len(msg_files)}")
-    results = []
-    for file_path in msg_files:
-        try:
-            logger.info(f"Parsing file: {file_path}")
-            msg_data = parse_msg_file(file_path)
-            # If parser returns error, do NOT add to vectordb, just append error result
-            if isinstance(msg_data, dict) and msg_data.get("status") == "error":
-                results.append({"file": file_path, **msg_data})
-                continue
-            issue_id = add_issue_to_vectordb(msg_data=msg_data)
-            logger.info(f"Ingested file: {file_path}, issue_id: {issue_id}")
-            results.append({"file": file_path, "status": "success", "issue_id": issue_id})
-        except Exception as e:
-            results.append({"file": file_path, "status": "error", "error": str(e), "traceback": traceback.format_exc()})
-            continue
-
-    return {"status": "completed", "total_files": len(msg_files), "results": results}
-
-@router.post("/ingest-msg-dir2")
+@router.post("/ingest-msg-dir")
 async def ingest_msg_dir(files: List[UploadFile] = File(...)):
     import traceback
     try:
-        logger.info(f"/ingest-msg-dir2 called. Number of files received: {len(files)}")
+        logger.info(f"/ingest-msg-dir called. Number of files received: {len(files)}")
         for idx, file in enumerate(files):
             logger.info(f"File {idx}: filename={file.filename}, content_type={file.content_type}")
         with tempfile.TemporaryDirectory() as temp_dir:

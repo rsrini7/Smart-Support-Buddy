@@ -32,7 +32,7 @@ const IngestMsgFilesPage = () => {
       files.forEach((file) => {
         formData.append('files', file);
       });
-      const response = await fetch(`${BACKEND_API_BASE}/ingest-msg-dir2`, {
+      const response = await fetch(`${BACKEND_API_BASE}/ingest-msg-dir`, {
         method: 'POST',
         body: formData,
       });
