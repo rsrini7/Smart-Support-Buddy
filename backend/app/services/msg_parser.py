@@ -8,44 +8,27 @@ logger = logging.getLogger(__name__)
 
 
 def parse_msg_file(file_path: str) -> Dict[str, Any]:
-    """
     logger = logging.getLogger(__name__)
     logger.info(f"parse_msg_file called with file_path: {file_path}")
     try:
-    Parse an Outlook MSG file and extract relevant information.
-    
-    Args:
-        file_path: Path to the MSG file
-        
-    Returns:
-        Dictionary containing extracted information from the MSG file
-    """
-    logger = logging.getLogger(__name__)
-    logger.info(f"parse_msg_file called with file_path: {file_path}")
-
-    try:
-        # Check if file exists
+        logger.info(f"Checking if file exists: {file_path}")
         if not os.path.exists(file_path):
             logger.error(f"File not found or invalid path: {file_path}")
             raise FileNotFoundError(f"MSG file not found at {file_path}")
-            
-        # Open the MSG file
+        logger.info(f"Opening MSG file: {file_path}")
         msg = extract_msg.Message(file_path)
-        
-        # Extract basic information
+        logger.info(f"MSG file opened: {file_path}")
         subject = msg.subject or "No Subject"
         sender = msg.sender or "Unknown Sender"
         body = msg.body or ""
-        
-        # Parse recipients
+        logger.info(f"Extracted subject: {subject}, sender: {sender}")
         recipients = []
         if msg.to is not None:
             if isinstance(msg.to, list):
                 recipients.extend(msg.to)
             else:
                 recipients.append(msg.to)
-                
-        # Parse received date
+        logger.info(f"Recipients: {recipients}")
         received_date = None
         if msg.date is not None:
             received_date = msg.date
@@ -54,26 +37,23 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
         elif getattr(msg, 'delivery_time', None) is not None:
             received_date = msg.delivery_time
         else:
-            # Fallback: use current datetime if no date info found
             from datetime import datetime as dt
             received_date = dt.now()
             logger.debug("[msg_parser] No date info found, using current datetime as received_date fallback")
-            
-        # Extract attachments
+        logger.info(f"Received date: {received_date}")
         attachments = []
         attachment_dir = os.path.join(os.path.dirname(file_path), "attachments", os.path.basename(file_path).split(".")[0])
         os.makedirs(attachment_dir, exist_ok=True)
-        
+        logger.info(f"Attachment directory: {attachment_dir}")
         for attachment in msg.attachments:
+            logger.info(f"Processing attachment: {getattr(attachment, 'longFilename', None)}")
             if attachment.longFilename:
                 attachment_path = os.path.join(attachment_dir, attachment.longFilename)
                 with open(attachment_path, "wb") as f:
                     f.write(attachment.data)
                 attachments.append(attachment_path)
-        
-        # Extract headers
+        logger.info(f"Attachments saved: {attachments}")
         headers = {}
-        # Restore original logic: attempt string split, fallback to str(msg.header), but never attempt to iterate or serialize objects
         if hasattr(msg, "header") and msg.header:
             if isinstance(msg.header, str):
                 header_lines = msg.header.split("\n")
@@ -82,13 +62,11 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
                         key, value = line.split(": ", 1)
                         headers[key.strip()] = value.strip()
             else:
-                # Fallback: just store the string representation, never the object itself
                 try:
                     headers["raw_header"] = str(msg.header)
                 except Exception as e:
                     headers["header_error"] = f"Could not convert header to string: {e}"
-        
-        # Create result dictionary
+        logger.info(f"Headers extracted: {headers}")
         result = {
             "file_path": file_path,
             "subject": subject,
@@ -99,13 +77,11 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
             "attachments": attachments,
             "headers": headers
         }
-        
-        # Extract additional issue details (Jira ID, root cause, solution)
+        logger.info(f"Basic MSG data extracted for {file_path}")
         extracted_details = extract_issue_details(result)
+        logger.info(f"Extracted issue details: {extracted_details}")
         result.update(extracted_details)
-
         def make_json_safe(obj):
-            """Recursively convert any object to a JSON-safe primitive."""
             if isinstance(obj, (str, int, float, bool)) or obj is None:
                 return obj
             elif isinstance(obj, dict):
@@ -116,33 +92,32 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
                 return tuple(make_json_safe(v) for v in obj)
             elif isinstance(obj, (datetime.datetime, datetime.date)):
                 return obj.isoformat()
-            # PATCH: if someone already called isoformat() on a date and it's a string, just return it
             elif isinstance(obj, str) and obj.count('-') >= 2 and 'T' in obj:
                 return obj
             else:
-                # Fallback: just show the type
                 return f"<non-serializable: {type(obj).__name__}>"
-
-        # FINAL PATCH: sanitize all output for JSON serialization
         result = make_json_safe(result)
-
+        logger.info(f"Final result for {file_path}: {result}")
     except Exception as e:
-        logger.error(f"Error inside parse_msg_file for file_path {file_path}: {e}")
-        # Always return a JSON-safe error result to the caller, never raise
+        error_msg = str(e) or "Unknown backend error"
+        error_type = type(e).__name__ if e else "UnknownError"
+        logger.error(f"Error inside parse_msg_file for file_path {file_path}: {error_msg}")
+        import traceback
+        logger.error(traceback.format_exc())
         return {
             "file_path": file_path,
             "status": "error",
-            "error": str(e),
-            "error_type": type(e).__name__,
+            "error": error_msg,
+            "error_type": error_type,
         }
     finally:
-        # Close the MSG file
         if 'msg' in locals():
             try:
                 msg.close()
             except Exception as close_err:
                 logger.warning(f"Error closing MSG file: {close_err}")
     return result
+
 
 import re
 

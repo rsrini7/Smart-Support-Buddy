@@ -8,7 +8,7 @@ NC="\033[0m" # No Color
 # Function to check if ChromaDB is healthy
 check_health() {
     for i in {1..30}; do
-        if curl -s http://localhost:8000/api/v1/heartbeat > /dev/null; then
+        if curl -s http://localhost:8000/api/v2/heartbeat > /dev/null; then
             echo -e "${GREEN}ChromaDB is healthy!${NC}"
             return 0
         fi

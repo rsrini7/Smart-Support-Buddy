@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from app.services.vector_service import get_issue as get_issue_from_service
 from typing import List, Dict, Any
 import os
 import logging
 from pydantic import BaseModel
+import shutil
+import tempfile
 
 from app.core.config import settings
 from app.services.msg_parser import parse_msg_file
@@ -447,3 +449,45 @@ async def ingest_msg_directory(payload: IngestDirRequest):
             continue
 
     return {"status": "completed", "total_files": len(msg_files), "results": results}
+
+@router.post("/ingest-msg-dir2")
+async def ingest_msg_dir(files: List[UploadFile] = File(...)):
+    import traceback
+    try:
+        logger.info(f"/ingest-msg-dir2 called. Number of files received: {len(files)}")
+        for idx, file in enumerate(files):
+            logger.info(f"File {idx}: filename={file.filename}, content_type={file.content_type}")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            saved_file_paths = []
+            for file in files:
+                try:
+                    file_path = os.path.join(temp_dir, file.filename)
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                    logger.info(f"Saving uploaded file: {file_path}")
+                    with open(file_path, "wb") as f:
+                        f.write(await file.read())
+                    saved_file_paths.append(file_path)
+                except Exception as file_save_err:
+                    logger.error(f"Error saving file {file.filename}: {file_save_err}")
+                    logger.error(traceback.format_exc())
+            results = []
+            for file_path in saved_file_paths:
+                logger.info(f"Calling parse_msg_file for: {file_path}")
+                msg_data = parse_msg_file(file_path)
+                if isinstance(msg_data, dict) and msg_data.get("status") == "error":
+                    results.append(msg_data)
+                    continue
+                try:
+                    issue_id = add_issue_to_vectordb(msg_data=msg_data)
+                    msg_data["issue_id"] = issue_id
+                    msg_data["status"] = "success"
+                except Exception as e:
+                    msg_data["status"] = "error"
+                    msg_data["error"] = str(e)
+                results.append(msg_data)
+            logger.info(f"Ingestion complete. Results: {results}")
+            return {"status": "success", "results": results}
+    except Exception as e:
+        logger.error(f"Error in ingest_msg_dir: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error ingesting MSG files: {str(e)}")

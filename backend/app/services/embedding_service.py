@@ -15,7 +15,8 @@ def get_embedding_model():
     global _model_instance
     if _model_instance is None:
         try:
-            _model_instance = SentenceTransformer(settings.EMBEDDING_MODEL)
+            # Always load on CPU
+            _model_instance = SentenceTransformer(settings.EMBEDDING_MODEL, device='cpu')
         except Exception as e:
             logger.error(f"Error initializing embedding model: {str(e)}")
             raise

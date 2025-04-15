@@ -9,7 +9,7 @@
     <url>jdbc:postgresql://postgres:5432/jira</url>
     <driver-class>org.postgresql.Driver</driver-class>
     <username>jira</username>
-    <password>{ATL_SECURED}</password>
+    <password>jira</password>
     <pool-min-size>40</pool-min-size>
     <pool-max-size>40</pool-max-size>
     <pool-max-wait>30000</pool-max-wait>
