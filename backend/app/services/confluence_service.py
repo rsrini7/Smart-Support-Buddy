@@ -22,7 +22,8 @@ def get_vector_db_client():
 
 def get_embedding_model():
     try:
-        model = SentenceTransformer(settings.EMBEDDING_MODEL)
+        # Always load on CPU
+        model = SentenceTransformer(settings.EMBEDDING_MODEL, device='cpu')
         return model
     except Exception as e:
         logger.error(f"Error initializing embedding model: {str(e)}")
