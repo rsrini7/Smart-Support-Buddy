@@ -1,6 +1,7 @@
 import chromadb
 import logging
 from app.core.config import settings
+from chromadb.config import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -9,8 +10,7 @@ def get_vector_db_client(db_path: str = None):
     Returns a ChromaDB PersistentClient. Uses settings.VECTOR_DB_PATH if db_path is not provided.
     """
     try:
-        chromadb.configure(anonymized_telemetry=False)
-        client = chromadb.PersistentClient(path=db_path or settings.VECTOR_DB_PATH)
+        client = chromadb.PersistentClient(path=db_path or settings.VECTOR_DB_PATH, settings=Settings(anonymized_telemetry=False))
         return client
     except Exception as e:
         logger.error(f"Error initializing vector database client: {str(e)}")
