@@ -18,7 +18,7 @@ docker compose up -d chroma postgres jira confluence-postgres confluence
 
 # Wait for ChromaDB to be healthy
 echo "Waiting for ChromaDB to be healthy..."
-until curl -s -f "http://localhost:8000/api/v1/heartbeat" > /dev/null 2>&1; do
+until curl -s -f "http://localhost:8000/api/v2/heartbeat" > /dev/null 2>&1; do
     echo "Waiting for ChromaDB..."
     sleep 5
 done
@@ -133,7 +133,7 @@ fi
 # Create virtual environment if it doesn't exist
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."
-    uv venv venv
+    uv venv --python 3.10 venv
 fi
 
 # Activate virtual environment

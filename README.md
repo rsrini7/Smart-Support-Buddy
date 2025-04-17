@@ -240,3 +240,8 @@ Support Buddy provides a comprehensive solution for support issue management thr
 1. **Knowledge Integration**: MSG file parsing, Jira synchronization, Confluence integration, StackOverflow Q&A ingestion, automatic deduplication
 2. **Intelligent Search**: Vector-based semantic search, configurable similarity, cross-source aggregation, real-time ranking
 3. **Modern Architecture**: Containerized microservices, vector database, React UI, extensible API design
+
+## Troubleshoot
+
+1. update ATL_SECURED to the password what you configure during its db setup in dbconfig.xml
+2. confluence is not starting with 5433 port with its confluence-postgres. update its port as 5432 and start docker compose up -d confluence to do the initial setup, once done revert back to its port. use start_backend.sh to start normally.

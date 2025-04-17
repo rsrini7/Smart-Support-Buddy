@@ -14,6 +14,7 @@ const IngestMsgFilesPage = () => {
 
   const handleFolderSelect = (event) => {
     const selectedFiles = Array.from(event.target.files).filter(file => file.name.endsWith('.msg'));
+    console.log('Selected files:', selectedFiles); // Log the selected files
     setFiles(selectedFiles);
     setResults([]);
     setError('');
@@ -24,25 +25,24 @@ const IngestMsgFilesPage = () => {
     setError('');
     setResults([]);
     try {
+      if (files.length === 0) {
+        throw new Error('No files selected');
+      }
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
       const response = await fetch(`${BACKEND_API_BASE}/ingest-msg-dir`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ directory_path: "/Users/srini/Downloads/msgfiles" }),
+        body: formData,
       });
       if (!response.ok) {
         throw new Error('Failed to ingest directory');
       }
       const data = await response.json();
-      console.log('Ingest directory response:', data);
-      if (data.results && Array.isArray(data.results)) {
-        setResults(data.results);
-      } else {
-        setResults([]);
-      }
+      console.log('Backend response:', data); // Debug: log backend response
+      setResults(data.results || []);
     } catch (err) {
-      console.error('Ingest directory error:', err);
       setResults([{ file: 'Directory', status: 'error', error: err.message }]);
     }
     setLoading(false);
@@ -116,24 +116,24 @@ const IngestMsgFilesPage = () => {
                 >
                   <ListItem disableGutters>
                     <ListItemText
-                      primary={result.file}
+                      primary={result.file || result.file_path}
                       secondary={
                         <span
                           style={{
                             color:
                               theme.palette.mode === 'dark'
-                                ? (result.status === 'success'
-                                    ? theme.palette.success.light
-                                    : theme.palette.error.light)
-                                : (result.status === 'success'
-                                    ? theme.palette.success.main
-                                    : theme.palette.error.main),
+                                ? (result.status === 'error'
+                                    ? theme.palette.error.light
+                                    : theme.palette.success.light)
+                                : (result.status === 'error'
+                                    ? theme.palette.error.main
+                                    : theme.palette.success.main),
                             fontWeight: 'bold'
                           }}
                         >
-                          {result.status === 'success'
-                            ? `Success - Issue ID: ${result.issue_id ?? 'N/A'}`
-                            : `Error: ${result.error}`}
+                          {result.status === 'error'
+                            ? `Error: ${result.error || result.error_type || 'Unknown error'}`
+                            : `Success - Issue ID: ${result.issue_id ?? 'N/A'}`}
                         </span>
                       }
                     />
