@@ -97,17 +97,6 @@ class TestRoutes:
         assert result["status"] == "success"
         assert "test_1" in result["message"]
 
-    @patch('app.services.vector_service.clear_all_issues')
-    def test_clear_chroma_db(self, mock_clear):
-        mock_clear.return_value = True
-
-        response = client.delete("/api/chroma-clear")
-        
-        assert response.status_code == 200
-        result = response.json()
-        assert result["status"] == "success"
-        assert "cleared" in result["message"]
-
     @patch('app.services.msg_parser.parse_msg_file')
     @patch('app.services.vector_service.add_issue_to_vectordb')
     def test_ingest_msg_directory(self, mock_add_to_vectordb, mock_parse_msg):

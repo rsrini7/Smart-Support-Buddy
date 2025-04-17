@@ -5,6 +5,7 @@ import os
 import logging
 from pydantic import BaseModel
 import tempfile
+from fastapi import Body
 
 from app.core.config import settings
 from app.services.msg_parser import parse_msg_file
@@ -14,22 +15,44 @@ from app.models import  IssueResponse, SearchQuery
 from pydantic import BaseModel
 from app.services.vector_service import clear_collection
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+from app.services.confluence_service import (
+    add_confluence_page_to_vectordb,
+    search_similar_confluence_pages
+)
 
-from typing import List
+from app.services.stackoverflow_service import (
+    add_stackoverflow_qa_to_vectordb,
+    search_similar_stackoverflow_content
+)
+
 
 class JiraIngestRequest(BaseModel):
     jira_ticket_ids: List[str]
 
-router = APIRouter()
-
-# --- SIMILARITY THRESHOLD CONFIG ENDPOINTS ---
-
-from fastapi import Body
+class IngestDirRequest(BaseModel):
+    directory_path: str
 
 class SimilarityThresholdRequest(BaseModel):
     similarity_threshold: float
+
+class ConfluenceIngestRequest(BaseModel):
+    confluence_urls: List[str]
+
+class ConfluenceSearchRequest(BaseModel):
+    query_text: str
+    limit: int = 10
+class StackOverflowIngestRequest(BaseModel):
+    stackoverflow_urls: List[str]
+
+class StackOverflowSearchRequest(BaseModel):
+    query_text: str
+    limit: int = 10
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+router = APIRouter()
 
 @router.get("/config/similarity-threshold")
 async def get_similarity_threshold():
@@ -51,34 +74,6 @@ async def set_similarity_threshold(payload: SimilarityThresholdRequest = Body(..
         return {"status": "success", "similarity_threshold": value}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid value: {e}")
-
-
-# Import Confluence service
-from app.services.confluence_service import (
-    add_confluence_page_to_vectordb,
-    search_similar_confluence_pages
-)
-
-# Import Stack Overflow service
-from app.services.stackoverflow_service import (
-    add_stackoverflow_qa_to_vectordb,
-    search_similar_stackoverflow_content
-)
-
-from typing import List
-
-class ConfluenceIngestRequest(BaseModel):
-    confluence_urls: List[str]
-
-class ConfluenceSearchRequest(BaseModel):
-    query_text: str
-    limit: int = 10
-class StackOverflowIngestRequest(BaseModel):
-    stackoverflow_urls: List[str]
-
-class StackOverflowSearchRequest(BaseModel):
-    query_text: str
-    limit: int = 10
 
 @router.get("/jira-ticket/{ticket_id}", response_model=Dict[str, Any])
 async def get_jira_ticket_info(ticket_id: str):
@@ -367,18 +362,6 @@ async def get_issue(issue_id: str):
         # Only raise 500 for truly fatal errors (not for missing Jira data)
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/chroma-clear")
-async def clear_chroma_db():
-    """
-    Delete all data from the ChromaDB 'issues' collection.
-    """
-    from app.services.vector_service import clear_all_issues
-    try:
-        clear_collection("issues")
-        return {"status": "success", "message": "All ChromaDB data cleared."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to clear ChromaDB: {str(e)}")
-
 @router.delete("/chroma-clear/{collection_name}")
 async def clear_chroma_collection(collection_name: str):
     """
@@ -409,11 +392,6 @@ async def delete_production_issue(issue_id: str):
         return {"status": "success", "message": f"Issue {issue_id} deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-class IngestDirRequest(BaseModel):
-    directory_path: str
-
 
 @router.post("/ingest-msg-dir")
 async def ingest_msg_dir(files: List[UploadFile] = File(...)):
