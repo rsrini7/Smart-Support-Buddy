@@ -1,16 +1,15 @@
 import marimo
 
-__generated_with = "0.12.4"
+__generated_with = "0.12.10"
 app = marimo.App(width="medium")
 
 
 @app.cell
 def _():
     import chromadb
-    from app.core.config import settings
-    client = chromadb.PersistentClient(path=settings.VECTOR_DB_PATH)
+    client = chromadb.PersistentClient(path="./backend/data/vectordb")
     collection = client.get_or_create_collection("issues")
-    return chromadb, client, collection, settings
+    return chromadb, client, collection
 
 
 @app.cell

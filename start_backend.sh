@@ -100,8 +100,8 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if [ "$STATE" = "RUNNING" ]; then
         echo "Confluence is ready and running!"
         break
-    elif [ "$STATE" = "FAILED" ]; then
-        echo "Confluence state is FAILED. Restarting confluence container..."
+    elif [ "$STATE" = "FAILED" ] || [ "$STATE" = "ERROR" ]; then
+        echo "Confluence state is $STATE. Restarting confluence container..."
         docker compose restart confluence
         echo "Waiting 15 seconds for Confluence to restart..."
         sleep 15

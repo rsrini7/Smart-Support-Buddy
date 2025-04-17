@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from app.services.chroma_client import get_collection
 from app.models import IssueResponse
 from datetime import datetime

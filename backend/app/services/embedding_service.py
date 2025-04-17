@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 _model_instance = None
 
-def get_embedding_model():
+def get_embedding_model(embedding_model: str = None, device: str = 'cpu'):
     """
     Singleton loader for the sentence transformer embedding model.
     Returns:
@@ -16,7 +16,7 @@ def get_embedding_model():
     if _model_instance is None:
         try:
             # Always load on CPU
-            _model_instance = SentenceTransformer(settings.EMBEDDING_MODEL, device='cpu')
+            _model_instance = SentenceTransformer(embedding_model or settings.EMBEDDING_MODEL, device=device)
         except Exception as e:
             logger.error(f"Error initializing embedding model: {str(e)}")
             raise

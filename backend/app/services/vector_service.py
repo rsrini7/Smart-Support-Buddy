@@ -1,14 +1,11 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Optional, Dict, Any
 import logging
 from app.models import IssueResponse
-
-# Refactored imports
-from app.services.chroma_client import get_vector_db_client, get_collection
-from app.services.embedding_service import get_embedding
-from app.services.deduplication_utils import compute_content_hash
+from app.services.chroma_client import get_vector_db_client
 from app.services.vector_issue_service import add_issue_to_vectordb as original_add_issue_to_vectordb
 from app.services.issue_service import delete_issue as real_delete_issue, get_issue as real_get_issue
-from app.services.collection_service import clear_all_issues, clear_collection
+from app.services.chroma_client import clear_collection as real_clear_collection
+from app.services.issue_service import search_similar_issues as real_search_similar_issues
 
 logger = logging.getLogger(__name__)
 
@@ -90,9 +87,6 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
     """
     return real_get_issue(issue_id)
 
-# Defensive patch: avoid infinite recursion by calling the real implementation
-from app.services.issue_service import search_similar_issues as real_search_similar_issues
-
 def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10) -> List[IssueResponse]:
     """
     Search for similar support issues / queries based on a query text or Jira ticket ID.
@@ -108,11 +102,7 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
     return real_search_similar_issues(query_text, jira_ticket_id, limit)
 
 def clear_all_issues() -> bool:
-    # Defensive patch: avoid infinite recursion by calling the real implementation
-    from app.services.collection_service import clear_all_issues as real_clear_all_issues
-    return real_clear_all_issues()
+    return real_clear_collection("issues")
 
 def clear_collection(collection_name: str) -> bool:
-    # Defensive patch: avoid infinite recursion by calling the real implementation
-    from app.services.collection_service import clear_collection as real_clear_collection
     return real_clear_collection(collection_name)

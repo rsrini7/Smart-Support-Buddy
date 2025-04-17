@@ -1,34 +1,15 @@
 import logging
 import hashlib
-import requests
 from typing import Optional, Dict, Any, List
 from datetime import datetime
-from sentence_transformers import SentenceTransformer
-import chromadb
-from urllib.parse import urlparse, parse_qs
+from app.services.chroma_client import get_vector_db_client
+from app.services.embedding_service import get_embedding_model
 import re
+import requests
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-
-def get_vector_db_client():
-    try:
-        chromadb.configure(anonymized_telemetry=False)
-        client = chromadb.PersistentClient(path=settings.VECTOR_DB_PATH)
-        return client
-    except Exception as e:
-        logger.error(f"Error initializing vector database client: {str(e)}")
-        raise
-
-def get_embedding_model():
-    try:
-        # Always load on CPU
-        model = SentenceTransformer(settings.EMBEDDING_MODEL, device='cpu')
-        return model
-    except Exception as e:
-        logger.error(f"Error initializing embedding model: {str(e)}")
-        raise
 
 def extract_question_id(stackoverflow_url: str) -> Optional[str]:
     """

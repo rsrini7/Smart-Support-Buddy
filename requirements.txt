@@ -22,3 +22,4 @@ httpx>=0.24.0
 pytest-mock>=3.10.0
 torch>=1.10,<2.2
 transformers>=4.30,<4.38
+marimo==0.12.10

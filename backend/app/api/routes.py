@@ -4,15 +4,15 @@ from typing import List, Dict, Any
 import os
 import logging
 from pydantic import BaseModel
-import shutil
 import tempfile
 
 from app.core.config import settings
 from app.services.msg_parser import parse_msg_file
 from app.services.jira_service import get_jira_ticket
-from app.services.vector_service import search_similar_issues, add_issue_to_vectordb, delete_issue, get_all_chroma_collections_data
-from app.models import IssueCreate, IssueResponse, SearchQuery
+from app.services.vector_service import add_issue_to_vectordb, delete_issue, get_all_chroma_collections_data
+from app.models import  IssueResponse, SearchQuery
 from pydantic import BaseModel
+from app.services.vector_service import clear_collection
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -374,7 +374,7 @@ async def clear_chroma_db():
     """
     from app.services.vector_service import clear_all_issues
     try:
-        clear_all_issues()
+        clear_collection("issues")
         return {"status": "success", "message": "All ChromaDB data cleared."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to clear ChromaDB: {str(e)}")
@@ -384,7 +384,6 @@ async def clear_chroma_collection(collection_name: str):
     """
     Delete all data from the specified ChromaDB collection.
     """
-    from app.services.vector_service import clear_collection
     try:
         result = clear_collection(collection_name)
         return {"success": result}
