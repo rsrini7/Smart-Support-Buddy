@@ -3,7 +3,7 @@ import { Box, Typography, Paper, Button, CircularProgress, Alert, Grid } from '@
 import { BACKEND_API_BASE } from '../settings';
 
 const COLLECTIONS = [
-  { name: 'production_issues', label: 'Issues' },
+  { name: 'issues', label: 'Issues' },
   { name: 'stackoverflow_qa', label: 'Stack Overflow Q&A' },
   { name: 'confluence_pages', label: 'Confluence Pages' },
 ];

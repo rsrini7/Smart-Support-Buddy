@@ -9,7 +9,7 @@ def _():
     import chromadb
     from app.core.config import settings
     client = chromadb.PersistentClient(path=settings.VECTOR_DB_PATH)
-    collection = client.get_or_create_collection("production_issues")
+    collection = client.get_or_create_collection("issues")
     return chromadb, client, collection, settings
 
 

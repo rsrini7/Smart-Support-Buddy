@@ -370,7 +370,7 @@ async def get_issue(issue_id: str):
 @router.delete("/chroma-clear")
 async def clear_chroma_db():
     """
-    Delete all data from the ChromaDB 'production_issues' collection.
+    Delete all data from the ChromaDB 'issues' collection.
     """
     from app.services.vector_service import clear_all_issues
     try:

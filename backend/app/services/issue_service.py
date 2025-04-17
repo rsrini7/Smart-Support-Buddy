@@ -7,7 +7,7 @@ import re
 
 logger = logging.getLogger(__name__)
 
-COLLECTION_NAME = "production_issues"
+COLLECTION_NAME = "issues"
 
 def delete_issue(issue_id: str) -> bool:
     try:

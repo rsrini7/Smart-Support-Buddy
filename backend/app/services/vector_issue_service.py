@@ -9,7 +9,7 @@ from app.services.deduplication_utils import compute_content_hash
 
 logger = logging.getLogger(__name__)
 
-COLLECTION_NAME = "production_issues"
+COLLECTION_NAME = "issues"
 
 def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: Optional[Dict[str, Any]] = None) -> str:
     try:

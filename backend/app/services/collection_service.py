@@ -5,9 +5,9 @@ logger = logging.getLogger(__name__)
 
 def clear_all_issues() -> bool:
     try:
-        collection = get_collection("production_issues")
+        collection = get_collection("issues")
         collection.delete(where={"id": {"$ne": ""}})
-        logger.info("All documents deleted from 'production_issues' collection.")
+        logger.info("All documents deleted from 'issues' collection.")
         return True
     except Exception as e:
         logger.error(f"Error clearing all issues from ChromaDB: {str(e)}")
