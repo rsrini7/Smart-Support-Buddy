@@ -118,11 +118,9 @@ This application helps teams manage support issues / queries by:
 
 ### Development Setup
 1. Clone this repository
-2. Install backend dependencies:
+2. Install backend dependencies: Supports Python 3.9 or 3.10
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # or venv\Scripts\activate on Windows
-   pip install -r requirements.txt
+      ./start_backend.sh
    ```
 3. Install frontend dependencies:
    ```bash
@@ -177,8 +175,6 @@ EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 
 ## Unified Search Result API
 - `/search` endpoint returns a single `results` array, sorted by similarity percentage, with a `type` field for each result (`jira`, `msg`, `confluence`, `stackoverflow`)
-- Legacy arrays (`vector_issues`, `confluence_results`, `stackoverflow_results`) are deprecated and retained only for backward compatibility
-- **Frontend and all new integrations must use the unified `results` array**
 
 ### Example Response
 ```json
@@ -198,7 +194,6 @@ EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 - Logs stored in `backend/logs/`
 - Configure log levels in `backend/app/core/logging_config.py`
 - Component-specific logging for MSG parsing, Jira, Confluence, StackOverflow, deduplication, vector ops, and search
-- ChromaDB Admin UI at http://localhost:3500 for vector DB management
 - Health checks: backend API `/health`, DB connections, vector DB collections, Jira/Confluence connectivity, StackOverflow ingestion
 
 ## Performance Tuning
