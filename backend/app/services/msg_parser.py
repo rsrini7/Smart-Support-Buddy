@@ -3,21 +3,19 @@ import os
 from typing import Dict, Any
 import logging
 import datetime
+import re
+
 
 logger = logging.getLogger(__name__)
 
 
 def parse_msg_file(file_path: str) -> Dict[str, Any]:
-    logger = logging.getLogger(__name__)
     logger.info(f"parse_msg_file called with file_path: {file_path}")
     try:
-        logger.info(f"Checking if file exists: {file_path}")
         if not os.path.exists(file_path):
             logger.error(f"File not found or invalid path: {file_path}")
             raise FileNotFoundError(f"MSG file not found at {file_path}")
-        logger.info(f"Opening MSG file: {file_path}")
         msg = extract_msg.Message(file_path)
-        logger.info(f"MSG file opened: {file_path}")
         subject = msg.subject or "No Subject"
         sender = msg.sender or "Unknown Sender"
         body = msg.body or ""
@@ -28,7 +26,6 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
                 recipients.extend(msg.to)
             else:
                 recipients.append(msg.to)
-        logger.info(f"Recipients: {recipients}")
         received_date = None
         if msg.date is not None:
             received_date = msg.date
@@ -40,11 +37,9 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
             from datetime import datetime as dt
             received_date = dt.now()
             logger.debug("[msg_parser] No date info found, using current datetime as received_date fallback")
-        logger.info(f"Received date: {received_date}")
         attachments = []
         attachment_dir = os.path.join(os.path.dirname(file_path), "attachments", os.path.basename(file_path).split(".")[0])
         os.makedirs(attachment_dir, exist_ok=True)
-        logger.info(f"Attachment directory: {attachment_dir}")
         for attachment in msg.attachments:
             logger.info(f"Processing attachment: {getattr(attachment, 'longFilename', None)}")
             if attachment.longFilename:
@@ -52,7 +47,6 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
                 with open(attachment_path, "wb") as f:
                     f.write(attachment.data)
                 attachments.append(attachment_path)
-        logger.info(f"Attachments saved: {attachments}")
         headers = {}
         if hasattr(msg, "header") and msg.header:
             if isinstance(msg.header, str):
@@ -66,7 +60,6 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
                     headers["raw_header"] = str(msg.header)
                 except Exception as e:
                     headers["header_error"] = f"Could not convert header to string: {e}"
-        logger.info(f"Headers extracted: {headers}")
         result = {
             "file_path": file_path,
             "subject": subject,
@@ -77,9 +70,7 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
             "attachments": attachments,
             "headers": headers
         }
-        logger.info(f"Basic MSG data extracted for {file_path}")
         extracted_details = extract_issue_details(result)
-        logger.info(f"Extracted issue details: {extracted_details}")
         result.update(extracted_details)
         def make_json_safe(obj):
             if isinstance(obj, (str, int, float, bool)) or obj is None:
@@ -97,7 +88,6 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
             else:
                 return f"<non-serializable: {type(obj).__name__}>"
         result = make_json_safe(result)
-        logger.info(f"Final result for {file_path}: {result}")
     except Exception as e:
         error_msg = str(e) or "Unknown backend error"
         error_type = type(e).__name__ if e else "UnknownError"
@@ -117,9 +107,6 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
             except Exception as close_err:
                 logger.warning(f"Error closing MSG file: {close_err}")
     return result
-
-
-import re
 
 def extract_issue_details(msg_data: Dict[str, Any]) -> Dict[str, Any]:
     """

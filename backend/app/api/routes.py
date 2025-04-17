@@ -451,7 +451,6 @@ async def ingest_msg_dir(files: List[UploadFile] = File(...)):
                     msg_data["status"] = "error"
                     msg_data["error"] = str(e)
                 results.append(msg_data)
-            logger.info(f"Ingestion complete. Results: {results}")
             return {"status": "success", "results": results}
     except Exception as e:
         logger.error(f"Error in ingest_msg_dir: {e}")
