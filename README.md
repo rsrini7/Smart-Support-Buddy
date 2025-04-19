@@ -13,6 +13,7 @@ SupportBuddy/
 ├── backend/
 │   ├── .env
 │   ├── .env.example
+│   ├── .python-version
 │   ├── Dockerfile
 │   ├── LearnChromaDB.py
 │   ├── app/
@@ -23,10 +24,13 @@ SupportBuddy/
 │   │   ├── main.py
 │   │   ├── services/
 │   │   └── utils/
+│   ├── check_chromadb.py
 │   ├── data/
+│   ├── pyproject.toml
 │   ├── pytest.ini
-│   └── tests/
-├── check_chromadb.py
+│   ├── tests/
+│   ├── uv.lock
+│   └── .venv/
 ├── chroma.sh
 ├── confluence-config/
 ├── confluence-setup-files/
@@ -35,6 +39,7 @@ SupportBuddy/
 ├── docker-compose.yml
 ├── frontend/
 │   ├── .env
+│   ├── .env.example
 │   ├── node_modules/
 │   ├── package-lock.json
 │   ├── package.json
@@ -43,7 +48,9 @@ SupportBuddy/
 ├── jira-config/
 ├── jira-setup-files/
 ├── run_backend.py
+├── set_venv.sh
 ├── start_backend.sh
+├── start_frontend.sh
 └── .venv/
 ```
 
@@ -107,6 +114,8 @@ This application helps teams manage support issues / queries by:
 
 ### Prerequisites
 - Python 3.11+
+- uv (https://github.com/astral-sh/uv) for Python dependency management
+  - Install with `pip install uv` or `brew install uv`
 - Node.js and npm
 - Docker and Docker Compose (for containerized setup)
 - Jira instance (local or cloud)
@@ -122,6 +131,7 @@ This application helps teams manage support issues / queries by:
    ```
    - This script will create a `.venv` using `uv`, and install dependencies from `pyproject.toml` via `uv sync`.
    - You do NOT need to manage `requirements.txt` anymore. All dependencies are managed in `pyproject.toml`.
+   - To add or update dependencies, edit `pyproject.toml` and run `uv sync`.
 3. Install frontend dependencies:
    ```bash
    cd frontend
@@ -143,13 +153,13 @@ This application helps teams manage support issues / queries by:
 5. Start the services:
    - Development mode:
      ```bash
-     ./run_backend.py  # Starts backend with auto-reload
-     cd frontend && npm start  # Starts frontend dev server
+     ./start_backend.sh  # Starts backend with auto-reload
+     ./start_frontend.sh  # Starts frontend dev server
      ```
    - Production mode:
      ```bash
-     ./run_backend.py --no-reload --host 0.0.0.0
-     cd frontend && npm run build
+     ./start_backend.sh --no-reload --host 0.0.0.0
+     ./start_frontend.sh
      ```
 
 ### Docker Usage
@@ -163,6 +173,54 @@ This application helps teams manage support issues / queries by:
 ### Notes
 - The `.venv/` directory is now the standard location for the Python virtual environment (see `.gitignore`).
 - All Python dependencies are managed in `pyproject.toml` and installed with `uv sync` (see [start_backend.sh](./start_backend.sh) and [backend/Dockerfile](./backend/Dockerfile)).
+
+## Starting the Frontend
+
+To start the frontend React application, use the provided script:
+
+```sh
+./start_frontend.sh
+```
+
+This script will:
+- Change to the `frontend/` directory
+- Install dependencies with `npm install` if needed
+- Start the development server with `npm start`
+
+You can also run these steps manually:
+```sh
+cd frontend
+npm install  # Only needed once or when dependencies change
+npm start
+```
+
+The frontend will be available at [http://localhost:3000](http://localhost:3000) by default.
+
+## Activating the Backend Python Virtual Environment
+
+To activate the backend's Python virtual environment, use the provided script:
+
+```sh
+source ./set_venv.sh
+```
+
+> **Note:**
+> - You **must** use `source` (or `. ./set_venv.sh`) to activate the venv in your current shell.
+> - Running `./set_venv.sh` directly will **not** activate the environment in your shell and will show an error.
+> - This script works for both bash and zsh shells.
+
+If the virtual environment is missing, simply run inside backend folder:
+
+```sh
+uv sync
+```
+
+Then install dependencies:
+
+```sh
+source ./set_venv.sh
+uv sync
+```
 
 ## Environment Variables
 The backend requires a `.env` file with configuration for:
@@ -220,7 +278,7 @@ EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 
 ## System Operations
 ### Deployment
-- Development: `./run_backend.py`, `npm start`
+- Development: `start_backend.sh`, `npm start`
 - Production: Docker Compose, persistent data volumes
 - Backend startup script ensures all services are ready before launch
 
