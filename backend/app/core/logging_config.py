@@ -1,5 +1,6 @@
 import logging
 import sys
+import os
 
 def setup_logging():
     # Create root logger
@@ -19,6 +20,16 @@ def setup_logging():
 
     # Add the handler to the root logger
     root_logger.addHandler(console_handler)
+
+    # Use a relative path for the log file
+    rel_log_path = os.path.join(os.path.dirname(__file__), '..', 'logs', 'backend.log')
+    log_dir = os.path.dirname(rel_log_path)
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir, exist_ok=True)
+    file_handler = logging.FileHandler(rel_log_path)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    root_logger.addHandler(file_handler)
 
     # Set levels for specific loggers
     logging.getLogger('app.services.jira_service').setLevel(logging.DEBUG)

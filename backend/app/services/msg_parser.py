@@ -4,6 +4,7 @@ from typing import Dict, Any
 import logging
 import datetime
 import re
+import traceback
 
 
 logger = logging.getLogger(__name__)
@@ -88,17 +89,18 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
             else:
                 return f"<non-serializable: {type(obj).__name__}>"
         result = make_json_safe(result)
+    except FileNotFoundError as fnf:
+        logger.error(f"Error inside parse_msg_file for file_path {file_path}: {fnf}")
+        logger.error(traceback.format_exc())
+        raise
     except Exception as e:
-        error_msg = str(e) or "Unknown backend error"
-        error_type = type(e).__name__ if e else "UnknownError"
-        logger.error(f"Error inside parse_msg_file for file_path {file_path}: {error_msg}")
-        import traceback
+        logger.error(f"Error inside parse_msg_file for file_path {file_path}: {e}")
         logger.error(traceback.format_exc())
         return {
             "file_path": file_path,
             "status": "error",
-            "error": error_msg,
-            "error_type": error_type,
+            "error": str(e) or "Unknown backend error",
+            "error_type": type(e).__name__ if e else "UnknownError",
         }
     finally:
         if 'msg' in locals():

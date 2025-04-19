@@ -295,19 +295,29 @@ async def search_issues(query: SearchQuery):
             vector_task, confluence_task, stackoverflow_task
         )
 
-        # Ensure stackoverflow_results is always a list or a consistent structure
+        # Defensive: ensure no NoneType for iterables
+        if vector_issues is None:
+            vector_issues = []
+        if confluence_results is None:
+            confluence_results = []
         if stackoverflow_results is None:
             stackoverflow_results = []
-        elif isinstance(stackoverflow_results, dict) and "results" in stackoverflow_results:
+
+        # Ensure stackoverflow_results is always a list or a consistent structure
+        if isinstance(stackoverflow_results, dict) and "results" in stackoverflow_results:
             stackoverflow_results = stackoverflow_results["results"]
 
         # Combine all results for single page result
         combined_results = []
         for item in vector_issues:
+            if hasattr(item, "dict"):
+                item_data = item.dict()
+            else:
+                item_data = dict(item)
             combined_results.append({
                 "type": "vector_issue",
-                **item.dict(),
-                "similarity_score": getattr(item, "similarity_score", 0)
+                **item_data,
+                "similarity_score": item_data.get("similarity_score", getattr(item, "similarity_score", 0))
             })
         for item in confluence_results:
             combined_results.append({

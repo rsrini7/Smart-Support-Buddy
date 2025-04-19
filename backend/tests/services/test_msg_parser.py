@@ -37,7 +37,7 @@ class TestMsgParser:
         assert result["sender"] == "test@example.com"
         assert result["body"] == "Test body content"
         assert result["recipients"] == ["recipient1@example.com", "recipient2@example.com"]
-        assert result["received_date"] == datetime(2023, 1, 1, 12, 0, 0)
+        assert result["received_date"] == "2023-01-01T12:00:00"
         assert isinstance(result["headers"], dict)
         assert result["attachments"] == []
         

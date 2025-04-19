@@ -10,6 +10,9 @@ from app.services.stackoverflow_service import (
     search_similar_stackoverflow_content,
     sanitize_metadata
 )
+from app.services.embedding_service import get_embedding_model
+from app.services.vector_service import get_vector_db_client
+from app.core import config as core_config
 
 class TestStackOverflowService:
     
@@ -70,10 +73,10 @@ class TestStackOverflowService:
         assert len(result["answers"]) == 1
         assert result["answers"][0]["answer_id"] == 87654321
 
+    @patch('app.services.embedding_service.get_embedding_model')
     @patch('app.services.stackoverflow_service.get_vector_db_client')
-    @patch('app.services.stackoverflow_service.get_embedding_model')
     @patch('app.services.stackoverflow_service.fetch_stackoverflow_content')
-    def test_add_stackoverflow_qa_to_vectordb(self, mock_fetch, mock_model, mock_client):
+    def test_add_stackoverflow_qa_to_vectordb(self, mock_fetch, mock_client, mock_model):
         # Mock the fetch content response
         mock_fetch.return_value = {
             "question_id": "12345678",
@@ -104,28 +107,34 @@ class TestStackOverflowService:
         assert result[0].startswith("stackoverflow_q_")
         assert result[1].startswith("stackoverflow_a_")
 
+    @patch('app.services.embedding_service.get_embedding_model')
     @patch('app.services.stackoverflow_service.get_vector_db_client')
-    @patch('app.services.stackoverflow_service.get_embedding_model')
-    def test_search_similar_stackoverflow_content(self, mock_model, mock_client):
-        # Mock the embedding model to return a numpy array with tolist method
-        mock_embedding = MagicMock()
-        mock_embedding.tolist.return_value = [0.1, 0.2, 0.3]
-        mock_model.return_value.encode.return_value = mock_embedding
+    def test_search_similar_stackoverflow_content(self, mock_client, mock_model):
+        from unittest.mock import patch
+        # Patch the similarity threshold to ensure all mock results are included
+        with patch("app.core.config.Settings.SIMILARITY_THRESHOLD", new=0):
+            # Mock the embedding model to return a numpy array with tolist method
+            mock_embedding = MagicMock()
+            mock_embedding.tolist.return_value = [0.1, 0.2, 0.3]
+            mock_model.return_value.encode.return_value = mock_embedding
 
-        # Mock the vector DB client and collection
-        mock_collection = MagicMock()
-        mock_collection.query.return_value = {
-            "ids": ["id1", "id2"],
-            "metadatas": [{"type": "question"}, {"type": "answer"}],
-            "documents": ["doc1", "doc2"],
-            "distances": [0.1, 0.2]
-        }
-        mock_client.return_value.get_or_create_collection.return_value = mock_collection
+            # Mock the vector DB client and collection
+            mock_collection = MagicMock()
+            mock_collection.query.return_value = {
+                "ids": ["id1", "id2"],
+                "metadatas": [{"type": "question"}, {"type": "answer"}],
+                "documents": ["doc1", "doc2"],
+                "distances": [0.1, 0.2]
+            }
+            mock_client.return_value.get_or_create_collection.return_value = mock_collection
 
-        result = search_similar_stackoverflow_content("test query")
-        
-        assert result is not None
-        assert "ids" in result
-        assert "metadatas" in result
-        assert "documents" in result
-        assert "distances" in result
+            result = search_similar_stackoverflow_content("test query")
+            
+            assert result is not None
+            assert isinstance(result, list)
+            assert len(result) == 2
+            assert all("id" in item for item in result)
+            assert all("title" in item for item in result)
+            assert all("content" in item for item in result)
+            assert all("similarity_score" in item for item in result)
+            assert all("metadata" in item for item in result)
