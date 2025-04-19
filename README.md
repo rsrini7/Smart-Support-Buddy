@@ -19,20 +19,49 @@ SupportBuddy/
 │   ├── app/
 │   │   ├── __init__.py
 │   │   ├── api/
+│   │   │   ├── __init__.py
+│   │   │   ├── routes.py
 │   │   ├── core/
-│   │   ├── db/
+│   │   │   ├── __init__.py
+│   │   │   ├── config.py
+│   │   │   ├── logging_config.py
+│   │   │   └── similarity_config.json
+│   │   ├── logs/
+│   │   │   └── backend.log
 │   │   ├── main.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   └── models.py
 │   │   ├── services/
-│   │   └── utils/
+│   │   │   ├── __init__.py
+│   │   │   ├── chroma_client.py
+│   │   │   ├── confluence_page_service.py
+│   │   │   ├── confluence_service.py
+│   │   │   ├── deduplication_utils.py
+│   │   │   ├── embedding_service.py
+│   │   │   ├── issue_service.py
+│   │   │   ├── jira_service.py
+│   │   │   ├── msg_parser.py
+│   │   │   ├── stackoverflow_qa_service.py
+│   │   │   ├── stackoverflow_service.py
+│   │   │   ├── vector_issue_service.py
+│   │   │   └── vector_service.py
 │   ├── check_chromadb.py
 │   ├── data/
 │   ├── pyproject.toml
 │   ├── pytest.ini
 │   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── api/
+│   │   ├── conftest.py
+│   │   ├── data/
+│   │   └── services/
 │   ├── uv.lock
 │   └── .venv/
 ├── chroma.sh
 ├── confluence-config/
+│   ├── dbconfig.xml
+│   └── server.xml
 ├── confluence-setup-files/
 ├── data/
 ├── deduplication_plan.md
@@ -44,14 +73,51 @@ SupportBuddy/
 │   ├── package-lock.json
 │   ├── package.json
 │   ├── public/
-│   └── src/
+│   │   ├── index.html
+│   │   ├── favicon.ico
+│   │   ├── favicon.png
+│   │   ├── favicon-16x16.png
+│   │   ├── favicon-32x32.png
+│   │   ├── favicon-trans.png
+│   │   ├── logo-trans.png
+│   │   ├── logo-white.png
+│   │   ├── logo192.png
+│   │   ├── logo96.png
+│   │   ├── manifest.json
+│   ├── src/
+│   │   ├── App.js
+│   │   ├── App.test.js
+│   │   ├── components/
+│   │   │   ├── Footer.js
+│   │   │   ├── Footer.test.js
+│   │   │   ├── Header.js
+│   │   │   ├── Header.test.js
+│   │   ├── index.css
+│   │   ├── index.js
+│   │   ├── pages/
+│   │   │   ├── AdminChromaPage.js
+│   │   │   ├── ClearChromaPage.js
+│   │   │   ├── ConfigPage.js
+│   │   │   ├── ConfluenceIngestPage.js
+│   │   │   ├── HomePage.js
+│   │   │   ├── HomePage.test.js
+│   │   │   ├── IngestMsgFilesPage.js
+│   │   │   ├── IngestMsgFilesPage.test.js
+│   │   │   ├── IssueDetailsPage.js
+│   │   │   ├── IssueDetailsPage.test.js
+│   │   │   ├── JiraIngestPage.js
+│   │   │   ├── SearchPage.js
+│   │   │   ├── SearchPage.test.js
+│   │   │   └── StackOverflowIngestPage.js
+│   │   ├── settings.js
 ├── jira-config/
+│   ├── dbconfig.xml
+│   └── server.xml
 ├── jira-setup-files/
 ├── set_venv.sh
 ├── start_backend.sh
 ├── start_frontend.sh
 └── .venv/
-```
 
 ## Overview
 
@@ -74,8 +140,8 @@ This application helps teams manage support issues / queries by:
 - Semantic search with sentence transformers
 - Bulk ingestion of MSG files, Confluence pages, and StackOverflow Q&A
 - Vector search with configurable similarity threshold
-- Responsive Material UI interface and configuration management
-- Chroma Admin UI for vector database management
+- Responsive, feature-rich Material UI interface and configuration management
+- **ChromaDB Admin UI support:** (If using Chroma's admin UI, see Chroma documentation)
 - **Jira ID search boost:** Searching for a Jira ID will always return the exact match as the top result (similarity score 1.0)
 
 ## System Architecture
@@ -206,20 +272,38 @@ EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 - Jira ticket IDs are always included in the embedded text for accurate matching.
 
 ## Unified Search Result API
-- `/search` endpoint returns a single `results` array, sorted by similarity percentage, with a `type` field for each result (`jira`, `msg`, `confluence`, `stackoverflow`)
+- `/search` endpoint returns a single `results` array, sorted by similarity percentage, with a `type` field for each result (`vector_issue`, `confluence`, `stackoverflow`)
 
 ### Example Response
 ```json
 {
   "results": [
-    { "type": "jira", "id": "...", "similarity_score": 0.91, ... },
-    { "type": "confluence", "id": "...", "similarity_score": 0.87, ... },
+    { "type": "vector_issue", "id": "...", "similarity_score": 0.91, ... },
+    { "type": "confluence", "page_id": "...", "similarity_score": 0.87, ... },
     { "type": "stackoverflow", "id": "...", "similarity_score": 0.85, ... }
   ],
   "vector_issues": [...],
   "confluence_results": [...],
   "stackoverflow_results": [...]
 }
+```
+
+## Logging
+
+Backend logs are written to `backend/app/logs/backend.log`. You can also view logs in the console.
+
+## Running Tests
+
+### Backend
+From the `backend/` directory:
+```sh
+pytest --maxfail=1 --disable-warnings -v
+```
+
+### Frontend
+From the `frontend/` directory:
+```sh
+npm test
 ```
 
 ## Monitoring & Logging
