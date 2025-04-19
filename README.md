@@ -131,12 +131,7 @@ This application helps teams manage support issues / queries by:
    - This script will create a `.venv` using `uv`, and install dependencies from `pyproject.toml` via `uv sync`.
    - You do NOT need to manage `requirements.txt` anymore. All dependencies are managed in `pyproject.toml`.
    - To add or update dependencies, edit `pyproject.toml` and run `uv sync`.
-3. Install frontend dependencies:
-   ```bash
-   cd frontend
-   npm install
-   ```
-4. Configure environment variables (see Environment Variables section)
+3. Configure environment variables (see Environment Variables section)
    - For **Confluence Server**, set these in `backend/.env`:
      ```env
      CONFLUENCE_USERNAME=your-confluence-username
@@ -149,7 +144,7 @@ This application helps teams manage support issues / queries by:
      # Or, for Jira Cloud:
      # JIRA_API_TOKEN=your-jira-api-token
      ```
-5. Start the services:
+4. Start the services:
    - Development mode:
      ```bash
      ./start_backend.sh  # Starts backend with auto-reload
