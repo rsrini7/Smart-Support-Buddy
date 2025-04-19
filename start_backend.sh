@@ -131,18 +131,18 @@ if ! command -v python3 &> /dev/null; then
 fi
 
 # Create virtual environment if it doesn't exist
-if [ ! -d "venv" ]; then
-    echo "Creating virtual environment..."
-    uv venv --python 3.10 venv
-fi
-
-# Activate virtual environment
-echo "Activating virtual environment..."
-source venv/bin/activate
+# if [ ! -d ".venv" ]; then
+#     echo "Creating virtual environment..."
+#     uv venv --python 3.11 .venv
+# fi
 
 # Install dependencies
 echo "Installing dependencies..."
-uv pip install -r requirements.txt
+uv sync
+
+# Activate virtual environment
+echo "Activating virtual environment..."
+source ./.venv/bin/activate
 
 # Create necessary directories
 echo "Setting up data directories..."

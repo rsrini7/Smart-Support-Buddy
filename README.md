@@ -9,8 +9,7 @@ prodissue-identifier/
 ├── .git/
 ├── .gitignore
 ├── LICENSE
-├── README.md                # ← Single, up-to-date documentation source
-├── UV_MIGRATION.md
+├── README.md
 ├── backend/
 │   ├── .env
 │   ├── .env.example
@@ -43,10 +42,9 @@ prodissue-identifier/
 │   └── src/
 ├── jira-config/
 ├── jira-setup-files/
-├── requirements.txt
 ├── run_backend.py
 ├── start_backend.sh
-└── venv/
+└── .venv/
 ```
 
 ## Overview
@@ -108,7 +106,7 @@ This application helps teams manage support issues / queries by:
 ## Setup Instructions
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.11+
 - Node.js and npm
 - Docker and Docker Compose (for containerized setup)
 - Jira instance (local or cloud)
@@ -118,10 +116,12 @@ This application helps teams manage support issues / queries by:
 
 ### Development Setup
 1. Clone this repository
-2. Install backend dependencies: Supports Python 3.9 or 3.10
+2. Install backend dependencies (Python 3.11 recommended):
    ```bash
-      ./start_backend.sh
+   ./start_backend.sh
    ```
+   - This script will create a `.venv` using `uv`, and install dependencies from `pyproject.toml` via `uv sync`.
+   - You do NOT need to manage `requirements.txt` anymore. All dependencies are managed in `pyproject.toml`.
 3. Install frontend dependencies:
    ```bash
    cd frontend
@@ -151,6 +151,18 @@ This application helps teams manage support issues / queries by:
      ./run_backend.py --no-reload --host 0.0.0.0
      cd frontend && npm run build
      ```
+
+### Docker Usage
+- The backend Dockerfile now uses `uv sync` and `pyproject.toml` for dependency management. No need for `requirements.txt`.
+- Example build and run:
+  ```bash
+  docker build -t support-buddy-backend ./backend
+  docker run --env-file ./backend/.env -p 8000:8000 support-buddy-backend
+  ```
+
+### Notes
+- The `.venv/` directory is now the standard location for the Python virtual environment (see `.gitignore`).
+- All Python dependencies are managed in `pyproject.toml` and installed with `uv sync` (see [start_backend.sh](./start_backend.sh) and [backend/Dockerfile](./backend/Dockerfile)).
 
 ## Environment Variables
 The backend requires a `.env` file with configuration for:

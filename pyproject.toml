@@ -1,0 +1,32 @@
+[project]
+name = "prodissue-identifier"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.95.0",
+    "uvicorn>=0.21.0",
+    "python-multipart>=0.0.6",
+    "pydantic>=1.10.7",
+    "pydantic-settings>=2.0.0",
+    "extract-msg>=0.41.0",
+    "jira>=3.5.0",
+    "psycopg2-binary>=2.9.6",
+    "python-dotenv>=1.0.0",
+    "langchain>=0.0.267",
+    "chromadb>=0.4.6",
+    "scikit-learn>=1.2.2",
+    "numpy>=1.24,<2",
+    "pandas>=2.0.1",
+    "pytesseract>=0.3.10",
+    "Pillow>=9.5.0",
+    "simple-parsing>=0.1.0",
+    "sentence-transformers>=2.2,<2.4",
+    "pytest>=7.0.0",
+    "httpx>=0.24.0",
+    "pytest-mock>=3.10.0",
+    "torch>=1.10,<2.2",
+    "transformers>=4.30,<4.38",
+    "marimo==0.12.10"
+]

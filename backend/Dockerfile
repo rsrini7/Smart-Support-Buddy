@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -8,11 +8,16 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file
-COPY requirements.txt .
+# Copy pyproject.toml and optional lock file
+COPY pyproject.toml .
+# If you have a uv.lock, uncomment the next line
+# COPY uv.lock .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv
+RUN pip install --no-cache-dir uv
+
+# Create and sync virtual environment
+RUN uv sync && ./.venv/bin/activate
 
 # Copy application code
 COPY . .
