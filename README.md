@@ -6,118 +6,22 @@ A GenAI-powered solution for handling support issues / queries by analyzing Micr
 
 ```
 SupportBuddy/
-├── .git/
-├── .gitignore
-├── LICENSE
-├── README.md
 ├── backend/
-│   ├── .env
-│   ├── .env.example
-│   ├── .python-version
-│   ├── Dockerfile
-│   ├── LearnChromaDB.py
 │   ├── app/
-│   │   ├── __init__.py
-│   │   ├── api/
-│   │   │   ├── __init__.py
-│   │   │   ├── routes.py
-│   │   ├── core/
-│   │   │   ├── __init__.py
-│   │   │   ├── config.py
-│   │   │   ├── logging_config.py
-│   │   │   └── similarity_config.json
-│   │   ├── logs/
-│   │   │   └── backend.log
-│   │   ├── main.py
-│   │   ├── models/
-│   │   │   ├── __init__.py
-│   │   │   └── models.py
-│   │   ├── services/
-│   │   │   ├── __init__.py
-│   │   │   ├── chroma_client.py
-│   │   │   ├── confluence_page_service.py
-│   │   │   ├── confluence_service.py
-│   │   │   ├── deduplication_utils.py
-│   │   │   ├── embedding_service.py
-│   │   │   ├── issue_service.py
-│   │   │   ├── jira_service.py
-│   │   │   ├── msg_parser.py
-│   │   │   ├── stackoverflow_qa_service.py
-│   │   │   ├── stackoverflow_service.py
-│   │   │   ├── vector_issue_service.py
-│   │   │   └── vector_service.py
-│   ├── check_chromadb.py
-│   ├── data/
-│   ├── pyproject.toml
-│   ├── pytest.ini
 │   ├── tests/
-│   │   ├── __init__.py
-│   │   ├── api/
-│   │   ├── conftest.py
-│   │   ├── data/
-│   │   └── services/
-│   ├── uv.lock
-│   └── .venv/
-├── chroma.sh
-├── confluence-config/
-│   ├── dbconfig.xml
-│   └── server.xml
-├── confluence-setup-files/
-├── data/
-├── deduplication_plan.md
-├── docker-compose.yml
+│   ├── data/
+│   └── ...
 ├── frontend/
-│   ├── .env
-│   ├── .env.example
-│   ├── node_modules/
-│   ├── package-lock.json
-│   ├── package.json
-│   ├── public/
-│   │   ├── index.html
-│   │   ├── favicon.ico
-│   │   ├── favicon.png
-│   │   ├── favicon-16x16.png
-│   │   ├── favicon-32x32.png
-│   │   ├── favicon-trans.png
-│   │   ├── logo-trans.png
-│   │   ├── logo-white.png
-│   │   ├── logo192.png
-│   │   ├── logo96.png
-│   │   ├── manifest.json
 │   ├── src/
-│   │   ├── App.js
-│   │   ├── App.test.js
-│   │   ├── components/
-│   │   │   ├── Footer.js
-│   │   │   ├── Footer.test.js
-│   │   │   ├── Header.js
-│   │   │   ├── Header.test.js
-│   │   ├── index.css
-│   │   ├── index.js
-│   │   ├── pages/
-│   │   │   ├── AdminChromaPage.js
-│   │   │   ├── ClearChromaPage.js
-│   │   │   ├── ConfigPage.js
-│   │   │   ├── ConfluenceIngestPage.js
-│   │   │   ├── HomePage.js
-│   │   │   ├── HomePage.test.js
-│   │   │   ├── IngestMsgFilesPage.js
-│   │   │   ├── IngestMsgFilesPage.test.js
-│   │   │   ├── IssueDetailsPage.js
-│   │   │   ├── IssueDetailsPage.test.js
-│   │   │   ├── JiraIngestPage.js
-│   │   │   ├── SearchPage.js
-│   │   │   ├── SearchPage.test.js
-│   │   │   └── StackOverflowIngestPage.js
-│   │   ├── settings.js
+│   ├── public/
+│   └── ...
+├── confluence-config/
 ├── jira-config/
-│   ├── dbconfig.xml
-│   └── server.xml
-├── jira-setup-files/
-├── set_venv.sh
+├── docker-compose.yml
 ├── start_backend.sh
 ├── start_frontend.sh
-└── .venv/
+└── ...
+```
 
 ## Overview
 
