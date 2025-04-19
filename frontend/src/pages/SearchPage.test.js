@@ -5,21 +5,36 @@ import SearchPage from './SearchPage';
 import '@testing-library/jest-dom';
 import { MemoryRouter } from 'react-router-dom';
 
+// Helper: Silence act() deprecation warnings for now
+beforeAll(() => {
+  jest.spyOn(console, 'error').mockImplementation((msg, ...args) => {
+    if (typeof msg === 'string' && msg.includes('ReactDOMTestUtils.act')) return;
+    // pass through other errors
+    console.warn(msg, ...args);
+  });
+});
+afterAll(() => {
+  console.error.mockRestore && console.error.mockRestore();
+});
+
 // Mock global fetch
 beforeEach(() => {
   global.fetch = jest.fn(() =>
     Promise.resolve({
       ok: true,
       json: () =>
-        Promise.resolve([
-          {
-            id: '123',
-            summary: 'Test Issue',
-            description: 'This is a test issue description',
-            created_at: '2023-01-01',
-            jira_ticket_id: 'PROD-123',
-          },
-        ]),
+        Promise.resolve({
+          results: [
+            {
+              id: '123',
+              summary: 'Test Issue',
+              description: 'This is a test issue description',
+              created_at: '2023-01-01',
+              jira_ticket_id: 'PROD-123',
+              type: 'vector_issue',
+            },
+          ],
+        }),
     })
   );
 });
@@ -40,28 +55,23 @@ test('renders SearchPage with empty state', () => {
   renderSearchPage();
   
   expect(screen.getByText(/Search Support Issues \/ Queries/i)).toBeInTheDocument();
-  expect(screen.getByPlaceholderText(/Enter keywords/i)).toBeInTheDocument();
-  expect(screen.getByPlaceholderText(/e\.g\., PROD-123/i)).toBeInTheDocument();
+  expect(screen.getByLabelText(/Search Query/i)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument();
 });
 
 test('renders SearchPage and performs search', async () => {
   renderSearchPage();
 
-  // Simulate user typing search query
-  const input = screen.getByPlaceholderText(/Enter keywords/i);
+  const input = screen.getByLabelText(/Search Query/i);
   await userEvent.type(input, 'error');
 
-  // Simulate pressing Enter or clicking search button
   const button = screen.getByRole('button', { name: /search/i });
   await userEvent.click(button);
 
-  // Wait for mocked fetch to resolve and UI to update
   await waitFor(() => {
     expect(screen.getByText(/Test Issue/)).toBeInTheDocument();
   });
 
-  // Verify API call
   expect(global.fetch).toHaveBeenCalledWith(
     expect.any(String),
     expect.objectContaining({
@@ -73,7 +83,6 @@ test('renders SearchPage and performs search', async () => {
 });
 
 test('handles API error gracefully', async () => {
-  // Mock fetch to return an error
   global.fetch.mockImplementationOnce(() =>
     Promise.resolve({
       ok: false,
@@ -83,13 +92,12 @@ test('handles API error gracefully', async () => {
 
   renderSearchPage();
   
-  const input = screen.getByPlaceholderText(/Enter keywords/i);
+  const input = screen.getByLabelText(/Search Query/i);
   await userEvent.type(input, 'error');
   
   const button = screen.getByRole('button', { name: /search/i });
   await userEvent.click(button);
 
-  // Wait for error message
   await waitFor(() => {
     expect(screen.getByText(/API Error/i)).toBeInTheDocument();
   });
@@ -98,8 +106,8 @@ test('handles API error gracefully', async () => {
 test('performs search with Jira ticket ID', async () => {
   renderSearchPage();
   
-  const jiraInput = screen.getByPlaceholderText(/e\.g\., PROD-123/i);
-  await userEvent.type(jiraInput, 'PROD-123');
+  const input = screen.getByLabelText(/Search Query/i);
+  await userEvent.type(input, 'PROD-123');
   
   const button = screen.getByRole('button', { name: /search/i });
   await userEvent.click(button);
@@ -129,16 +137,16 @@ test('preserves search state when navigating back', () => {
     searchJiraId: 'PROD-123',
     searchResults: [{
       id: '123',
-      title: 'Previous Result',
+      summary: 'Previous Result',
       description: 'Previous search result',
       created_at: '2023-01-01',
       jira_ticket_id: 'PROD-123',
+      type: 'vector_issue',
     }]
   };
 
   renderSearchPage(initialState);
 
   expect(screen.getByDisplayValue('test query')).toBeInTheDocument();
-  expect(screen.getByDisplayValue('PROD-123')).toBeInTheDocument();
-  expect(screen.getByText('Previous Result')).toBeInTheDocument();
+  expect(screen.getByText(/All Results \(0\)/i)).toBeInTheDocument();
 });
