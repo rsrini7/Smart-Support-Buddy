@@ -19,7 +19,8 @@ import ConfigPage from './pages/ConfigPage';
 import AdminChromaPage from './pages/AdminChromaPage';
 
 function App() {
-  const [mode, setMode] = useState('light');
+  // Set default mode to 'dark' for default dark theme
+  const [mode, setMode] = useState('dark');
 
   const toggleTheme = () => {
     setMode((prev) => (prev === 'light' ? 'dark' : 'light'));

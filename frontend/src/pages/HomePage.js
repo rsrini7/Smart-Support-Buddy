@@ -90,7 +90,7 @@ const HomePage = () => {
         </Box>
       </Paper>
 
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h5" gutterBottom sx={{ color: (theme) => theme.palette.text.primary }}>
         Features
       </Typography>
       
@@ -116,10 +116,10 @@ const HomePage = () => {
           >
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <MailIcon sx={{ fontSize: 28 }} />
+                <MailIcon sx={{ fontSize: 28, color: (theme) => theme.palette.mode === 'dark' ? '#90caf9' : '#2575fc' }} />
                 MSG File Ingest
               </Typography>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ color: (theme) => theme.palette.text.secondary }}>
                 Ingest Microsoft Outlook MSG files and parse them to extract RCA details and save them into the vector database.
               </Typography>
             </CardContent>
@@ -158,10 +158,10 @@ const HomePage = () => {
           >
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <BugReportIcon sx={{ fontSize: 28 }} />
+                <BugReportIcon sx={{ fontSize: 28, color: (theme) => theme.palette.mode === 'dark' ? '#90caf9' : '#2575fc' }} />
                 Jira Details Ingest
               </Typography>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ color: (theme) => theme.palette.text.secondary }}>
                 Ingest Jira ticket details into the vector database by providing the Jira IDs to enable information correlation and resolution tracking.
               </Typography>
             </CardContent>
@@ -200,10 +200,10 @@ const HomePage = () => {
           >
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <SearchIcon sx={{ fontSize: 28 }} />
+                <SearchIcon sx={{ fontSize: 28, color: (theme) => theme.palette.mode === 'dark' ? '#90caf9' : '#2575fc' }} />
                 Semantic Search
               </Typography>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ color: (theme) => theme.palette.text.secondary }}>
                 Find similar content from the msg file content, jira, confluence and stackoverflow using vector search to quickly identify solutions
               </Typography>
             </CardContent>
@@ -241,10 +241,10 @@ const HomePage = () => {
           >
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <LibraryBooksIcon sx={{ fontSize: 28 }} />
+                <LibraryBooksIcon sx={{ fontSize: 28, color: (theme) => theme.palette.mode === 'dark' ? '#90caf9' : '#2575fc' }} />
                 Confluence Ingest
               </Typography>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ color: (theme) => theme.palette.text.secondary }}>
                 Ingest and analyze Confluence pages by providing a page URL. Integrate documentation and knowledge base content into the system for enhanced search and context.
               </Typography>
             </CardContent>
@@ -282,11 +282,11 @@ const HomePage = () => {
           >
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CodeIcon sx={{ fontSize: 28 }} />
+                <CodeIcon sx={{ fontSize: 28, color: (theme) => theme.palette.mode === 'dark' ? '#90caf9' : '#2575fc' }} />
                 Stack Overflow Ingest
               </Typography>
-              <Typography variant="body2">
-                Ingest and analyze Stack Overflow questions and answers by providing a question URL. Integrate community Q&amp;A into the system for enhanced search and context.
+              <Typography variant="body2" sx={{ color: (theme) => theme.palette.text.secondary }}>
+                Ingest and analyze Stack Overflow questions and answers by providing a question URL. Integrate community Q&A into the system for enhanced search and context.
               </Typography>
             </CardContent>
             <CardActions>

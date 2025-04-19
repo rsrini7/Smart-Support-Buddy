@@ -22,7 +22,9 @@ def get_all_chroma_collections_data() -> list:
         collections = client.list_collections()
         logger.info(f"ChromaDB list_collections() returned: {collections}")
         all_data = []
-        for col_name in collections:
+        for col in collections:
+            # Ensure col is a string (collection name), not a Collection object
+            col_name = col.name if hasattr(col, 'name') else col
             collection = client.get_collection(col_name)
             docs = collection.get()
             if docs is None:

@@ -81,7 +81,7 @@ done
 
 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo "Error: Jira failed to start after $MAX_RETRIES attempts"
-    echo "Please check:
+    echo "Please check: 
     1. Docker containers are running (docker ps)
     2. Jira credentials are correct
     3. Jira is running on port 9090"
@@ -96,7 +96,7 @@ RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     RESPONSE=$(curl -s "http://localhost:8090/status")
-    STATE=$(echo "$RESPONSE" | grep -o '"state":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+    STATE=$(echo "$RESPONSE" | grep -o '"state":"[^\"]*"' | cut -d':' -f2 | tr -d '"')
     if [ "$STATE" = "RUNNING" ]; then
         echo "Confluence is ready and running!"
         break
@@ -130,34 +130,30 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# Create virtual environment if it doesn't exist
-# if [ ! -d ".venv" ]; then
-#     echo "Creating virtual environment..."
-#     uv venv --python 3.11 .venv
-# fi
+# Change to backend directory
+cd "$BACKEND_DIR"
 
-# Install dependencies
+# Install dependencies (in backend dir)
 echo "Installing dependencies..."
 uv sync
 
 # Activate virtual environment
 echo "Activating virtual environment..."
-source ./.venv/bin/activate
+source .venv/bin/activate
 
 # Create necessary directories
 echo "Setting up data directories..."
 mkdir -p "$VECTOR_DB_DIR"
 
 # Check for .env file and create from example if it doesn't exist
-if [ ! -f "$BACKEND_DIR/.env" ] && [ -f "$BACKEND_DIR/.env.example" ]; then
+if [ ! -f ".env" ] && [ -f ".env.example" ]; then
     echo "Creating .env file from example..."
-    cp "$BACKEND_DIR/.env.example" "$BACKEND_DIR/.env"
+    cp ".env.example" ".env"
     echo "WARNING: A default .env file has been created. Please edit it with your actual configuration."
 fi
 
 # Start the FastAPI server
 echo "Starting FastAPI server..."
-cd "$BACKEND_DIR"
 python -m uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload
 
 echo "Server stopped."

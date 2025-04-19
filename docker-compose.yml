@@ -18,6 +18,7 @@ services:
       - chroma
       - jira
       - postgres
+      - confluence
 
   chroma:
     image: chromadb/chroma:latest
@@ -54,9 +55,7 @@ services:
       - JVM_MAXIMUM_MEMORY=2048m
     volumes:
       - jira_data:/var/atlassian/application-data/jira
-      - ./jira-setup-files/dbconfig.xml:/var/atlassian/application-data/jira/dbconfig.xml
-      - ./jira-setup-files/jira-response.varfile:/var/atlassian/application-data/jira/jira-response.varfile:ro
-      - ./jira-setup-files/jira-config.properties:/var/atlassian/application-data/jira/jira-config.properties:ro
+      - ./jira-config/dbconfig.xml:/var/atlassian/application-data/jira/dbconfig.xml
       - ./jira-config/server.xml:/opt/atlassian/jira/conf/server.xml:ro
     ports:
       - "9090:8080"
@@ -74,9 +73,7 @@ services:
       - "8091:8091"
     volumes:
       - confluence-data:/var/atlassian/application-data/confluence
-      - ./confluence-setup-files/dbconfig.xml:/var/atlassian/application-data/confluence/dbconfig.xml
-      - ./confluence-setup-files/confluence-response.varfile:/var/atlassian/application-data/confluence/confluence-response.varfile:ro
-      - ./confluence-setup-files/confluence-config.properties:/var/atlassian/application-data/confluence/confluence-config.properties:ro
+      - ./confluence-config/dbconfig.xml:/var/atlassian/application-data/confluence/dbconfig.xml
       - ./confluence-config/server.xml:/opt/atlassian/confluence/conf/server.xml:ro
     environment:
       - CATALINA_CONNECTOR_PROXYNAME=localhost

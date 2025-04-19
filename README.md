@@ -5,7 +5,7 @@ A GenAI-powered solution for handling support issues / queries by analyzing Micr
 ## Project Structure
 
 ```
-prodissue-identifier/
+SupportBuddy/
 ├── .git/
 ├── .gitignore
 ├── LICENSE
