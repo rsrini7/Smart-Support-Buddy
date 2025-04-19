@@ -240,7 +240,7 @@ EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 
 ## System Operations
 ### Deployment
-- Development: `start_backend.sh`, `npm start`
+- Development: `start_backend.sh`, `start_frontend.sh`
 - Production: Docker Compose, persistent data volumes
 - Backend startup script ensures all services are ready before launch
 
@@ -270,5 +270,21 @@ Support Buddy provides a comprehensive solution for support issue management thr
 
 ## Troubleshoot
 
-1. update ATL_SECURED to the password what you configure during its db setup in dbconfig.xml
-2. confluence is not starting with 5433 port with its confluence-postgres. update its port as 5432 and start docker compose up -d confluence to do the initial setup, once done revert back to its port. use start_backend.sh to start normally.
+If you encounter issues during setup or operation, consider the following troubleshooting steps:
+
+1. **Jira Database Password Issue:**
+   - Ensure that the `ATL_SECURED` password in your Jira `dbconfig.xml` matches the password you configured during the Jira database setup.
+
+2. **Confluence Postgres Port Issue:**
+   - If Confluence is not starting with the default `5433` port for its `confluence-postgres` service:
+     1. Edit the configuration to use port `5432` instead of `5433`.
+     2. Run the following command to start Confluence for initial setup:
+        ```sh
+        docker compose up -d confluence
+        ```
+     3. Complete the initial setup steps in Confluence.
+     4. Revert the port back to `5433` in your configuration if needed.
+     5. Start the backend as usual with:
+        ```sh
+        ./start_backend.sh
+        ```
