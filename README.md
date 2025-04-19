@@ -47,7 +47,6 @@ SupportBuddy/
 │   └── src/
 ├── jira-config/
 ├── jira-setup-files/
-├── run_backend.py
 ├── set_venv.sh
 ├── start_backend.sh
 ├── start_frontend.sh
@@ -177,50 +176,18 @@ This application helps teams manage support issues / queries by:
 ## Starting the Frontend
 
 To start the frontend React application, use the provided script:
-
 ```sh
 ./start_frontend.sh
 ```
-
-This script will:
-- Change to the `frontend/` directory
-- Install dependencies with `npm install` if needed
-- Start the development server with `npm start`
-
-You can also run these steps manually:
-```sh
-cd frontend
-npm install  # Only needed once or when dependencies change
-npm start
-```
-
-The frontend will be available at [http://localhost:3000](http://localhost:3000) by default.
+See Development Setup for full details.
 
 ## Activating the Backend Python Virtual Environment
 
 To activate the backend's Python virtual environment, use the provided script:
-
 ```sh
 source ./set_venv.sh
 ```
-
-> **Note:**
-> - You **must** use `source` (or `. ./set_venv.sh`) to activate the venv in your current shell.
-> - Running `./set_venv.sh` directly will **not** activate the environment in your shell and will show an error.
-> - This script works for both bash and zsh shells.
-
-If the virtual environment is missing, simply run inside backend folder:
-
-```sh
-uv sync
-```
-
-Then install dependencies:
-
-```sh
-source ./set_venv.sh
-uv sync
-```
+See Development Setup for full details.
 
 ## Environment Variables
 The backend requires a `.env` file with configuration for:
