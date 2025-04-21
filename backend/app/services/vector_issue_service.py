@@ -6,6 +6,7 @@ import logging
 from app.services.chroma_client import get_collection
 from app.services.embedding_service import get_embedding
 from app.services.deduplication_utils import compute_content_hash
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,13 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
         if jira_comments_text:
             # Prepend comments to the embedding text for higher weight in semantic search
             full_text = f"Comments:\n{jira_comments_text}\n" + full_text
-        embedding = get_embedding(full_text)
+        # Only pass model_path if set in env
+        if getattr(settings, "MODEL_LOCAL_PATH", None):
+            logger.info(f"Using local model: {settings.MODEL_LOCAL_PATH}")
+            embedding = get_embedding(full_text, model_path=settings.MODEL_LOCAL_PATH)
+        else:
+            logger.info(f"Using model: {settings.EMBEDDING_MODEL}")
+            embedding = get_embedding(full_text)
 
         metadata = {
             "msg_subject": msg_subject,

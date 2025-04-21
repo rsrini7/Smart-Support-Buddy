@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     
     # LLM settings
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+    MODEL_LOCAL_PATH: Optional[str] = os.getenv("MODEL_LOCAL_PATH", None)
     _SIMILARITY_THRESHOLD_ENV: float = float(os.getenv("SIMILARITY_THRESHOLD", 0.1))
 
     @property
