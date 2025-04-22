@@ -39,6 +39,7 @@ services:
       timeout: 10s
       retries: 3
 
+  # Still chromadb admin uses v1 - not working.
   chroma-admin:
     image: fengzhichao/chromadb-admin
     ports:
