@@ -8,13 +8,13 @@ logger = logging.getLogger(__name__)
 
 def get_vector_db_client(db_path: str = None):
     """
-    Returns a ChromaDB PersistentClient (ChromaDB 0.4.x+) or HttpClient if USE_HTTP is true.
+    Returns a ChromaDB PersistentClient (ChromaDB 0.4.x+) or HttpClient if CHROMA_USE_HTTP is true.
     Uses settings.VECTOR_DB_PATH if db_path is not provided.
     Logs the persist directory and current working directory for debugging.
     """
     try:
-        use_http = os.getenv("CHROMA_USE_HTTP", "false").lower() == "true"
-        if use_http:
+        chroma_use_http = os.getenv("CHROMA_USE_HTTP", "false").lower() == "true"
+        if chroma_use_http:
             # Default to localhost:8000, can be extended to support env config
             logger.info("Using ChromaDB HttpClient (server mode)")
             client = chromadb.HttpClient(

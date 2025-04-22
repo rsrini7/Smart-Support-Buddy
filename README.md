@@ -8,19 +8,41 @@ A GenAI-powered solution for handling support issues / queries by analyzing Micr
 SupportBuddy/
 ├── backend/
 │   ├── app/
-│   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── logs/
+│   │   ├── models/
+│   │   └── services/
 │   ├── data/
-│   └── ...
-├── frontend/
-│   ├── src/
-│   ├── public/
-│   └── ...
+│   ├── tests/
+│   ├── Dockerfile
+│   ├── LearnChromaDB.py
+│   ├── check_chromadb.py
+│   ├── pyproject.toml
+│   ├── pytest.ini
+│   └── uv.lock
 ├── confluence-config/
+│   ├── dbconfig.xml
+│   └── server.xml
+├── frontend/
+│   ├── package.json
+│   ├── public/
+│   └── src/
 ├── jira-config/
+│   ├── dbconfig.xml
+│   └── server.xml
+├── chroma-config.yaml
+├── deduplication_plan.md
 ├── docker-compose.yml
+├── LICENSE
+├── README.md
+├── set_venv.sh
 ├── start_backend.sh
-├── start_frontend.sh
-└── ...
+├── start_chromadb_server.ps1
+├── start_chromadb_server.sh
+└── start_frontend.sh
 ```
 
 ## Overview
@@ -250,6 +272,65 @@ npm test
 - Authentication: Jira/Confluence credentials, StackOverflow public Q&A does not require authentication
 - Data protection: file handling, encryption, network, access controls
 
+## ChromaDB Setup (Docker Compose)
+
+ChromaDB is now run as a Docker container using Docker Compose. The `docker-compose.yml` file includes a `chroma` service with a healthcheck that ensures the service is healthy only if it returns HTTP 200 on its heartbeat endpoint.
+
+**To start all services (including ChromaDB):**
+```sh
+docker compose up -d
+```
+
+- The ChromaDB Admin UI is available at [http://localhost:3500](http://localhost:3500) if you wish to monitor collections.
+- The backend connects to ChromaDB via HTTP (see below).
+
+## Backend ChromaDB HTTP Client Configuration
+
+The backend is configured to connect to ChromaDB using the HTTP API (`chroma_use_http=True`).
+
+- Ensure your `pyproject.toml` specifies a `chromadb` version that matches the Docker image (e.g., `chromadb==1.0.5` if using `chromadb/chroma:1.0.5`).
+- The backend will use `chromadb.HttpClient` when `chroma_use_http` is enabled. Do not pass local-only settings (like `persist_directory`) to the HTTP client.
+- Example environment variable (in `backend/.env`):
+  ```env
+  CHROMA_USE_HTTP=true
+  CHROMA_SERVER_HOST=chroma
+  CHROMA_SERVER_HTTP_PORT=8000
+  ```
+- The backend will connect to ChromaDB at `http://chroma:8000` when running in Docker Compose.
+
+## Healthcheck for ChromaDB
+
+The `docker-compose.yml` healthcheck for ChromaDB is:
+```yaml
+test: ["CMD", "bash", "-c", "curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8000/api/v2/heartbeat | grep 200"]
+interval: 30s
+timeout: 10s
+retries: 3
+```
+This ensures the service is only marked healthy if it returns HTTP 200.
+
+## Troubleshooting: ChromaDB HTTP Mode
+
+If you see an error like:
+```
+{"error":"KeyError('_type')"}
+```
+when using `chroma_use_http=True`, this usually means:
+- The client and server versions of ChromaDB are mismatched.
+- You are using a feature or API call not supported in HTTP mode.
+
+**How to fix:**
+1. Ensure the `chromadb` Python package version in your backend matches the Docker image version.
+2. Only use `chromadb.HttpClient` (not `PersistentClient`) when `chroma_use_http` is enabled.
+3. Do not pass local-only settings (like `persist_directory`) to the HTTP client.
+
+**To update your backend's ChromaDB version:**
+```sh
+uv pip install --upgrade chromadb==1.0.5
+```
+
+**If you change the Docker image version, update your backend's `chromadb` version to match.**
+
 ## Summary
 Support Buddy provides a comprehensive solution for support issue management through:
 1. **Knowledge Integration**: MSG file parsing, Jira synchronization, Confluence integration, StackOverflow Q&A ingestion, automatic deduplication
@@ -276,3 +357,9 @@ If you encounter issues during setup or operation, consider the following troubl
         ```sh
         ./start_backend.sh
         ```
+
+3. **ChromaDB KeyError Issue:**
+   - If you encounter a `KeyError('_type')` when using ChromaDB in HTTP mode:
+     1. Verify that the backend's `chromadb` Python package version matches the Docker image version.
+     2. Ensure you are using `chromadb.HttpClient` and not `PersistentClient`.
+     3. Avoid passing local-only settings (like `persist_directory`) to the HTTP client.
