@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 def get_vector_db_client(db_path: str = None):
     """
-    Returns a ChromaDB Client (ChromaDB 1.x+).
+    Returns a ChromaDB PersistentClient (ChromaDB 0.4.x+).
     Uses settings.VECTOR_DB_PATH if db_path is not provided.
     Logs the persist directory and current working directory for debugging.
     """
@@ -16,9 +16,9 @@ def get_vector_db_client(db_path: str = None):
         persist_dir = db_path or settings.VECTOR_DB_PATH
         logger.debug(f"ChromaDB Persist Directory: {persist_dir}")
         logger.debug(f"Current Working Directory: {os.getcwd()}")
-        client = chromadb.Client(
-            Settings(
-                persist_directory=persist_dir,
+        client = chromadb.PersistentClient(
+            path=persist_dir,
+            settings=Settings(
                 anonymized_telemetry=False,
             )
         )

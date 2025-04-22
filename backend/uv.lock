@@ -2797,7 +2797,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "chroma-migrate", specifier = ">=0.0.7" },
-    { name = "chromadb", specifier = ">=1.0.0" },
+    { name = "chromadb", specifier = ">=1.0.5" },
     { name = "extract-msg", specifier = ">=0.41.0" },
     { name = "fastapi", specifier = ">=0.95.0" },
     { name = "httpx", specifier = ">=0.24.0" },

@@ -1,0 +1,13 @@
+port: 8000
+listen_address: "0.0.0.0"
+max_payload_size_bytes: 41943040
+# cors_allow_origins: ["*"]
+persist_path: "./backend/data/vectordb"
+allow_reset: false # defaults to false
+sqlitedb:
+  hash_type: "md5" # or "sha256"
+  migration_mode: "apply" # or "validate"
+sysdb:
+  sqlite:
+    log_topic_namespace: "default"
+    log_tenant: "default"
