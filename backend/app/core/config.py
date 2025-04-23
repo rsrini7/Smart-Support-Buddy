@@ -54,7 +54,7 @@ class Settings(BaseSettings):
         return bool(self.JIRA_URL and self.JIRA_USERNAME and (self.JIRA_API_TOKEN or self.JIRA_PASSWORD))
     
     # Vector DB settings
-    VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "./data/vectordb")
+    VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "./data/chroma")
     CHROMA_USE_HTTP: bool = os.getenv("CHROMA_USE_HTTP", "false").lower() == "true"
     USE_FAISS: bool = os.getenv("USE_FAISS", "false").lower() == "true"
     FAISS_INDEX_PATH: str = os.getenv("FAISS_INDEX_PATH", "./data/faiss")

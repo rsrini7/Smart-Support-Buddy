@@ -49,7 +49,7 @@ SupportBuddy/
 
 Support Buddy can use either ChromaDB or FAISS as its vector database backend. All references to "ChromaDB collections" in the UI have been updated to "Index Data" or "Index collections" to reflect this flexibility.
 
-*   **ChromaDB (Default):** Uses a persistent ChromaDB instance. The data is stored in the directory specified by the `VECTOR_DB_PATH` environment variable (defaults to `./data/vectordb`). You can also run ChromaDB as a separate server and connect via HTTP by setting `CHROMA_USE_HTTP=true`.
+*   **ChromaDB (Default):** Uses a persistent ChromaDB instance. The data is stored in the directory specified by the `VECTOR_DB_PATH` environment variable (defaults to `./data/chroma`). You can also run ChromaDB as a separate server and connect via HTTP by setting `CHROMA_USE_HTTP=true`.
 *   **FAISS (Alternative):** Uses a local FAISS index for vector storage. To enable FAISS, set the environment variable `USE_FAISS=true`. The FAISS index files will be stored in the directory specified by the `FAISS_INDEX_PATH` environment variable (defaults to `./data/faiss`).
 
 **Switching:**
@@ -231,7 +231,7 @@ This application helps teams manage support issues / queries by:
 
 Support Buddy can use either ChromaDB or FAISS as its vector database backend.
 
-*   **ChromaDB (Default):** Uses a persistent ChromaDB instance. The data is stored in the directory specified by the `VECTOR_DB_PATH` environment variable (defaults to `./data/vectordb`). You can also run ChromaDB as a separate server and connect via HTTP by setting `CHROMA_USE_HTTP=true`.
+*   **ChromaDB (Default):** Uses a persistent ChromaDB instance. The data is stored in the directory specified by the `VECTOR_DB_PATH` environment variable (defaults to `./data/chroma`). You can also run ChromaDB as a separate server and connect via HTTP by setting `CHROMA_USE_HTTP=true`.
 *   **FAISS (Alternative):** Uses a local FAISS index for vector storage. To enable FAISS, set the environment variable `USE_FAISS=true`. The FAISS index files will be stored in the directory specified by the `FAISS_INDEX_PATH` environment variable (defaults to `./data/faiss`).
 
 **Switching:**
@@ -301,7 +301,7 @@ JIRA_API_TOKEN=          # For cloud instance
 CONFLUENCE_USERNAME=your-confluence-username
 CONFLUENCE_PASSWORD=your-confluence-password
 # Vector DB Settings
-VECTOR_DB_PATH=./data/vectordb
+VECTOR_DB_PATH=./data/chroma
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 # (No special StackOverflow credentials required for public Q&A ingestion)
 ```

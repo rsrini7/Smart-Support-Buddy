@@ -35,8 +35,8 @@ env/
 .DS_Store
 
 # Project specific
-backend/data/vectordb/*
-!backend/data/vectordb/.gitkeep
+backend/data/chroma/*
+!backend/data/chroma/.gitkeep
 
 backend/data/faiss/*
 

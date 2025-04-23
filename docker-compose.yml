@@ -28,7 +28,7 @@ services:
       - PERSIST_DIRECTORY=/chroma/data
       - ANONYMIZED_TELEMETRY=False # Add this line to disable telemetry
     volumes:
-      - ./backend/data/vectordb:/chroma/data
+      - ./backend/data/chroma:/chroma/data
     ports:
       - "8000:8000"
     networks:

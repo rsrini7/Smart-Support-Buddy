@@ -7,7 +7,7 @@ app = marimo.App(width="medium")
 @app.cell
 def _():
     import chromadb
-    client = chromadb.PersistentClient(path="./backend/data/vectordb")
+    client = chromadb.PersistentClient(path="./backend/data/chroma")
     collection = client.get_or_create_collection("issues")
     return chromadb, client, collection
 
