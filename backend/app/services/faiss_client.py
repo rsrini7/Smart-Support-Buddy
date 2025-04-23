@@ -157,67 +157,78 @@ class FaissCollection:
                 # Note: Rolling back next_internal_id is tricky if partial success occurred
                 raise # Re-raise the exception
 
-    def query(self, query_embeddings: List[List[float]], n_results: int = 10, include: List[str] = ['metadatas', 'documents', 'distances']) -> Dict[str, List[List[Any]]]:
+    def query(self, query_embeddings: List[List[float]], n_results: int = 10, include: List[str] = ['metadatas', 'documents', 'distances'], where: Optional[Dict] = None, where_document: Optional[Dict] = None) -> Dict[str, List[Any]]:
+        """ Query the collection. Mimics ChromaDB's return format. """
         if self.index is None or self.index.ntotal == 0:
             logger.warning(f"[{self.name}] Query called on empty or uninitialized index.")
-            return {'ids': [[]], 'distances': [[]], 'metadatas': [[]], 'documents': [[]]}
+            # Return format consistent with ChromaDB for empty results
+            return {'ids': [], 'distances': [], 'metadatas': [], 'documents': [], 'embeddings': []}
 
         if not query_embeddings:
-             return {'ids': [[]], 'distances': [[]], 'metadatas': [[]], 'documents': [[]]}
+             return {'ids': [], 'distances': [], 'metadatas': [], 'documents': [], 'embeddings': []}
+
+        # Currently, FAISS client doesn't support 'where' or 'where_document' filters during search.
+        # This would require iterating through all results and filtering afterwards, which is inefficient.
+        # For now, we log a warning if these filters are used.
+        if where or where_document:
+            logger.warning(f"[{self.name}] FAISS client currently does not support 'where' or 'where_document' filters during query. Filters ignored.")
 
         query_embeddings_np = np.array(query_embeddings).astype('float32')
         if query_embeddings_np.shape[1] != self.dimension:
             raise ValueError(f"[{self.name}] Query embedding dimension mismatch: expected {self.dimension}, got {query_embeddings_np.shape[1]}")
 
+        # FAISS search expects a single batch of queries
+        # We only process the first query embedding if multiple are provided, mimicking Chroma's typical single-query behavior
+        if query_embeddings_np.shape[0] > 1:
+            logger.warning(f"[{self.name}] Multiple query embeddings provided ({query_embeddings_np.shape[0]}), but FAISS client currently processes only the first one.")
+            query_embeddings_np = query_embeddings_np[0:1]
+
         k = min(n_results, self.index.ntotal)
         if k <= 0:
-            return {'ids': [[]], 'distances': [[]], 'metadatas': [[]], 'documents': [[]]}
+            return {'ids': [], 'distances': [], 'metadatas': [], 'documents': [], 'embeddings': []}
 
         # FAISS search returns distances (L2 squared) and internal IDs
         all_distances, all_internal_ids = self.index.search(query_embeddings_np, k)
 
-        results_ids = []
-        results_distances = []
-        results_metadatas = []
-        results_documents = []
+        # Results for the first (and only processed) query
+        internal_ids_list = all_internal_ids[0]
+        distances_list = all_distances[0]
 
-        for i in range(query_embeddings_np.shape[0]): # Iterate through each query embedding
-            batch_ids = []
-            batch_distances = []
-            batch_metadatas = []
-            batch_documents = []
+        final_ids = []
+        final_distances = []
+        final_metadatas = []
+        final_documents = []
 
-            internal_ids_list = all_internal_ids[i]
-            distances_list = all_distances[i]
+        for j, internal_id in enumerate(internal_ids_list):
+            if internal_id == -1: # FAISS uses -1 if fewer than k results found
+                continue
 
-            for j, internal_id in enumerate(internal_ids_list):
-                if internal_id == -1: # FAISS uses -1 if fewer than k results found
-                    continue
+            doc_id = self.faiss_id_to_doc_id.get(int(internal_id)) # Ensure internal_id is int
+            if doc_id:
+                final_ids.append(doc_id)
+                if 'distances' in include:
+                    # FAISS returns L2 squared, Chroma often uses cosine similarity or L2.
+                    # We'll return L2 distance.
+                    final_distances.append(float(np.sqrt(distances_list[j]))) # Ensure float
+                if 'metadatas' in include:
+                    final_metadatas.append(self.metadata_store.get(doc_id, {}))
+                if 'documents' in include:
+                    final_documents.append(self.doc_store.get(doc_id, ""))
+                # 'embeddings' are typically not returned by FAISS search directly
 
-                doc_id = self.faiss_id_to_doc_id.get(internal_id)
-                if doc_id:
-                    batch_ids.append(doc_id)
-                    if 'distances' in include:
-                        # Convert L2 squared distance to something more like cosine similarity if needed
-                        # For now, just return the L2 distance
-                        batch_distances.append(float(distances_list[j]))
-                    if 'metadatas' in include:
-                        batch_metadatas.append(self.metadata_store.get(doc_id))
-                    if 'documents' in include:
-                        batch_documents.append(self.doc_store.get(doc_id))
-                else:
-                    logger.warning(f"[{self.name}] Could not find document ID for internal FAISS ID: {internal_id}")
+        # Construct the final result dictionary in ChromaDB format
+        final_results = {
+            'ids': [final_ids], # Wrap in a list to match Chroma's structure for single query
+            'distances': [final_distances] if 'distances' in include else None,
+            'metadatas': [final_metadatas] if 'metadatas' in include else None,
+            'documents': [final_documents] if 'documents' in include else None,
+            'embeddings': None # Embeddings not retrieved in standard search
+        }
 
-            results_ids.append(batch_ids)
-            results_distances.append(batch_distances)
-            results_metadatas.append(batch_metadatas)
-            results_documents.append(batch_documents)
-
-        final_results = {}
-        if 'ids' in include or not include: final_results['ids'] = results_ids
-        if 'distances' in include: final_results['distances'] = results_distances
-        if 'metadatas' in include: final_results['metadatas'] = results_metadatas
-        if 'documents' in include: final_results['documents'] = results_documents
+        # Remove keys if not requested (as per ChromaDB behavior)
+        for key in list(final_results.keys()):
+             if final_results[key] is None:
+                 del final_results[key]
 
         return final_results
 

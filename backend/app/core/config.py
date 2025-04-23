@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     
     # Vector DB settings
     VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "./data/vectordb")
+    CHROMA_USE_HTTP: bool = os.getenv("CHROMA_USE_HTTP", "false").lower() == "true"
+    USE_FAISS: bool = os.getenv("USE_FAISS", "false").lower() == "true"
+    FAISS_INDEX_PATH: str = os.getenv("FAISS_INDEX_PATH", "./data/faiss")
     
     
     # LLM settings
@@ -81,3 +84,5 @@ settings = Settings()
 
 # Ensure required directories exist
 os.makedirs(settings.VECTOR_DB_PATH, exist_ok=True)
+if settings.USE_FAISS:
+    os.makedirs(settings.FAISS_INDEX_PATH, exist_ok=True)

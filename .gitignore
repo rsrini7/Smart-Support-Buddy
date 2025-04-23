@@ -38,6 +38,8 @@ env/
 backend/data/vectordb/*
 !backend/data/vectordb/.gitkeep
 
+backend/data/faiss/*
+
 # Node
 node_modules/
 npm-debug.log*
