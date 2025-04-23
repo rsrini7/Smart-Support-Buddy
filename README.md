@@ -47,7 +47,7 @@ SupportBuddy/
 
 ## Index Data (ChromaDB / FAISS)
 
-Support Buddy can use either ChromaDB or FAISS as its vector database backend. All references to "ChromaDB collections" in the UI have been updated to "Index Data" or "Index collections" to reflect this flexibility.
+Support Buddy can use either ChromaDB or FAISS as its vector database backend. All references to "ChromaDB/FAISS collections" in the UI have been updated to "Index Data" or "Index collections" to reflect this flexibility.
 
 *   **ChromaDB (Default):** Uses a persistent ChromaDB instance. The data is stored in the directory specified by the `VECTOR_DB_PATH` environment variable (defaults to `./data/chroma`). You can also run ChromaDB as a separate server and connect via HTTP by setting `CHROMA_USE_HTTP=true`.
 *   **FAISS (Alternative):** Uses a local FAISS index for vector storage. To enable FAISS, set the environment variable `USE_FAISS=true`. The FAISS index files will be stored in the directory specified by the `FAISS_INDEX_PATH` environment variable (defaults to `./data/faiss`).

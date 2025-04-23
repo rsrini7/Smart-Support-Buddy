@@ -36,7 +36,7 @@ const AdminChromaPage = () => {
         setLoading(true);
         setError('');
         const res = await fetch(API_URL);
-        if (!res.ok) throw new Error('Failed to fetch ChromaDB collections');
+        if (!res.ok) throw new Error('Failed to fetch collections');
         const data = await res.json();
         let safeCollections = [];
         if (data && Array.isArray(data.collections)) {
