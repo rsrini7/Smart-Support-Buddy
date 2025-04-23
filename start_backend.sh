@@ -10,7 +10,7 @@ echo "===== Support Buddy Backend Setup ====="
 # Define directories
 BACKEND_DIR="$(pwd)/backend"
 DATA_DIR="$BACKEND_DIR/data"
-VECTOR_DB_DIR="$DATA_DIR/vectordb"
+VECTOR_DB_DIR="$DATA_DIR/chroma"
 
 # Start Docker Compose services
 echo "Starting Docker Compose services..."
