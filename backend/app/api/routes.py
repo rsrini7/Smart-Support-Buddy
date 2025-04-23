@@ -332,8 +332,8 @@ async def search_issues(query: SearchQuery):
         # Combine all results for single page result
         combined_results = []
         for item in vector_issues:
-            if hasattr(item, "dict"):
-                item_data = item.dict()
+            if hasattr(item, "model_dump"):
+                item_data = item.model_dump()
             else:
                 item_data = dict(item)
             combined_results.append({

@@ -4,6 +4,7 @@ from app.services.embedding_service import get_embedding
 from app.services.deduplication_utils import compute_content_hash
 from app.services.stackoverflow_service import fetch_stackoverflow_content
 from app.utils.similarity import compute_similarity_score
+from app.models.models import StackOverflowQA
 import logging
 from datetime import datetime
 
@@ -30,8 +31,19 @@ def add_stackoverflow_qa_to_vectordb(stackoverflow_url: str, extra_metadata: Opt
         else:
             qid = f"soq_{question_id}"
             ids.append(qid)
+            question_obj = StackOverflowQA(
+                question_id=question_id,
+                question_text=content["question_text"],
+                tags=content.get("tags"),
+                author=content.get("author"),
+                creation_date=content.get("creation_date"),
+                score=content.get("score"),
+                link=content.get("link"),
+                content_hash=question_hash,
+                metadata=extra_metadata,
+            )
             embeddings.append(get_embedding(content["question_text"]))
-            metadatas.append({"question_id": question_id, "content_hash": question_hash})
+            metadatas.append(question_obj.model_dump())
             documents.append(content["question_text"])
         # Add answers
         for ans in content.get("answers", []):
@@ -42,8 +54,19 @@ def add_stackoverflow_qa_to_vectordb(stackoverflow_url: str, extra_metadata: Opt
             else:
                 aid = f"soa_{ans["answer_id"]}"
                 ids.append(aid)
+                answer_obj = StackOverflowQA(
+                    question_id=ans["question_id"],
+                    question_text=ans["text"],
+                    tags=None,
+                    author=ans.get("author"),
+                    creation_date=ans.get("creation_date"),
+                    score=ans.get("score"),
+                    link=None,
+                    content_hash=ans_hash,
+                    metadata=None,
+                )
                 embeddings.append(get_embedding(ans["text"]))
-                metadatas.append({"answer_id": ans["answer_id"], "content_hash": ans_hash})
+                metadatas.append(answer_obj.model_dump())
                 documents.append(ans["text"])
         # Only add if there are new documents
         if embeddings:
