@@ -232,33 +232,67 @@ class FaissCollection:
 
         return final_results
 
+    def _matches_where(self, metadata: Optional[Dict[str, Any]], where_clause: Dict[str, Any]) -> bool:
+        """ Check if an item's metadata matches the where clause. """
+        if not metadata:
+            return False
+        for key, value in where_clause.items():
+            if key not in metadata or metadata[key] != value:
+                return False
+        return True
+
+    def _matches_where_document(self, document: Optional[str], where_document_clause: Dict[str, Any]) -> bool:
+        """ Check if an item's document content matches the where_document clause. """
+        if not document:
+            return False
+        if '$contains' in where_document_clause:
+            search_term = where_document_clause['$contains']
+            return search_term in document
+        # Add more complex document filtering logic here if needed
+        logger.warning(f"[{self.name}] Unsupported where_document filter: {where_document_clause}")
+        return False
+
     def get(self, ids: Optional[List[str]] = None, where: Optional[Dict[str, Any]] = None, limit: Optional[int] = None, offset: Optional[int] = None, where_document: Optional[Dict[str, Any]] = None, include: List[str] = ['metadatas', 'documents']) -> Dict[str, List[Any]]:
-        """ Mimics ChromaDB's get method. Filtering is basic (only by ID). """
-        if where or where_document:
-            logger.warning(f"[{self.name}] FAISS get method currently only supports filtering by ID. 'where' and 'where_document' clauses are ignored.")
+        """ Mimics ChromaDB's get method, including basic 'where' and 'where_document' filtering. """
+        # Remove the warning log as filtering is implemented
+        # logger.warning(f"[{self.name}] FAISS get method currently only supports filtering by ID. 'where' and 'where_document' clauses are ignored.")
 
-        target_ids = ids if ids else list(self.doc_id_to_faiss_id.keys())
+        potential_ids = ids if ids else list(self.doc_id_to_faiss_id.keys())
 
-        # Apply limit and offset (basic implementation)
+        filtered_items = []
+        for doc_id in potential_ids:
+            if doc_id not in self.doc_id_to_faiss_id:
+                continue # Skip if ID doesn't exist in this collection
+
+            metadata = self.metadata_store.get(doc_id)
+            document = self.doc_store.get(doc_id)
+
+            # Apply 'where' filter (metadata)
+            if where and not self._matches_where(metadata, where):
+                continue
+
+            # Apply 'where_document' filter (document content)
+            if where_document and not self._matches_where_document(document, where_document):
+                continue
+
+            # If all filters pass, add the item
+            item = {'id': doc_id}
+            if 'metadatas' in include: item['metadata'] = metadata
+            if 'documents' in include: item['document'] = document
+            # Note: Embeddings are not typically stored/retrieved in 'get'
+            filtered_items.append(item)
+
+        # Apply limit and offset *after* filtering
         start = offset if offset else 0
-        end = (start + limit) if limit else len(target_ids)
-        paginated_ids = target_ids[start:end]
+        end = (start + limit) if limit is not None else len(filtered_items)
+        paginated_items = filtered_items[start:end]
 
-        results_ids = []
-        results_metadatas = []
-        results_documents = []
-
-        for doc_id in paginated_ids:
-            if doc_id in self.doc_id_to_faiss_id:
-                results_ids.append(doc_id)
-                if 'metadatas' in include:
-                    results_metadatas.append(self.metadata_store.get(doc_id))
-                if 'documents' in include:
-                    results_documents.append(self.doc_store.get(doc_id))
-
-        final_results = {'ids': results_ids}
-        if 'metadatas' in include: final_results['metadatas'] = results_metadatas
-        if 'documents' in include: final_results['documents'] = results_documents
+        # Construct final results dictionary
+        final_results = {'ids': [item['id'] for item in paginated_items]}
+        if 'metadatas' in include:
+            final_results['metadatas'] = [item.get('metadata') for item in paginated_items]
+        if 'documents' in include:
+            final_results['documents'] = [item.get('document') for item in paginated_items]
 
         return final_results
 
