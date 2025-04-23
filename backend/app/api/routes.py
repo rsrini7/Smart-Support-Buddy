@@ -25,6 +25,7 @@ from app.services.stackoverflow_service import (
     search_similar_stackoverflow_content
 )
 
+from app.utils.similarity import compute_similarity_score
 
 class JiraIngestRequest(BaseModel):
     jira_ticket_ids: List[str]
@@ -213,7 +214,7 @@ async def search_stackoverflow_qa(payload: StackOverflowSearchRequest):
             metadata = metadatas[i]
             document = documents[i]
             distance = distances[i]
-            similarity_score = 1.0 - min(distance / 2, 1.0)
+            similarity_score = compute_similarity_score(distance)
             if similarity_score == 0.0:
                 continue  # Skip results with 0.00% similarity
             formatted.append({
@@ -258,7 +259,7 @@ async def search_confluence_pages(payload: ConfluenceSearchRequest):
                 continue
             seen.add(unique_key)
             distance = distances[i]
-            similarity_score = 1.0 - min(distance / 2, 1.0)
+            similarity_score = compute_similarity_score(distance)
             if similarity_score == 0.0:
                 continue  # Skip results with 0.00% similarity
             formatted.append({
