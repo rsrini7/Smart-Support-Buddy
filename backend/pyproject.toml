@@ -30,4 +30,5 @@ dependencies = [
     "transformers>=4.30,<4.38",
     "marimo==0.12.10",
     "chroma-migrate>=0.0.7",
+    "faiss-cpu>=1.7.4", # Added for FAISS support
 ]
