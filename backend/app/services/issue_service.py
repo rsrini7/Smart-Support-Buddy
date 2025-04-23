@@ -4,6 +4,7 @@ from app.models import IssueResponse
 from datetime import datetime
 import logging
 import re
+from app.utils.similarity import compute_similarity_score
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +138,7 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                             distance = distances[i]
                     else:
                         distance = 0.0
-                    similarity_score = 1.0 - min(distance / 2, 1.0)
+                    similarity_score = compute_similarity_score(distance)
                     if boost_jira_id:
                         similarity_score = 1.0
                 else:

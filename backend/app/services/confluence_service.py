@@ -5,6 +5,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 from app.services.chroma_client import get_vector_db_client
 from app.services.embedding_service import get_embedding_model
+from app.utils.similarity import compute_similarity_score
 
 from app.core.config import settings
 
@@ -145,7 +146,7 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
                 continue
             seen.add(unique_key)
             distance = distances[i] if i < len(distances) else 0.0
-            similarity_score = 1.0 - min(distance / 2, 1.0)
+            similarity_score = compute_similarity_score(distance)
             if similarity_score < settings.SIMILARITY_THRESHOLD:
                 continue
 

@@ -3,6 +3,7 @@ from app.services.chroma_client import get_collection
 from app.services.embedding_service import get_embedding
 from app.services.deduplication_utils import compute_content_hash
 from app.services.stackoverflow_service import fetch_stackoverflow_content
+from app.utils.similarity import compute_similarity_score
 import logging
 from datetime import datetime
 
@@ -75,7 +76,7 @@ def search_similar_stackoverflow_content(query_text: str, limit: int = 10):
             metadata = metadatas[i] if i < len(metadatas) else {}
             document = documents[i] if i < len(documents) else ""
             distance = distances[i] if i < len(distances) else 0.0
-            similarity_score = 1.0 - min(distance / 2, 1.0)
+            similarity_score = compute_similarity_score(distance)
             if similarity_score < 0.1:  # TODO: Use settings.SIMILARITY_THRESHOLD
                 continue
             formatted.append({
