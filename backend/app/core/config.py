@@ -59,6 +59,12 @@ class Settings(BaseSettings):
     USE_FAISS: bool = os.getenv("USE_FAISS", "false").lower() == "true"
     FAISS_INDEX_PATH: str = os.getenv("FAISS_INDEX_PATH", "./data/faiss")
     
+    # OpenRouter LLM API settings
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    OPENROUTER_API_URL: str = os.getenv("OPENROUTER_API_URL", "https://openrouter.ai/api/v1/chat/completions")
+    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "openai/gpt-3.5-turbo")
+    YOUR_SITE_URL: str = os.getenv("YOUR_SITE_URL", "http://localhost:3000")
+    YOUR_APP_NAME: str = os.getenv("YOUR_APP_NAME", "SupportBuddy")
     
     # LLM settings
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")

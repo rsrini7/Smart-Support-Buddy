@@ -45,6 +45,37 @@ SupportBuddy/
 └── start_frontend.sh
 ```
 
+## LLM Integration (OpenRouter)
+
+Support Buddy supports LLM-powered summarization of search results using OpenRouter. This feature provides concise summaries and action points for your search queries, powered by models like GPT-3.5/4 and others via OpenRouter.
+
+### Enabling LLM Summaries
+
+1. **Obtain an OpenRouter API Key:**
+   - Sign up and get your API key from https://openrouter.ai/
+
+2. **Configure Environment Variables:**
+   Add the following to your `backend/.env` (see `.env.example`):
+   ```env
+   # OpenRouter LLM API settings
+   OPENROUTER_API_KEY=your-openrouter-api-key
+   OPENROUTER_API_URL=https://openrouter.ai/api/v1/chat/completions
+   OPENROUTER_MODEL=openai/gpt-3.5-turbo  # Or any available model
+   YOUR_SITE_URL=http://localhost:3000    # For analytics (optional)
+   YOUR_APP_NAME=SupportBuddy            # For analytics (optional)
+   ```
+
+3. **Frontend Usage:**
+   - On the Search page, enable the "LLM" checkbox before searching to get an LLM-generated summary of the results.
+   - The summary will appear at the top of the results, styled for both dark and light mode.
+
+4. **Backend:**
+   - The backend will use the configured OpenRouter API key and model to generate summaries when requested.
+   - You can change the default model by updating `OPENROUTER_MODEL` in your `.env`.
+
+### Security Note
+- **Never commit your real API key to version control.** Use `.env` for secrets and `.env.example` for templates only.
+
 ## Index Data (ChromaDB / FAISS)
 
 Support Buddy can use either ChromaDB or FAISS as its vector database backend. All references to "ChromaDB/FAISS collections" in the UI have been updated to "Index Data" or "Index collections" to reflect this flexibility.

@@ -285,6 +285,8 @@ async def search_issues(query: SearchQuery):
     from app.services.vector_service import search_similar_issues
     from app.services.confluence_service import search_similar_confluence_pages
     from app.services.stackoverflow_service import search_similar_stackoverflow_content
+    from app.services.llm_service import generate_summary_from_results # Import LLM service
+    from app.models.models import SearchQuery # Ensure SearchQuery is imported
 
     try:
         vector_task = asyncio.to_thread(search_similar_issues, query.query_text, query.jira_ticket_id, query.limit)
@@ -334,11 +336,22 @@ async def search_issues(query: SearchQuery):
         # Sort combined results by similarity_score descending
         combined_results.sort(key=lambda x: x.get("similarity_score", 0), reverse=True)
 
+        llm_summary = ""
+        if query.use_llm and combined_results:
+            try:
+                # Generate summary using the top results
+                llm_summary = generate_summary_from_results(combined_results)
+            except Exception as llm_e:
+                # Log LLM error but don't fail the whole request
+                logger.error(f"LLM summary generation failed: {llm_e}", exc_info=True)
+                llm_summary = f"Error generating summary. Please check backend logs." # Inform frontend about the error
+
         return {
             "results": combined_results,
             "vector_issues": vector_issues,
             "confluence_results": confluence_results,
-            "stackoverflow_results": stackoverflow_results
+            "stackoverflow_results": stackoverflow_results,
+            "llm_summary": llm_summary # Include LLM summary in response
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

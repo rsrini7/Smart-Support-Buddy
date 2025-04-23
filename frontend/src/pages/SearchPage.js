@@ -14,7 +14,9 @@ import {
   Divider,
   Chip,
   Tabs,
-  Tab
+  Tab,
+  Checkbox, // Import Checkbox
+  FormControlLabel // Import FormControlLabel
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BACKEND_API_BASE } from '../settings';
@@ -30,10 +32,14 @@ const SearchPage = () => {
   const [error, setError] = useState('');
   const [tab, setTab] = useState(0);
   const [singlePageResult, setSinglePageResult] = useState(true);
+  const [useLLM, setUseLLM] = useState(false); // State for LLM checkbox
+  const [llmSummary, setLlmSummary] = useState(''); // State for LLM summary
 
   useEffect(() => {
     // Perform search if we have initial search parameters
     if (location.state?.searchQuery) {
+      // Check if LLM was used in the previous state if needed
+      // setUseLLM(location.state?.useLLM || false);
       handleSearch();
     }
     // eslint-disable-next-line
@@ -59,6 +65,7 @@ const SearchPage = () => {
     setLoading(true);
     setError('');
     setCombinedResults([]);
+    setLlmSummary(''); // Clear previous summary
 
     try {
       const response = await fetch(`${BACKEND_API_BASE}/search`, {
@@ -68,7 +75,8 @@ const SearchPage = () => {
         },
         body: JSON.stringify({
           query_text: queryText,
-          limit: 10
+          limit: 10,
+          use_llm: useLLM // Send LLM flag to backend
         }),
       });
 
@@ -79,6 +87,7 @@ const SearchPage = () => {
       }
 
       setCombinedResults(data.results || []);
+      setLlmSummary(data.llm_summary || ''); // Set LLM summary if available
     } catch (err) {
       setError(err.message);
     } finally {
@@ -90,7 +99,9 @@ const SearchPage = () => {
     navigate(`/issues/${issueId}`, {
       state: {
         searchResults: combinedResults,
-        searchQuery: queryText
+        searchQuery: queryText,
+        // Persist LLM state if needed
+        // useLLM: useLLM
       }
     });
   };
@@ -148,28 +159,37 @@ const SearchPage = () => {
             sx={{ mb: 2 }}
           />
 
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             <Button
               variant="contained"
               color="primary"
               onClick={handleSearch}
               disabled={loading || !queryText}
-              sx={{ mr: 2 }}
             >
               {loading ? <CircularProgress size={24} /> : 'Search'}
             </Button>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <input
-                type="checkbox"
-                id="singlePageResult"
-                checked={singlePageResult}
-                onChange={(e) => setSinglePageResult(e.target.checked)}
-                style={{ marginRight: 6 }}
-              />
-              <label htmlFor="singlePageResult" style={{ userSelect: 'none' }}>
-                Single Page Result
-              </label>
-            </Box>
+            {/* Keep Single Page Result Checkbox */}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={singlePageResult}
+                  onChange={(e) => setSinglePageResult(e.target.checked)}
+                  id="singlePageResult"
+                />
+              }
+              label="Single Page Result"
+            />
+            {/* Add LLM Checkbox */}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={useLLM}
+                  onChange={(e) => setUseLLM(e.target.checked)}
+                  id="useLLM"
+                />
+              }
+              label="Use LLM Summary"
+            />
           </Box>
         </Box>
       </Paper>
@@ -178,6 +198,53 @@ const SearchPage = () => {
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
+      )}
+
+      {/* Display LLM Summary if available */}
+      {llmSummary && (
+        <Paper
+          sx={(theme) => ({
+            p: 2,
+            mb: 3,
+            background: theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, #23272a 0%, #181a1b 100%)'
+              : theme.palette.info.light,
+            color: theme.palette.mode === 'dark'
+              ? theme.palette.text.primary
+              : theme.palette.text.primary,
+            border: `1px solid ${theme.palette.divider}`,
+            boxShadow: 3,
+            borderRadius: 2,
+            transition: 'background 0.3s, color 0.3s',
+          })}
+        >
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={(theme) => ({
+              color: theme.palette.mode === 'dark'
+                ? theme.palette.info.light
+                : theme.palette.info.dark,
+              fontWeight: 700,
+              letterSpacing: 1,
+              mb: 1
+            })}
+          >
+            LLM Summary
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={(theme) => ({
+              whiteSpace: 'pre-wrap',
+              fontFamily: 'inherit',
+              color: theme.palette.text.primary,
+              fontSize: 16,
+              lineHeight: 1.6,
+            })}
+          >
+            {llmSummary}
+          </Typography>
+        </Paper>
       )}
 
       {singlePageResult ? (

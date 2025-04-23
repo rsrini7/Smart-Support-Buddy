@@ -33,6 +33,7 @@ class SearchQuery(BaseModel):
     query_text: str
     jira_ticket_id: Optional[str] = None
     limit: int = Field(default=10, ge=1, le=100)
+    use_llm: bool = False  # Add flag for LLM usage
 
 class JiraTicket(BaseModel):
     """Schema for Jira ticket data"""
