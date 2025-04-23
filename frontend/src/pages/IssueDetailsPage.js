@@ -239,20 +239,7 @@ const IssueDetailsPage = () => {
                     {issue.msg_data.body}
                   </Typography>
                 )}
-                {issue.msg_data.attachments && issue.msg_data.attachments.length > 0 && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Attachments
-                    </Typography>
-                    <List dense>
-                      {issue.msg_data.attachments.map((att, idx) => (
-                        <ListItem key={idx}>
-                          <ListItemText primary={att.fileName} />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Box>
-                )}
+                {/* Attachments removed: no longer parsed, ingested, or displayed */}
               </CardContent>
             </Card>
           </Box>

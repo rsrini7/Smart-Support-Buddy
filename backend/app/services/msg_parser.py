@@ -39,15 +39,15 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
             received_date = dt.now()
             logger.debug("[msg_parser] No date info found, using current datetime as received_date fallback")
         attachments = []
-        attachment_dir = os.path.join(os.path.dirname(file_path), "attachments", os.path.basename(file_path).split(".")[0])
-        os.makedirs(attachment_dir, exist_ok=True)
-        for attachment in msg.attachments:
-            logger.info(f"Processing attachment: {getattr(attachment, 'longFilename', None)}")
-            if attachment.longFilename:
-                attachment_path = os.path.join(attachment_dir, attachment.longFilename)
-                with open(attachment_path, "wb") as f:
-                    f.write(attachment.data)
-                attachments.append(attachment_path)
+        # attachment_dir = os.path.join(os.path.dirname(file_path), "attachments", os.path.basename(file_path).split(".")[0])
+        # os.makedirs(attachment_dir, exist_ok=True)
+        # for attachment in msg.attachments:
+        #     logger.info(f"Processing attachment: {getattr(attachment, 'longFilename', None)}")
+        #     if attachment.longFilename:
+        #         attachment_path = os.path.join(attachment_dir, attachment.longFilename)
+        #         with open(attachment_path, "wb") as f:
+        #             f.write(attachment.data)
+        #         attachments.append(attachment_path)
         headers = {}
         if hasattr(msg, "header") and msg.header:
             if isinstance(msg.header, str):
@@ -68,7 +68,7 @@ def parse_msg_file(file_path: str) -> Dict[str, Any]:
             "recipients": recipients,
             "body": body,
             "received_date": received_date,
-            "attachments": attachments,
+            # 'attachments': attachments,  # Remove attachments from result
             "headers": headers
         }
         extracted_details = extract_issue_details(result)

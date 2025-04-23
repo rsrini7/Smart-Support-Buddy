@@ -54,8 +54,7 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
                 'received_date': metadata.get('msg_received_date', ''),
                 'jira_id': metadata.get('msg_jira_id', ''),
                 'jira_url': metadata.get('msg_jira_url', ''),
-                'recipients': metadata.get('recipients', []),
-                'attachments': metadata.get('attachments', [])
+                'recipients': metadata.get('recipients', [])
             },
             jira_data=jira_data
         )
@@ -157,8 +156,7 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                     'received_date': metadata.get('msg_received_date', ''),
                     'jira_id': metadata.get('msg_jira_id', ''),
                     'jira_url': metadata.get('msg_jira_url', ''),
-                    'recipients': metadata.get('recipients', []),
-                    'attachments': metadata.get('attachments', [])
+                    'recipients': metadata.get('recipients', [])
                 }
                 issue_response = IssueResponse(
                     id=issue_id,
