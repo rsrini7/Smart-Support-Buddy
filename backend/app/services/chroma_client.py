@@ -75,13 +75,15 @@ def clear_collection(collection_name: str) -> bool:
         use_faiss = os.getenv("USE_FAISS", "false").lower() == "true"
 
         if use_faiss:
-            # FAISS client needs a specific delete/clear implementation
-            # Current FaissClient has delete_collection, let's use that.
-            # Or implement a clear method within FaissCollection if needed.
-            logger.warning(f"Clearing FAISS collection '{collection_name}' by deleting and recreating.")
-            client.delete_collection(collection_name)
-            client.get_or_create_collection(collection_name) # Recreate it empty
-            logger.info(f"FAISS collection '{collection_name}' cleared and recreated.")
+            collection = client.get_collection(collection_name)
+            if collection is not None and hasattr(collection, "clear"):
+                collection.clear()
+                logger.info(f"FAISS collection '{collection_name}' cleared using clear().")
+            else:
+                logger.warning(f"FAISS collection '{collection_name}' not found or does not support clear(). Deleting and recreating.")
+                client.delete_collection(collection_name)
+                client.get_or_create_collection(collection_name) # Recreate it empty
+                logger.info(f"FAISS collection '{collection_name}' deleted and recreated.")
             return True
         else:
             # ChromaDB's way

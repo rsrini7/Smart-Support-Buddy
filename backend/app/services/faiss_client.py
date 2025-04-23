@@ -338,6 +338,18 @@ class FaissCollection:
         """ Returns the number of items in the collection. """
         return self.index.ntotal if self.index else 0
 
+    def clear(self):
+        """Remove all documents, metadata, and reset the FAISS index."""
+        import faiss
+        self.doc_store.clear()
+        self.metadata_store.clear()
+        self.faiss_id_to_doc_id.clear()
+        self.doc_id_to_faiss_id.clear()
+        self.next_internal_id = 0
+        self.index = faiss.IndexFlatL2(self.dimension)
+        self._save()
+        logger.info(f"FAISS collection '{self.name}' cleared (all records removed, index reset).")
+
 
 class FaissClient:
     """ Manages multiple FAISS collections. """
