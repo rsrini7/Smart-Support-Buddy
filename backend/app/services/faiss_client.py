@@ -375,7 +375,18 @@ class FaissClient:
             return collection
 
     def get_collection(self, name: str) -> Optional[FaissCollection]:
-         return self.collections.get(name)
+        # Try in-memory first
+        if name in self.collections:
+            return self.collections[name]
+        # Try loading from disk if folder exists
+        collection_path = os.path.join(self.base_path, name)
+        index_path = os.path.join(collection_path, "index.faiss")
+        metadata_path = os.path.join(collection_path, "metadata.pkl")
+        if os.path.exists(collection_path) and (os.path.exists(index_path) or os.path.exists(metadata_path)):
+            collection = FaissCollection(name, index_path, metadata_path, self.dimension)
+            self.collections[name] = collection
+            return collection
+        return None
 
     def delete_collection(self, name: str):
         if name in self.collections:
@@ -400,8 +411,58 @@ class FaissClient:
             logger.warning(f"Attempted to delete non-existent FAISS collection: {name}")
 
     def list_collections(self) -> List[Dict[str, Any]]:
-         # Mimic Chroma's list_collections format
-         return [{'name': name, 'metadata': None} for name in self.collections.keys()]
+        """
+        Mimic Chroma's list_collections format.
+        Scan the base_path directory for all subdirectories that contain FAISS index or metadata files.
+        Return their names as collections, even if not loaded in memory, and include record count.
+        """
+        collections = set(self.collections.keys())
+        # Scan for additional collections on disk
+        if os.path.exists(self.base_path):
+            for entry in os.listdir(self.base_path):
+                entry_path = os.path.join(self.base_path, entry)
+                if os.path.isdir(entry_path):
+                    has_metadata = os.path.exists(os.path.join(entry_path, "metadata.pkl"))
+                    has_index = any(f.endswith(".index") for f in os.listdir(entry_path)) if os.path.exists(entry_path) else False
+                    if has_metadata or has_index:
+                        collections.add(entry)
+        result = []
+        for name in sorted(collections):
+            try:
+                collection = self.get_collection(name)
+                count = collection.count() if collection else 0
+            except Exception:
+                count = 0
+            result.append({"name": name, "record_count": count})
+        return result
+
+    def get_collections_with_records(self) -> List[Dict[str, Any]]:
+        """
+        Returns all collections and their records (id, document, metadata) in Chroma-like format.
+        """
+        results = []
+        for col in self.list_collections() or []:
+            collection = self.get_collection(col["name"])
+            if collection:
+                all_ids = list(collection.doc_store.keys())
+                records = []
+                for doc_id in all_ids:
+                    record = {
+                        "id": doc_id,
+                        "document": collection.doc_store.get(doc_id, ""),
+                        "metadata": collection.metadata_store.get(doc_id, {})
+                    }
+                    records.append(record)
+                results.append({
+                    "collection_name": col["name"],
+                    "records": records
+                })
+            else:
+                results.append({
+                    "collection_name": col["name"],
+                    "records": []
+                })
+        return results
 
 # Global instance (optional, depends on usage pattern)
 # _global_faiss_client = None

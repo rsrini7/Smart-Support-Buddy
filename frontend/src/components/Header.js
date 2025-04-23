@@ -260,28 +260,7 @@ const Header = ({ mode, toggleTheme }) => {
               <Box component="span" sx={{ minWidth: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                 <DeleteSweepIcon sx={{ color: theme.palette.primary.main }} />
               </Box>
-              Clear ChromaDB Collections
-            </MenuItem>
-            <MenuItem
-              component={RouterLink}
-              to="/config"
-              onClick={handleClose}
-              sx={{
-                borderRadius: 1.5,
-                fontWeight: 500,
-                gap: 1,
-                px: 2,
-                my: 0.5,
-                transition: 'background 0.2s',
-                '&:hover': {
-                  background: 'linear-gradient(90deg, #6a11cb22 0%, #2575fc22 100%)'
-                }
-              }}
-            >
-              <Box component="span" sx={{ minWidth: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                <SettingsIcon sx={{ color: theme.palette.secondary.main }} />
-              </Box>
-              Config
+              Clear Index Data
             </MenuItem>
           <MenuItem
             component={RouterLink}
@@ -302,8 +281,29 @@ const Header = ({ mode, toggleTheme }) => {
             <Box component="span" sx={{ minWidth: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
               <TableChartIcon sx={{ color: theme.palette.primary.main }} />
             </Box>
-            Admin Chroma
+            View Index Data
           </MenuItem>
+          <MenuItem
+              component={RouterLink}
+              to="/config"
+              onClick={handleClose}
+              sx={{
+                borderRadius: 1.5,
+                fontWeight: 500,
+                gap: 1,
+                px: 2,
+                my: 0.5,
+                transition: 'background 0.2s',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #6a11cb22 0%, #2575fc22 100%)'
+                }
+              }}
+            >
+              <Box component="span" sx={{ minWidth: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <SettingsIcon sx={{ color: theme.palette.secondary.main }} />
+              </Box>
+              Config
+            </MenuItem>
         </Menu>
         </Box>
         <Box sx={{ ml: 2 }}>

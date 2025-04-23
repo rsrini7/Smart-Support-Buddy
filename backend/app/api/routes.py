@@ -383,13 +383,36 @@ async def clear_chroma_collection(collection_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+from app.core.config import settings
+from app.services.faiss_client import FaissClient # Add import for FaissClient
+
 @router.get("/chroma-collections")
 async def get_chroma_collections():
     """
-    Get all ChromaDB collections and their documents.
+    Get all vector database collections (ChromaDB or FAISS) and their basic info.
     """
-    data = get_all_chroma_collections_data()
-    return {"collections": data}
+    if settings.USE_FAISS:
+        try:
+            # Ensure FAISS_INDEX_PATH is configured
+            if not settings.FAISS_INDEX_PATH:
+                raise HTTPException(status_code=500, detail="FAISS_INDEX_PATH is not configured in settings.")
+            faiss_client = FaissClient(base_path=settings.FAISS_INDEX_PATH)
+            data = faiss_client.get_collections_with_records()
+            logger.info(f"Retrieved FAISS collections: {len(data)}")
+        except Exception as e:
+            logger.error(f"Error accessing FAISS collections: {e}")
+            raise HTTPException(status_code=500, detail=f"Error accessing FAISS collections: {str(e)}")
+    else:
+        try:
+            data = get_all_chroma_collections_data() or []
+            if not isinstance(data, list):
+                data = []
+            logger.info(f"Retrieved ChromaDB collections: {len(data)}")
+        except Exception as e:
+            logger.error(f"Error accessing ChromaDB collections: {e}")
+            raise HTTPException(status_code=500, detail=f"Error accessing ChromaDB collections: {str(e)}")
+
+    return {"collections": data if isinstance(data, list) else []}
     
 @router.delete("/issues/{issue_id}")
 async def delete_production_issue(issue_id: str):

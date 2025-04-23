@@ -90,20 +90,20 @@ def clear_collection(collection_name: str) -> bool:
                 collection = client.get_collection(collection_name)
                 count = collection.count()
                 if count > 0:
-                    logger.info(f"Clearing ChromaDB collection '{collection_name}' which has {count} items.")
-                    # ChromaDB's delete method with filter is preferred if available and works
+                    logger.info(f"Clearing Index collection '{collection_name}' which has {count} items.")
+                    # Index's delete method with filter is preferred if available and works
                     # Using a simple filter that should match all items
                     collection.delete(where={})
-                    logger.info(f"ChromaDB collection '{collection_name}' cleared using delete with filter.")
+                    logger.info(f"Index collection '{collection_name}' cleared using delete with filter.")
                 else:
-                    logger.info(f"ChromaDB collection '{collection_name}' is already empty.")
+                    logger.info(f"Index collection '{collection_name}' is already empty.")
             except Exception as get_err:
                  # Handle case where collection might not exist or other errors during get/delete
-                 logger.warning(f"Could not get or clear ChromaDB collection '{collection_name}': {get_err}. It might not exist.")
+                 logger.warning(f"Could not get or clear Index data '{collection_name}': {get_err}. It might not exist.")
                  # Optionally, try deleting the collection entirely if clearing fails
                  try:
                      client.delete_collection(collection_name)
-                     logger.info(f"Deleted ChromaDB collection '{collection_name}' as fallback.")
+                     logger.info(f"Deleted Index collection '{collection_name}' as fallback.")
                      client.create_collection(collection_name) # Recreate empty
                  except Exception as del_err:
                      logger.error(f"Failed to delete and recreate ChromaDB collection '{collection_name}': {del_err}")

@@ -38,7 +38,21 @@ const AdminChromaPage = () => {
         const res = await fetch(API_URL);
         if (!res.ok) throw new Error('Failed to fetch ChromaDB collections');
         const data = await res.json();
-        setCollections(data.collections || []);
+        let safeCollections = [];
+        if (data && Array.isArray(data.collections)) {
+          safeCollections = data.collections.map(col => {
+            if (col.collection_name && Array.isArray(col.records)) {
+              return col;
+            } else if (col.name) {
+              return {
+                collection_name: col.name,
+                records: [] 
+              };
+            }
+            return null;
+          }).filter(Boolean);
+        }
+        setCollections(safeCollections);
       } catch (err) {
         setError(err.message || 'Unknown error');
       } finally {
@@ -62,7 +76,7 @@ const AdminChromaPage = () => {
       }}
     >
       <Typography variant="h4" gutterBottom sx={{ color: theme.palette.text.primary }}>
-        Admin Chroma: View ChromaDB Collections
+        View Index Data: Collections
       </Typography>
       {loading && <CircularProgress />}
       {error && <Alert severity="error">{error}</Alert>}
