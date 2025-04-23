@@ -1,4 +1,4 @@
-import os
+import logging
 import requests
 from fastapi import HTTPException
 from app.core.config import settings
@@ -10,6 +10,8 @@ OPENROUTER_MODEL = settings.OPENROUTER_MODEL
 # Recommended: Set your app's site URL and name for OpenRouter headers
 YOUR_SITE_URL = settings.YOUR_SITE_URL
 YOUR_APP_NAME = settings.YOUR_APP_NAME
+
+logger = logging.getLogger(__name__)
 
 def call_openrouter_api(prompt: str, model: str = None) -> str:
     """
@@ -97,25 +99,38 @@ def generate_summary_from_results(results: list) -> str:
     # Take top N results (configurable, file-backed)
     top_results = results[:settings.LLM_TOP_RESULTS]
 
+    logger.info(f"Top results: {top_results}")
+
     # Construct prompt
-    prompt_context = "Based on the following top search results, please provide a concise summary or key action points:\n\n"
+    prompt_context = "Based on the following top search results, please provide key action points:\n\n"
     for i, result in enumerate(top_results):
         title = result.get('title', 'N/A')
-        content_snippet = result.get('content', result.get('summary', ''))[:1000] # Limit content length
         source_type = result.get('type', 'Unknown').replace('_', ' ').title()
-        score = result.get('similarity_score', 0)
+        description = result.get('description', '')[:2000]
+        similarity_score = result.get('similarity_score', None)
+        root_cause = result.get('root_cause') or (result.get('msg_data', {}) or {}).get('root_cause')
+        solution = result.get('solution') or (result.get('msg_data', {}) or {}).get('solution')
 
-        prompt_context += f"Result {i+1} (Type: {source_type}, Score: {score:.2f}):\n"
+        prompt_context += f"Result {i+1} (Type: {source_type}):\n"
         prompt_context += f"Title: {title}\n"
-        prompt_context += f"Content Snippet: {content_snippet}...\n"
-        # Add Jira comments if present
-        if source_type == 'Jira' and 'comments' in result and result['comments']:
-            prompt_context += "Comments:\n"
-            for comment in result['comments']:
-                author = comment.get('author', 'Unknown')
-                created = comment.get('created', '')
-                body = comment.get('body', '')[:300]
-                prompt_context += f"- [{author} at {created}]: {body}...\n"
+        if similarity_score is not None:
+            prompt_context += f"Similarity Score: {similarity_score:.2f}\n"
+        prompt_context += f"Description: {description}\n"
+
+        # Add root cause and solution if present
+        if root_cause:
+            prompt_context += f"Root Cause: {root_cause}\n"
+        if solution:
+            prompt_context += f"Solution: {solution}\n"
+
+        # Add message data if present
+        msg_data = result.get('msg_data')
+        if msg_data:
+            prompt_context += f"Sender: {msg_data.get('sender', 'N/A')}\n"
+            prompt_context += f"Received Date: {msg_data.get('received_date', 'N/A')}\n"
+            prompt_context += f"Jira URL: {msg_data.get('jira_url', 'N/A')}\n"
+            prompt_context += f"Body: {msg_data.get('body', '')[:500]}\n"
+
         prompt_context += "\n"
 
     try:
@@ -136,20 +151,22 @@ if __name__ == "__main__":
         {
             "type": "vector_issue",
             "title": "Login fails after password reset",
-            "content": "User reports being unable to log in after successfully resetting their password. Error message 'Invalid credentials' displayed. Checked logs, password hash updated correctly. Suspect cache issue on client side.",
-            "similarity_score": 0.95
+            "description": "User reports being unable to log in after successfully resetting their password. Error message 'Invalid credentials' displayed. Checked logs, password hash updated correctly. Suspect cache issue on client side.",
+            "similarity_score": 0.95,
+            "root_cause": "Cache issue on client side",
+            "solution": "Clear cache and cookies"
         },
         {
             "type": "confluence",
             "title": "Troubleshooting Login Issues",
-            "content": "Common login problems include incorrect username/password, locked accounts, and browser cache/cookies. Steps to resolve: 1. Verify credentials. 2. Try incognito mode. 3. Clear cache and cookies. 4. Contact support if issues persist.",
+            "description": "Common login problems include incorrect username/password, locked accounts, and browser cache/cookies. Steps to resolve: 1. Verify credentials. 2. Try incognito mode. 3. Clear cache and cookies. 4. Contact support if issues persist.",
             "similarity_score": 0.88,
             "url": "https://confluence.example.com/display/KB/Troubleshooting+Login+Issues"
         },
         {
             "type": "stackoverflow",
             "title": "Flask login not working after password change",
-            "content": "My Flask app uses Flask-Login. When a user changes their password, they can't log back in immediately. I'm updating the password hash in the database correctly. Is there a session issue?",
+            "description": "My Flask app uses Flask-Login. When a user changes their password, they can't log back in immediately. I'm updating the password hash in the database correctly. Is there a session issue?",
             "similarity_score": 0.85,
             "url": "https://stackoverflow.com/questions/12345/flask-login-not-working"
         }
