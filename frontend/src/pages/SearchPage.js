@@ -33,7 +33,7 @@ const SearchPage = () => {
   const [tab, setTab] = useState(0);
   const [singlePageResult, setSinglePageResult] = useState(true);
   const [useLLM, setUseLLM] = useState(false); // State for LLM checkbox
-  const [llmSummary, setLlmSummary] = useState(''); // State for LLM summary
+  const [llmSummary, setLlmSummary] = useState(''); // State for LLM Action
 
   useEffect(() => {
     // Perform search if we have initial search parameters
@@ -87,7 +87,7 @@ const SearchPage = () => {
       }
 
       setCombinedResults(data.results || []);
-      setLlmSummary(data.llm_summary || ''); // Set LLM summary if available
+      setLlmSummary(data.llm_summary || ''); // Set LLM Action if available
     } catch (err) {
       setError(err.message);
     } finally {
@@ -188,7 +188,7 @@ const SearchPage = () => {
                   id="useLLM"
                 />
               }
-              label="Use LLM Summary"
+              label="LLM Action"
             />
           </Box>
         </Box>
@@ -200,7 +200,7 @@ const SearchPage = () => {
         </Alert>
       )}
 
-      {/* Display LLM Summary if available */}
+      {/* Display LLM Action if available */}
       {llmSummary && (
         <Paper
           sx={(theme) => ({
@@ -230,7 +230,7 @@ const SearchPage = () => {
               mb: 1
             })}
           >
-            LLM Summary
+            LLM Action
           </Typography>
           <Typography
             variant="body1"

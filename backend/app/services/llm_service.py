@@ -172,7 +172,7 @@ if __name__ == "__main__":
         }
     ]
 
-    print("--- Generating Summary --- ")
+    print("--- Generating Action --- ")
     summary = generate_summary_from_results(mock_results)
-    print("\n--- LLM Summary --- ")
+    print("\n--- LLM Action --- ")
     print(summary)

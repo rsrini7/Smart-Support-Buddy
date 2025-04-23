@@ -363,15 +363,15 @@ async def search_issues(query: SearchQuery):
                 llm_summary = generate_summary_from_results(combined_results)
             except Exception as llm_e:
                 # Log LLM error but don't fail the whole request
-                logger.error(f"LLM summary generation failed: {llm_e}", exc_info=True)
-                llm_summary = f"Error generating summary. Please check backend logs." # Inform frontend about the error
+                logger.error(f"LLM Action generation failed: {llm_e}", exc_info=True)
+                llm_summary = f"Error generating action from LLM. Please check backend logs." # Inform frontend about the error
 
         return {
             "results": combined_results,
             "vector_issues": vector_issues,
             "confluence_results": confluence_results,
             "stackoverflow_results": stackoverflow_results,
-            "llm_summary": llm_summary # Include LLM summary in response
+            "llm_summary": llm_summary # Include LLM Action in response
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
