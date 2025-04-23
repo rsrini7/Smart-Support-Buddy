@@ -13,26 +13,31 @@ if env_loaded:
 else:
     logger.warning("No environment file (.env) found, using default values")
 
-SIMILARITY_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "similarity_config.json")
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
 
-def read_similarity_threshold_from_file() -> Optional[float]:
+def read_config_value_from_file(key: str):
     try:
-        if os.path.exists(SIMILARITY_CONFIG_PATH):
-            with open(SIMILARITY_CONFIG_PATH, "r") as f:
+        if os.path.exists(CONFIG_PATH):
+            with open(CONFIG_PATH, "r") as f:
                 data = json.load(f)
-                value = data.get("SIMILARITY_THRESHOLD")
+                value = data.get(key)
                 if value is not None:
-                    return float(value)
+                    return value
     except Exception as e:
-        logger.warning(f"Could not read similarity threshold from file: {e}")
+        logger.warning(f"Could not read {key} from config file: {e}")
     return None
 
-def write_similarity_threshold_to_file(value: float):
+def write_config_value_to_file(key: str, value):
     try:
-        with open(SIMILARITY_CONFIG_PATH, "w") as f:
-            json.dump({"SIMILARITY_THRESHOLD": value}, f)
+        data = {}
+        if os.path.exists(CONFIG_PATH):
+            with open(CONFIG_PATH, "r") as f:
+                data = json.load(f)
+        data[key] = value
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(data, f)
     except Exception as e:
-        logger.error(f"Could not write similarity threshold to file: {e}")
+        logger.error(f"Could not write {key} to config file: {e}")
 
 class Settings(BaseSettings):
     # API settings
@@ -70,17 +75,29 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
     MODEL_LOCAL_PATH: Optional[str] = os.getenv("MODEL_LOCAL_PATH", None)
     _SIMILARITY_THRESHOLD_ENV: float = float(os.getenv("SIMILARITY_THRESHOLD", 0.1))
+    _LLM_TOP_RESULTS_COUNT_ENV: int = int(os.getenv("LLM_TOP_RESULTS_COUNT", 3))
 
     @property
     def SIMILARITY_THRESHOLD(self) -> float:
         """Return the user-set similarity threshold if present, else fallback to env/default."""
-        file_value = read_similarity_threshold_from_file()
+        file_value = read_config_value_from_file("SIMILARITY_THRESHOLD")
         if file_value is not None:
-            return file_value
+            return float(file_value)
         return self._SIMILARITY_THRESHOLD_ENV
 
+    @property
+    def LLM_TOP_RESULTS(self) -> int:
+        """Return the user-set LLM top results count if present, else fallback to env/default."""
+        file_value = read_config_value_from_file("LLM_TOP_RESULTS_COUNT")
+        if file_value is not None:
+            return int(file_value)
+        return self._LLM_TOP_RESULTS_COUNT_ENV
+
     def set_similarity_threshold(self, value: float):
-        write_similarity_threshold_to_file(value)
+        write_config_value_to_file("SIMILARITY_THRESHOLD", value)
+
+    def set_llm_top_results_count(self, value: int):
+        write_config_value_to_file("LLM_TOP_RESULTS_COUNT", value)
 
     class Config:
         case_sensitive = True

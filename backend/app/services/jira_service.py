@@ -106,7 +106,7 @@ def get_jira_client():
             options=options,
             basic_auth=auth_tuple,
             validate=True,
-            max_retries=3
+            max_retries=1
         )
 
         # Verify connection and permissions

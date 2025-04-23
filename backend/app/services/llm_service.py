@@ -94,20 +94,29 @@ def generate_summary_from_results(results: list) -> str:
     if not results:
         return ""
 
-    # Take top 3 results
-    top_results = results[:3]
+    # Take top N results (configurable, file-backed)
+    top_results = results[:settings.LLM_TOP_RESULTS]
 
     # Construct prompt
     prompt_context = "Based on the following top search results, please provide a concise summary or key action points:\n\n"
     for i, result in enumerate(top_results):
         title = result.get('title', 'N/A')
-        content_snippet = result.get('content', result.get('summary', ''))[:500] # Limit content length
+        content_snippet = result.get('content', result.get('summary', ''))[:1000] # Limit content length
         source_type = result.get('type', 'Unknown').replace('_', ' ').title()
         score = result.get('similarity_score', 0)
 
         prompt_context += f"Result {i+1} (Type: {source_type}, Score: {score:.2f}):\n"
         prompt_context += f"Title: {title}\n"
-        prompt_context += f"Content Snippet: {content_snippet}...\n\n"
+        prompt_context += f"Content Snippet: {content_snippet}...\n"
+        # Add Jira comments if present
+        if source_type == 'Jira' and 'comments' in result and result['comments']:
+            prompt_context += "Comments:\n"
+            for comment in result['comments']:
+                author = comment.get('author', 'Unknown')
+                created = comment.get('created', '')
+                body = comment.get('body', '')[:300]
+                prompt_context += f"- [{author} at {created}]: {body}...\n"
+        prompt_context += "\n"
 
     try:
         summary = call_openrouter_api(prompt_context)

@@ -48,6 +48,8 @@ class StackOverflowSearchRequest(BaseModel):
     query_text: str
     limit: int = 10
 
+class LLMTopResultsCountRequest(BaseModel):
+    llm_top_results_count: int
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -72,6 +74,23 @@ async def set_similarity_threshold(payload: SimilarityThresholdRequest = Body(..
             raise HTTPException(status_code=400, detail="similarity_threshold must be between 0 and 1 (exclusive)")
         settings.set_similarity_threshold(value)
         return {"status": "success", "similarity_threshold": value}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid value: {e}")
+
+@router.get("/config/llm-top-results-count")
+async def get_llm_top_results_count():
+    """Get the current LLM top results count (user-set or fallback)."""
+    return {"llm_top_results_count": settings.LLM_TOP_RESULTS}
+
+@router.post("/config/llm-top-results-count")
+async def set_llm_top_results_count(payload: LLMTopResultsCountRequest = Body(...)):
+    """Set a new LLM top results count (persists to config file)."""
+    try:
+        value = int(payload.llm_top_results_count)
+        if not (1 <= value <= 20):
+            raise HTTPException(status_code=400, detail="llm_top_results_count must be between 1 and 20")
+        settings.set_llm_top_results_count(value)
+        return {"status": "success", "llm_top_results_count": value}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid value: {e}")
 
