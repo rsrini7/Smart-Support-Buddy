@@ -59,6 +59,64 @@ SupportBuddy/
 └── start_frontend.sh
 ```
 
+
+## Overview
+
+This application helps teams manage support issues / queries by:
+
+1. Reading and parsing Microsoft Outlook MSG files containing issue details
+2. Integrating with Jira to correlate tickets with issue reports
+3. Ingesting and searching knowledge from Confluence pages and StackOverflow Q&A
+4. Storing the extracted information in a vector database for semantic search
+5. Providing a simple UI to query historical issues and find relevant solutions, and to configure search parameters
+
+## Features
+
+- MSG file parsing with metadata and attachment extraction
+- Jira integration with bi-directional linking
+- Confluence integration: ingest and search Confluence pages (supports Basic Auth with username/password for Server/DC)
+- StackOverflow integration: ingest, index, and search StackOverflow Q&A
+- Unified search results: All sources (Issues, Confluence, Stack Overflow) are combined and sorted by similarity percentage in a single backend response for the frontend to display
+- Automatic deduplication for all sources using content-based hashing
+- Semantic search with sentence transformers
+- Bulk ingestion of MSG files, Confluence pages, and StackOverflow Q&A
+- Vector search with configurable similarity threshold
+- Responsive, feature-rich Material UI interface and configuration management
+- **ChromaDB Admin UI support:** (If using Chroma's admin UI, see Chroma documentation)
+- **Jira ID search boost:** Searching for a Jira ID will always return the exact match as the top result (similarity score 1.0)
+
+## System Architecture
+
+### Core Components
+
+1. **Backend Services** (FastAPI)
+   - MSG Parser: Extracts data from Outlook MSG files
+   - Jira Service: Handles Jira ticket integration
+   - Confluence Service: Manages Confluence page ingestion and search
+   - StackOverflow Service: Handles ingestion, indexing, and semantic search of StackOverflow Q&A
+   - Vector Service: Manages ChromaDB operations, semantic search, and deduplication
+   - Unified Search Aggregation: Combines and sorts all results by similarity percentage before returning to the frontend. Legacy result arrays are deprecated for UI use.
+
+2. **Vector Database** (ChromaDB)
+   - Stores embeddings for semantic search
+   - Content-based deduplication using SHA256 hashes
+   - Collections for support issues, Jira tickets, Confluence pages, StackOverflow Q&A
+   - Configurable similarity threshold
+   - Admin UI for monitoring
+
+3. **Knowledge Integration**
+   - Bi-directional Jira ticket linking
+   - Confluence page ingestion and search
+   - StackOverflow Q&A ingestion, indexing, and search
+   - Unified search across all sources
+
+4. **Frontend** (React/Material-UI)
+   - Search interface with configurable parameters
+   - Issue management and ingestion tools
+   - Real-time search results with similarity scores
+   - Unified results rendering: All search views use the unified, similarity-sorted results array
+
+
 ## LLM Integration (OpenRouter)
 
 Support Buddy supports LLM-powered summarization of search results using OpenRouter. This feature provides concise summaries and action points for your search queries, powered by models like GPT-3.5/4 and others via OpenRouter.
@@ -168,62 +226,6 @@ CHROMA_USE_HTTP=true
 - The logic for returning all FAISS collections and their records is now in `FaissClient.get_collections_with_records()`.
 - The backend and frontend are robust to either backend and display actual record data.
 - All references to "ChromaDB collections" in the UI and docs are now "Index Data" for clarity.
-
-## Overview
-
-This application helps teams manage support issues / queries by:
-
-1. Reading and parsing Microsoft Outlook MSG files containing issue details
-2. Integrating with Jira to correlate tickets with issue reports
-3. Ingesting and searching knowledge from Confluence pages and StackOverflow Q&A
-4. Storing the extracted information in a vector database for semantic search
-5. Providing a simple UI to query historical issues and find relevant solutions, and to configure search parameters
-
-## Features
-
-- MSG file parsing with metadata and attachment extraction
-- Jira integration with bi-directional linking
-- Confluence integration: ingest and search Confluence pages (supports Basic Auth with username/password for Server/DC)
-- StackOverflow integration: ingest, index, and search StackOverflow Q&A
-- Unified search results: All sources (Issues, Confluence, Stack Overflow) are combined and sorted by similarity percentage in a single backend response for the frontend to display
-- Automatic deduplication for all sources using content-based hashing
-- Semantic search with sentence transformers
-- Bulk ingestion of MSG files, Confluence pages, and StackOverflow Q&A
-- Vector search with configurable similarity threshold
-- Responsive, feature-rich Material UI interface and configuration management
-- **ChromaDB Admin UI support:** (If using Chroma's admin UI, see Chroma documentation)
-- **Jira ID search boost:** Searching for a Jira ID will always return the exact match as the top result (similarity score 1.0)
-
-## System Architecture
-
-### Core Components
-
-1. **Backend Services** (FastAPI)
-   - MSG Parser: Extracts data from Outlook MSG files
-   - Jira Service: Handles Jira ticket integration
-   - Confluence Service: Manages Confluence page ingestion and search
-   - StackOverflow Service: Handles ingestion, indexing, and semantic search of StackOverflow Q&A
-   - Vector Service: Manages ChromaDB operations, semantic search, and deduplication
-   - Unified Search Aggregation: Combines and sorts all results by similarity percentage before returning to the frontend. Legacy result arrays are deprecated for UI use.
-
-2. **Vector Database** (ChromaDB)
-   - Stores embeddings for semantic search
-   - Content-based deduplication using SHA256 hashes
-   - Collections for support issues, Jira tickets, Confluence pages, StackOverflow Q&A
-   - Configurable similarity threshold
-   - Admin UI for monitoring
-
-3. **Knowledge Integration**
-   - Bi-directional Jira ticket linking
-   - Confluence page ingestion and search
-   - StackOverflow Q&A ingestion, indexing, and search
-   - Unified search across all sources
-
-4. **Frontend** (React/Material-UI)
-   - Search interface with configurable parameters
-   - Issue management and ingestion tools
-   - Real-time search results with similarity scores
-   - Unified results rendering: All search views use the unified, similarity-sorted results array
 
 ## Setup Instructions
 
