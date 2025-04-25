@@ -4,10 +4,6 @@ A GenAI-powered solution for handling support issues / queries by analyzing Micr
 
 ## Architecture
 
-## C4 - Context Diagram
-
-![Support Buddy Architecture](assets/c4/support-buddy-context-c4.png)
-
 ## C4 - Container Diagram
 
 ![Support Buddy Architecture](assets/c4/support-buddy-container-c4.png)
@@ -83,11 +79,11 @@ Support Buddy supports LLM-powered summarization of search results using OpenRou
    YOUR_APP_NAME=SupportBuddy            # For analytics (optional)
    ```
 
-3. **Frontend Usage:**
+## **Frontend Usage:**
    - On the Search page, enable the "LLM" checkbox before searching to get an LLM-generated summary of the results.
    - The summary will appear at the top of the results, styled for both dark and light mode.
 
-4. **Backend:**
+## **Backend:**
    - The backend will use the configured OpenRouter API key and model to generate summaries when requested.
    - You can change the default model by updating `OPENROUTER_MODEL` in your `.env`.
 
