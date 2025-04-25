@@ -69,53 +69,62 @@ This application helps teams manage support issues / queries by:
 3. Ingesting and searching knowledge from Confluence pages and StackOverflow Q&A
 4. Storing the extracted information in a vector database for semantic search
 5. Providing a simple UI to query historical issues and find relevant solutions, and to configure search parameters
+6. Dual vector database support: Use either ChromaDB (local/server) or FAISS for semantic search and storage. Switchable via `USE_FAISS` environment variable.
+7. LLM integration: Summarize and recommend actions using OpenRouter LLM, configurable via environment and runtime API.
+8. Modular, pluggable backend: Easily extend to new data sources, vector DBs, or LLM providers.
 
 ## Features
 
-- MSG file parsing with metadata and attachment extraction
-- Jira integration with bi-directional linking
-- Confluence integration: ingest and search Confluence pages (supports Basic Auth with username/password for Server/DC)
-- StackOverflow integration: ingest, index, and search StackOverflow Q&A
-- Unified search results: All sources (Issues, Confluence, Stack Overflow) are combined and sorted by similarity percentage in a single backend response for the frontend to display
-- Automatic deduplication for all sources using content-based hashing
-- Semantic search with sentence transformers
-- Bulk ingestion of MSG files, Confluence pages, and StackOverflow Q&A
-- Vector search with configurable similarity threshold
-- Responsive, feature-rich Material UI interface and configuration management
-- **ChromaDB Admin UI support:** (If using Chroma's admin UI, see Chroma documentation)
-- **Jira ID search boost:** Searching for a Jira ID will always return the exact match as the top result (similarity score 1.0)
+- **MSG File Parsing:** Extracts metadata, attachments, and content from Microsoft Outlook MSG files for downstream analysis.
+- **Jira Integration:** Bi-directional synchronization and linking with Jira tickets, enabling seamless correlation between email issues and ticketing workflows.
+- **Confluence Integration:** Ingests and semantically searches Confluence pages, supporting Basic Auth for Server/Data Center deployments.
+- **StackOverflow Integration:** Ingests, indexes, and enables semantic search across StackOverflow Q&A for relevant solutions.
+- **Unified Semantic Search:** Aggregates and ranks results from all sources (MSG, Jira, Confluence, StackOverflow) in a single, similarity-sorted response for the frontend.
+- **Automatic Deduplication:** Detects and removes duplicate issues across all data sources using robust content-based hashing.
+- **Advanced Semantic Search:** Utilizes sentence transformer models to power deep semantic retrieval and similarity matching.
+- **Bulk Ingestion:** Supports bulk import of MSG files, Confluence pages, and StackOverflow Q&A for rapid knowledge base expansion.
+- **Configurable Vector Search:** Allows tuning of similarity thresholds to control search precision and recall.
+- **Pluggable Vector Database:** Supports both ChromaDB (local/server) and FAISS (local, high-performance) as interchangeable backends, selectable via the `USE_FAISS` environment variable.
+- **LLM-Powered Summarization:** Integrates with OpenRouter LLM to generate summaries and recommended actions from top search results, with runtime toggling per query.
+- **Modern, Responsive UI:** Provides a feature-rich, Material UI-based frontend for search, configuration, and management.
+- **ChromaDB Admin UI:** Includes support for ChromaDB’s Admin UI for monitoring and managing vector collections.
+- **Jira ID Search Boost:** Guarantees exact Jira ticket ID matches are always ranked as the top result (similarity score 1.0), regardless of embedding similarity.
 
 ## System Architecture
 
 ### Core Components
 
-1. **Backend Services** (FastAPI)
-   - MSG Parser: Extracts data from Outlook MSG files
-   - Jira Service: Handles Jira ticket integration
-   - Confluence Service: Manages Confluence page ingestion and search
-   - StackOverflow Service: Handles ingestion, indexing, and semantic search of StackOverflow Q&A
-   - Vector Service: Manages ChromaDB operations, semantic search, and deduplication
-   - Unified Search Aggregation: Combines and sorts all results by similarity percentage before returning to the frontend. Legacy result arrays are deprecated for UI use.
+1. **Backend Services** (Python, FastAPI)
+   - **MSG Parser:** Extracts metadata, attachments, and content from Outlook MSG files for ingestion and analysis.
+   - **Jira Service:** Integrates with Jira for ticket synchronization, linking, and enrichment of support issues.
+   - **Confluence Service:** Handles ingestion and semantic search of Confluence pages, supporting enterprise authentication.
+   - **StackOverflow Service:** Ingests and indexes StackOverflow Q&A, enabling semantic retrieval of community knowledge.
+   - **Vector Service:** Abstracts vector database operations (add/search/delete), semantic search, and deduplication logic.
+   - **Unified Search Aggregation:** Combines, deduplicates, and sorts results from all sources, returning a single, similarity-ranked array for the frontend.
 
-2. **Vector Database** (ChromaDB)
-   - Stores embeddings for semantic search
-   - Content-based deduplication using SHA256 hashes
-   - Collections for support issues, Jira tickets, Confluence pages, StackOverflow Q&A
-   - Configurable similarity threshold
-   - Admin UI for monitoring
+2. **Vector Database Layer**
+   - **ChromaDB:** Persistent or server mode vector database for storing and searching embeddings, with content-based deduplication and per-source collections.
+   - **FAISS:** High-performance, local vector search engine, mimicking ChromaDB’s API for seamless interchangeability.
+   - **Runtime Switching:** Easily switch between ChromaDB and FAISS via environment configuration (`USE_FAISS`), with all vector operations routed through a unified abstraction.
+   - **Admin UI:** ChromaDB Admin UI support for monitoring and managing vector collections.
+   - **Configurable Similarity:** Supports tuning of similarity thresholds and collection management.
 
 3. **Knowledge Integration**
-   - Bi-directional Jira ticket linking
-   - Confluence page ingestion and search
-   - StackOverflow Q&A ingestion, indexing, and search
-   - Unified search across all sources
+   - **Bi-directional Jira Linking:** Maintains links between MSG issues and Jira tickets for traceability.
+   - **Confluence Integration:** Ingests and enables search over enterprise documentation.
+   - **StackOverflow Integration:** Brings in external community solutions for broader support coverage.
+   - **Unified Knowledge Base:** Enables cross-source, deduplicated, and semantically ranked search across all integrated systems.
 
-4. **Frontend** (React/Material-UI)
-   - Search interface with configurable parameters
-   - Issue management and ingestion tools
-   - Real-time search results with similarity scores
-   - Unified results rendering: All search views use the unified, similarity-sorted results array
+4. **Frontend** (React, Material-UI)
+   - **Search Interface:** Modern, responsive UI for querying, filtering, and exploring search results.
+   - **Issue Management:** Tools for bulk ingestion, manual entry, and curation of support issues.
+   - **Real-Time Results:** Displays similarity-ranked, unified results with LLM summaries and metadata.
+   - **Configuration Management:** UI for adjusting search parameters, managing sources, and toggling features.
 
+5. **LLM Integration**
+   - **Summarization & Recommendations:** Uses OpenRouter LLM to generate concise summaries and action points from top search results.
+   - **Configurable:** Number of results sent to LLM and model selection are runtime-configurable.
+   - **Frontend Toggle:** Users can enable or disable LLM-powered summaries per search.
 
 ## LLM Integration (OpenRouter)
 
@@ -148,54 +157,55 @@ Support Buddy supports LLM-powered summarization of search results using OpenRou
 ### Security Note
 - **Never commit your real API key to version control.** Use `.env` for secrets and `.env.example` for templates only.
 
-## Index Data (ChromaDB / FAISS)
+## Index Data: ChromaDB & FAISS Support
 
-Support Buddy can use either ChromaDB or FAISS as its vector database backend. All references to "ChromaDB/FAISS collections" in the UI have been updated to "Index Data" or "Index collections" to reflect this flexibility.
+Support Buddy provides flexible vector database support, allowing you to choose between ChromaDB (default) and FAISS (alternative) as the backend for semantic search and storage. All references to "ChromaDB/FAISS collections" in the UI and documentation are now referred to as "Index Data" or "Index Collections" for clarity.
 
-*   **ChromaDB (Default):** Uses a persistent ChromaDB instance. The data is stored in the directory specified by the `VECTOR_DB_PATH` environment variable (defaults to `./data/chroma`). You can also run ChromaDB as a separate server and connect via HTTP by setting `CHROMA_USE_HTTP=true`.
-*   **FAISS (Alternative):** Uses a local FAISS index for vector storage. To enable FAISS, set the environment variable `USE_FAISS=true`. The FAISS index files will be stored in the directory specified by the `FAISS_INDEX_PATH` environment variable (defaults to `./data/faiss`).
+**Backend Options:**
+- **ChromaDB (Default):**
+  - Persistent, local vector database. Data is stored at the path specified by `VECTOR_DB_PATH` (default: `./data/chroma`).
+  - Optionally, run ChromaDB as a server and connect via HTTP by setting `CHROMA_USE_HTTP=true`.
+- **FAISS (Alternative):**
+  - Local, high-performance vector index. Enable by setting `USE_FAISS=true`.
+  - Index files are stored at `FAISS_INDEX_PATH` (default: `./data/faiss`).
 
-**Switching:**
+**Switching Backends:**
+- Select the backend by setting the appropriate environment variables in your `.env` file before starting the backend:
 
-To switch between backends, modify the relevant environment variables (e.g., in your `.env` file or export them) before starting the backend application.
+  **Example `.env` for FAISS:**
+  ```dotenv
+  USE_FAISS=true
+  # FAISS_INDEX_PATH=./data/my_faiss_index # (optional)
+  ```
 
-Example `.env` for FAISS:
+  **Example `.env` for ChromaDB (Persistent Client):**
+  ```dotenv
+  # USE_FAISS=false # Or simply omit USE_FAISS
+  VECTOR_DB_PATH=./data/my_chroma_db # (optional)
+  ```
 
-```dotenv
-USE_FAISS=true
-# FAISS_INDEX_PATH=./data/my_faiss_index # Optional: Override default path
-```
+  **Example `.env` for ChromaDB (HTTP Client):**
+  ```dotenv
+  # USE_FAISS=false
+  CHROMA_USE_HTTP=true
+  # CHROMA_HTTP_HOST=your_chroma_server # (optional)
+  # CHROMA_HTTP_PORT=8000 # (optional)
+  ```
 
-Example `.env` for ChromaDB (Persistent Client):
+- Ensure all required dependencies are installed (`faiss-cpu` for FAISS, included in `pyproject.toml`).
 
-```dotenv
-# USE_FAISS=false # Or simply omit USE_FAISS
-VECTOR_DB_PATH=./data/my_chroma_db # Optional: Override default path
-```
+## Admin UI: Viewing & Managing Index Data
 
-Example `.env` for ChromaDB (HTTP Client):
-
-```dotenv
-# USE_FAISS=false
-CHROMA_USE_HTTP=true
-# CHROMA_HTTP_HOST=your_chroma_server # Optional: Specify host if not localhost
-# CHROMA_HTTP_PORT=8000 # Optional: Specify port if not 8000
-```
-
-**Note:** Ensure the required dependencies are installed. `faiss-cpu` is needed for FAISS support (included in `pyproject.toml`).
-
-## Admin UI: View and Clear Index Data
-
-- The Admin page (formerly "Admin Chroma") is now labeled "View Index Data" and displays all collections and their records for the currently active backend (ChromaDB or FAISS).
-- The Clear page/button now reads "Clear Index Data".
-- The UI and backend work seamlessly with either backend. All collections and records are shown in a consistent format.
+- The Admin page (formerly "Admin Chroma") is now labeled **"View Index Data"** and displays all collections and their records for the active backend (ChromaDB or FAISS).
+- The "Clear" action is now labeled **"Clear Index Data"**.
+- The UI and backend seamlessly support both backends, presenting collections and records in a unified format for consistency.
 
 ## Backend API: `/chroma-collections`
 
-- This endpoint returns all index collections and their records (id, document, metadata).
-- For ChromaDB: returns real records from the collection.
-- For FAISS: returns real records from the collection (auto-loads from disk if needed).
-- The backend logic for fetching all FAISS collections and their records is encapsulated in `FaissClient.get_collections_with_records()` for maintainability.
+- Returns all index collections and their records (`id`, `document`, `metadata`).
+- **ChromaDB:** Returns real records directly from the collection.
+- **FAISS:** Returns real records from the collection, auto-loading from disk as needed.
+- Backend logic for FAISS is encapsulated in `FaissClient.get_collections_with_records()` for maintainability.
 
 ## Example API Response
 
@@ -214,18 +224,18 @@ CHROMA_USE_HTTP=true
 }
 ```
 
-## .env Summary
+## Environment Variable Summary
 
 - `USE_FAISS=true` to use FAISS as the backend index store.
 - `USE_FAISS=false` or unset to use ChromaDB.
-- `FAISS_INDEX_PATH` and `VECTOR_DB_PATH` control storage locations.
-- All UI and backend features work with either backend.
+- `FAISS_INDEX_PATH` and `VECTOR_DB_PATH` control storage locations for FAISS and ChromaDB, respectively.
+- All UI and backend features are compatible with either backend.
 
-## Refactoring & Maintenance
+## Refactoring & Maintenance Notes
 
-- The logic for returning all FAISS collections and their records is now in `FaissClient.get_collections_with_records()`.
-- The backend and frontend are robust to either backend and display actual record data.
-- All references to "ChromaDB collections" in the UI and docs are now "Index Data" for clarity.
+- Logic for retrieving all FAISS collections and their records is encapsulated in `FaissClient.get_collections_with_records()`.
+- Both backend and frontend are robust to either backend and display actual record data.
+- All references to "ChromaDB collections" in the UI and docs have been updated to "Index Data" for clarity and consistency.
 
 ## Setup Instructions
 
@@ -399,7 +409,7 @@ npm test
 - Health checks: backend API `/health`, DB connections, vector DB collections, Jira/Confluence connectivity, StackOverflow ingestion
 
 ## Performance Tuning
-- Similarity threshold (default 0.2) in `backend/app/core/similarity_config.json`
+- Similarity threshold (default 0.2) in `backend/app/core/config.json`
 - Resource management: cleanup, archiving, disk space monitoring
 - Query performance: result limits, response times, batch sizes
 
