@@ -42,10 +42,10 @@ const ClearChromaPage = () => {
           Back
         </Button>
         <Typography variant="h5" gutterBottom>
-          Clear ChromaDB Collections
+          Clear Index Data
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          Use the buttons below to clear all data from individual ChromaDB collections.
+          Use the buttons below to clear all data from individual collections.
         </Typography>
         <Grid container spacing={3}>
           {COLLECTIONS.map((collection) => (

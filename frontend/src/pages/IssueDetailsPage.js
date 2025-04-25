@@ -111,6 +111,12 @@ const IssueDetailsPage = () => {
     return date.toLocaleString();
   };
 
+  const issueDetailsTextStyle = (theme) => ({
+    color: theme.palette.mode === 'dark' ? '#f1f1f1' : '#222',
+    background: theme.palette.mode === 'dark' ? '#181a1b' : '#fff',
+    transition: 'color 0.2s, background 0.2s',
+  });
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -148,7 +154,7 @@ const IssueDetailsPage = () => {
         </Button>
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">
+        <Typography variant="h4" sx={issueDetailsTextStyle}>
           Issue Details
         </Typography>
         <Button
@@ -162,7 +168,7 @@ const IssueDetailsPage = () => {
       </Box>
       
       <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" gutterBottom>
+        <Typography variant="h5" gutterBottom sx={issueDetailsTextStyle}>
           {issue.title}
         </Typography>
         
@@ -235,24 +241,11 @@ const IssueDetailsPage = () => {
                 )}
                 <Divider sx={{ my: 2 }} />
                 {issue.msg_data.body && (
-                  <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                  <Typography variant="body1" sx={{ whiteSpace: 'pre-line', ...issueDetailsTextStyle() }}>
                     {issue.msg_data.body}
                   </Typography>
                 )}
-                {issue.msg_data.attachments && issue.msg_data.attachments.length > 0 && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Attachments
-                    </Typography>
-                    <List dense>
-                      {issue.msg_data.attachments.map((att, idx) => (
-                        <ListItem key={idx}>
-                          <ListItemText primary={att.fileName} />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Box>
-                )}
+                {/* Attachments removed: no longer parsed, ingested, or displayed */}
               </CardContent>
             </Card>
           </Box>

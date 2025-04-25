@@ -97,7 +97,6 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
             "msg_jira_id": msg_data.get("jira_id", "") if msg_data else "",
             "msg_jira_url": msg_data.get("jira_url", "") if msg_data else "",
             "recipients": msg_data.get("recipients", []) if msg_data else [],
-            "attachments": msg_data.get("attachments", []) if msg_data else [],
             "jira_ticket_id": jira_ticket_id or "",
             "jira_summary": jira_summary,
             "created_date": datetime.now().isoformat() if not (msg_data and msg_data.get("received_date")) else "",

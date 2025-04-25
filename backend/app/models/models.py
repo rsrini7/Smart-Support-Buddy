@@ -33,6 +33,7 @@ class SearchQuery(BaseModel):
     query_text: str
     jira_ticket_id: Optional[str] = None
     limit: int = Field(default=10, ge=1, le=100)
+    use_llm: bool = False  # Add flag for LLM usage
 
 class JiraTicket(BaseModel):
     """Schema for Jira ticket data"""
@@ -61,3 +62,32 @@ class MsgFile(BaseModel):
     received_date: datetime
     attachments: Optional[List[str]] = None
     headers: Optional[Dict[str, str]] = None
+
+class StackOverflowQA(BaseModel):
+    """Schema for Stack Overflow Q&A data"""
+    question_id: str
+    question_text: str
+    answer_id: Optional[str] = None
+    answer_text: Optional[str] = None
+    tags: Optional[List[str]] = None
+    author: Optional[str] = None
+    creation_date: Optional[datetime] = None
+    score: Optional[int] = None
+    link: Optional[str] = None
+    content_hash: Optional[str] = None
+    similarity_score: Optional[float] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+class ConfluencePage(BaseModel):
+    """Schema for Confluence page data"""
+    page_id: str
+    title: str
+    url: Optional[str] = None
+    space: Optional[str] = None
+    labels: Optional[List[str]] = None
+    creator: Optional[str] = None
+    created: Optional[datetime] = None
+    updated: Optional[datetime] = None
+    content: Optional[str] = None
+    similarity_score: Optional[float] = None
+    metadata: Optional[Dict[str, Any]] = None

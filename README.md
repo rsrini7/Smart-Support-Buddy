@@ -2,6 +2,9 @@
 
 A GenAI-powered solution for handling support issues / queries by analyzing Microsoft Outlook MSG files, Jira tickets, Confluence pages, and StackOverflow Q&A to identify root causes and solutions.
 
+## Architecture
+![Support Buddy Architecture](assets/image.png)
+
 ## Project Structure
 
 ```
@@ -44,6 +47,116 @@ SupportBuddy/
 ├── start_chromadb_server.sh
 └── start_frontend.sh
 ```
+
+## LLM Integration (OpenRouter)
+
+Support Buddy supports LLM-powered summarization of search results using OpenRouter. This feature provides concise summaries and action points for your search queries, powered by models like GPT-3.5/4 and others via OpenRouter.
+
+### Enabling LLM Summaries
+
+1. **Obtain an OpenRouter API Key:**
+   - Sign up and get your API key from https://openrouter.ai/
+
+2. **Configure Environment Variables:**
+   Add the following to your `backend/.env` (see `.env.example`):
+   ```env
+   # OpenRouter LLM API settings
+   OPENROUTER_API_KEY=your-openrouter-api-key
+   OPENROUTER_API_URL=https://openrouter.ai/api/v1/chat/completions
+   OPENROUTER_MODEL=openai/gpt-3.5-turbo  # Or any available model
+   YOUR_SITE_URL=http://localhost:3000    # For analytics (optional)
+   YOUR_APP_NAME=SupportBuddy            # For analytics (optional)
+   ```
+
+3. **Frontend Usage:**
+   - On the Search page, enable the "LLM" checkbox before searching to get an LLM-generated summary of the results.
+   - The summary will appear at the top of the results, styled for both dark and light mode.
+
+4. **Backend:**
+   - The backend will use the configured OpenRouter API key and model to generate summaries when requested.
+   - You can change the default model by updating `OPENROUTER_MODEL` in your `.env`.
+
+### Security Note
+- **Never commit your real API key to version control.** Use `.env` for secrets and `.env.example` for templates only.
+
+## Index Data (ChromaDB / FAISS)
+
+Support Buddy can use either ChromaDB or FAISS as its vector database backend. All references to "ChromaDB/FAISS collections" in the UI have been updated to "Index Data" or "Index collections" to reflect this flexibility.
+
+*   **ChromaDB (Default):** Uses a persistent ChromaDB instance. The data is stored in the directory specified by the `VECTOR_DB_PATH` environment variable (defaults to `./data/chroma`). You can also run ChromaDB as a separate server and connect via HTTP by setting `CHROMA_USE_HTTP=true`.
+*   **FAISS (Alternative):** Uses a local FAISS index for vector storage. To enable FAISS, set the environment variable `USE_FAISS=true`. The FAISS index files will be stored in the directory specified by the `FAISS_INDEX_PATH` environment variable (defaults to `./data/faiss`).
+
+**Switching:**
+
+To switch between backends, modify the relevant environment variables (e.g., in your `.env` file or export them) before starting the backend application.
+
+Example `.env` for FAISS:
+
+```dotenv
+USE_FAISS=true
+# FAISS_INDEX_PATH=./data/my_faiss_index # Optional: Override default path
+```
+
+Example `.env` for ChromaDB (Persistent Client):
+
+```dotenv
+# USE_FAISS=false # Or simply omit USE_FAISS
+VECTOR_DB_PATH=./data/my_chroma_db # Optional: Override default path
+```
+
+Example `.env` for ChromaDB (HTTP Client):
+
+```dotenv
+# USE_FAISS=false
+CHROMA_USE_HTTP=true
+# CHROMA_HTTP_HOST=your_chroma_server # Optional: Specify host if not localhost
+# CHROMA_HTTP_PORT=8000 # Optional: Specify port if not 8000
+```
+
+**Note:** Ensure the required dependencies are installed. `faiss-cpu` is needed for FAISS support (included in `pyproject.toml`).
+
+## Admin UI: View and Clear Index Data
+
+- The Admin page (formerly "Admin Chroma") is now labeled "View Index Data" and displays all collections and their records for the currently active backend (ChromaDB or FAISS).
+- The Clear page/button now reads "Clear Index Data".
+- The UI and backend work seamlessly with either backend. All collections and records are shown in a consistent format.
+
+## Backend API: `/chroma-collections`
+
+- This endpoint returns all index collections and their records (id, document, metadata).
+- For ChromaDB: returns real records from the collection.
+- For FAISS: returns real records from the collection (auto-loads from disk if needed).
+- The backend logic for fetching all FAISS collections and their records is encapsulated in `FaissClient.get_collections_with_records()` for maintainability.
+
+## Example API Response
+
+```json
+{
+  "collections": [
+    {
+      "collection_name": "issues",
+      "records": [
+        { "id": "abc123", "document": "...", "metadata": { ... } },
+        ...
+      ]
+    },
+    ...
+  ]
+}
+```
+
+## .env Summary
+
+- `USE_FAISS=true` to use FAISS as the backend index store.
+- `USE_FAISS=false` or unset to use ChromaDB.
+- `FAISS_INDEX_PATH` and `VECTOR_DB_PATH` control storage locations.
+- All UI and backend features work with either backend.
+
+## Refactoring & Maintenance
+
+- The logic for returning all FAISS collections and their records is now in `FaissClient.get_collections_with_records()`.
+- The backend and frontend are robust to either backend and display actual record data.
+- All references to "ChromaDB collections" in the UI and docs are now "Index Data" for clarity.
 
 ## Overview
 
@@ -148,6 +261,42 @@ This application helps teams manage support issues / queries by:
      ./start_frontend.sh
      ```
 
+## Vector Database Configuration
+
+Support Buddy can use either ChromaDB or FAISS as its vector database backend.
+
+*   **ChromaDB (Default):** Uses a persistent ChromaDB instance. The data is stored in the directory specified by the `VECTOR_DB_PATH` environment variable (defaults to `./data/chroma`). You can also run ChromaDB as a separate server and connect via HTTP by setting `CHROMA_USE_HTTP=true`.
+*   **FAISS (Alternative):** Uses a local FAISS index for vector storage. To enable FAISS, set the environment variable `USE_FAISS=true`. The FAISS index files will be stored in the directory specified by the `FAISS_INDEX_PATH` environment variable (defaults to `./data/faiss`).
+
+**Switching:**
+
+To switch between databases, modify the relevant environment variables (e.g., in your `.env` file or export them) before starting the backend application.
+
+Example `.env` for FAISS:
+
+```dotenv
+USE_FAISS=true
+# FAISS_INDEX_PATH=./data/my_faiss_index # Optional: Override default path
+```
+
+Example `.env` for ChromaDB (Persistent Client):
+
+```dotenv
+# USE_FAISS=false # Or simply omit USE_FAISS
+VECTOR_DB_PATH=./data/my_chroma_db # Optional: Override default path
+```
+
+Example `.env` for ChromaDB (HTTP Client):
+
+```dotenv
+# USE_FAISS=false
+CHROMA_USE_HTTP=true
+# CHROMA_HTTP_HOST=your_chroma_server # Optional: Specify host if not localhost
+# CHROMA_HTTP_PORT=8000 # Optional: Specify port if not 8000
+```
+
+**Note:** Ensure the required dependencies are installed. `faiss-cpu` is needed for FAISS support (included in `pyproject.toml`).
+
 ### Docker Usage
 - The backend Dockerfile now uses `uv sync` and `pyproject.toml` for dependency management. No need for `requirements.txt`.
 - Example build and run:
@@ -166,7 +315,6 @@ To start the frontend React application, use the provided script:
 ```sh
 ./start_frontend.sh
 ```
-See Development Setup for full details.
 
 ## Activating the Backend Python Virtual Environment
 
@@ -174,7 +322,6 @@ To activate the backend's Python virtual environment, use the provided script:
 ```sh
 source ./set_venv.sh
 ```
-See Development Setup for full details.
 
 ## Environment Variables
 The backend requires a `.env` file with configuration for:
@@ -188,7 +335,7 @@ JIRA_API_TOKEN=          # For cloud instance
 CONFLUENCE_USERNAME=your-confluence-username
 CONFLUENCE_PASSWORD=your-confluence-password
 # Vector DB Settings
-VECTOR_DB_PATH=./data/vectordb
+VECTOR_DB_PATH=./data/chroma
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 # (No special StackOverflow credentials required for public Q&A ingestion)
 ```
@@ -222,13 +369,13 @@ Backend logs are written to `backend/app/logs/backend.log`. You can also view lo
 
 ### Backend
 From the `backend/` directory:
-```sh
+```bash
 pytest --maxfail=1 --disable-warnings -v
 ```
 
 ### Frontend
 From the `frontend/` directory:
-```sh
+```bash
 npm test
 ```
 
@@ -277,7 +424,7 @@ npm test
 ChromaDB is now run as a Docker container using Docker Compose. The `docker-compose.yml` file includes a `chroma` service with a healthcheck that ensures the service is healthy only if it returns HTTP 200 on its heartbeat endpoint.
 
 **To start all services (including ChromaDB):**
-```sh
+```bash
 docker compose up -d
 ```
 
@@ -296,6 +443,7 @@ The backend is configured to connect to ChromaDB using the HTTP API (`chroma_use
   CHROMA_SERVER_HOST=chroma
   CHROMA_SERVER_HTTP_PORT=8000
   ```
+
 - The backend will connect to ChromaDB at `http://chroma:8000` when running in Docker Compose.
 
 ## Healthcheck for ChromaDB
@@ -307,6 +455,7 @@ interval: 30s
 timeout: 10s
 retries: 3
 ```
+
 This ensures the service is only marked healthy if it returns HTTP 200.
 
 ## Troubleshooting: ChromaDB HTTP Mode
@@ -315,17 +464,18 @@ If you see an error like:
 ```
 {"error":"KeyError('_type')"}
 ```
+
 when using `chroma_use_http=True`, this usually means:
 - The client and server versions of ChromaDB are mismatched.
 - You are using a feature or API call not supported in HTTP mode.
 
 **How to fix:**
 1. Ensure the `chromadb` Python package version in your backend matches the Docker image version.
-2. Only use `chromadb.HttpClient` (not `PersistentClient`) when `chroma_use_http` is enabled.
-3. Do not pass local-only settings (like `persist_directory`) to the HTTP client.
+2. Ensure you are using `chromadb.HttpClient` and not `PersistentClient`.
+3. Avoid passing local-only settings (like `persist_directory`) to the HTTP client.
 
 **To update your backend's ChromaDB version:**
-```sh
+```bash
 uv pip install --upgrade chromadb==1.0.5
 ```
 
@@ -348,13 +498,13 @@ If you encounter issues during setup or operation, consider the following troubl
    - If Confluence is not starting with the default `5433` port for its `confluence-postgres` service:
      1. Edit the configuration to use port `5432` instead of `5433`.
      2. Run the following command to start Confluence for initial setup:
-        ```sh
+        ```bash
         docker compose up -d confluence
         ```
      3. Complete the initial setup steps in Confluence.
      4. Revert the port back to `5433` in your configuration if needed.
      5. Start the backend as usual with:
-        ```sh
+        ```bash
         ./start_backend.sh
         ```
 

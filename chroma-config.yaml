@@ -2,7 +2,7 @@ port: 8000
 listen_address: "0.0.0.0"
 max_payload_size_bytes: 41943040
 # cors_allow_origins: ["*"]
-persist_path: "./backend/data/vectordb"
+persist_path: "./backend/data/chroma"
 allow_reset: false # defaults to false
 telemetry: false
 anonymized_telemetry: false

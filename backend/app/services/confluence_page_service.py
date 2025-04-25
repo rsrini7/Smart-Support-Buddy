@@ -3,6 +3,8 @@ from app.services.chroma_client import get_collection
 from app.services.embedding_service import get_embedding
 from app.services.deduplication_utils import compute_content_hash
 from app.services.confluence_service import fetch_confluence_content
+from app.utils.similarity import compute_similarity_score
+from app.models.models import ConfluencePage
 import logging
 from datetime import datetime
 
@@ -54,15 +56,24 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
             metadata = metadatas[i] if i < len(metadatas) else {}
             document = documents[i] if i < len(documents) else ""
             distance = distances[i] if i < len(distances) else 0.0
-            similarity_score = 1.0 - min(distance / 2, 1.0)
+            similarity_score = compute_similarity_score(distance)
             if similarity_score < 0.1:  # TODO: Use settings.SIMILARITY_THRESHOLD
                 continue
-            formatted.append({
-                "page_id": page_id,
-                "content": document,
-                "similarity_score": similarity_score,
-                "metadata": metadata
-            })
+            # Use ConfluencePage model for structured metadata
+            page_obj = ConfluencePage(
+                page_id=page_id,
+                title=metadata.get('title', ''),
+                url=metadata.get('url', ''),
+                space=metadata.get('space'),
+                labels=metadata.get('labels'),
+                creator=metadata.get('creator'),
+                created=metadata.get('created'),
+                updated=metadata.get('updated'),
+                content=document,
+                similarity_score=similarity_score,
+                metadata=metadata
+            )
+            formatted.append(page_obj.model_dump())
         return formatted
     except Exception as e:
         logger.error(f"Error searching similar Confluence pages: {str(e)}")

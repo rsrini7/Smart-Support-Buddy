@@ -5,6 +5,8 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 from app.services.chroma_client import get_vector_db_client
 from app.services.embedding_service import get_embedding_model
+from app.utils.similarity import compute_similarity_score
+from app.models.models import ConfluencePage
 
 from app.core.config import settings
 
@@ -72,24 +74,23 @@ def add_confluence_page_to_vectordb(confluence_url: str, extra_metadata: Optiona
 
         page_id = f"confluence_{datetime.now().strftime('%Y%m%d%H%M%S')}"
         embedding = model.encode(content).tolist()
-        metadata = {
-            "confluence_url": confluence_url,
-            "created_date": datetime.now().isoformat(),
-            "content_hash": content_hash,
-            "display_title": display_title,
-            "html_body": html_body
-        }
-        if extra_metadata:
-            metadata.update(extra_metadata)
-        sanitized_metadata = {}
-        for k, v in metadata.items():
-            if v is None:
-                sanitized_metadata[k] = ""
-            elif isinstance(v, list):
-                sanitized_metadata[k] = ", ".join(str(item) for item in v)
-            else:
-                sanitized_metadata[k] = v
-        metadata = sanitized_metadata
+        
+        # Use ConfluencePage model for structured metadata
+        page_obj = ConfluencePage(
+            page_id=page_id,
+            title=display_title or "Confluence Page",
+            url=confluence_url,
+            space=page_data.get("space"),
+            labels=page_data.get("labels"),
+            creator=page_data.get("creator"),
+            created=page_data.get("created"),
+            updated=page_data.get("updated"),
+            content=content,
+            similarity_score=None,
+            metadata=extra_metadata,
+        )
+        metadata = page_obj.model_dump()
+        
         collection.add(
             ids=[page_id],
             embeddings=[embedding],
@@ -145,7 +146,7 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
                 continue
             seen.add(unique_key)
             distance = distances[i] if i < len(distances) else 0.0
-            similarity_score = 1.0 - min(distance / 2, 1.0)
+            similarity_score = compute_similarity_score(distance)
             if similarity_score < settings.SIMILARITY_THRESHOLD:
                 continue
 

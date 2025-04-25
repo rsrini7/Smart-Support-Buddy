@@ -25,6 +25,7 @@ from app.services.stackoverflow_service import (
     search_similar_stackoverflow_content
 )
 
+from app.utils.similarity import compute_similarity_score
 
 class JiraIngestRequest(BaseModel):
     jira_ticket_ids: List[str]
@@ -48,6 +49,8 @@ class StackOverflowSearchRequest(BaseModel):
     query_text: str
     limit: int = 10
 
+class LLMTopResultsCountRequest(BaseModel):
+    llm_top_results_count: int
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -72,6 +75,23 @@ async def set_similarity_threshold(payload: SimilarityThresholdRequest = Body(..
             raise HTTPException(status_code=400, detail="similarity_threshold must be between 0 and 1 (exclusive)")
         settings.set_similarity_threshold(value)
         return {"status": "success", "similarity_threshold": value}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid value: {e}")
+
+@router.get("/config/llm-top-results-count")
+async def get_llm_top_results_count():
+    """Get the current LLM top results count (user-set or fallback)."""
+    return {"llm_top_results_count": settings.LLM_TOP_RESULTS}
+
+@router.post("/config/llm-top-results-count")
+async def set_llm_top_results_count(payload: LLMTopResultsCountRequest = Body(...)):
+    """Set a new LLM top results count (persists to config file)."""
+    try:
+        value = int(payload.llm_top_results_count)
+        if not (1 <= value <= 20):
+            raise HTTPException(status_code=400, detail="llm_top_results_count must be between 1 and 20")
+        settings.set_llm_top_results_count(value)
+        return {"status": "success", "llm_top_results_count": value}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid value: {e}")
 
@@ -213,7 +233,7 @@ async def search_stackoverflow_qa(payload: StackOverflowSearchRequest):
             metadata = metadatas[i]
             document = documents[i]
             distance = distances[i]
-            similarity_score = 1.0 - min(distance / 2, 1.0)
+            similarity_score = compute_similarity_score(distance)
             if similarity_score == 0.0:
                 continue  # Skip results with 0.00% similarity
             formatted.append({
@@ -258,7 +278,7 @@ async def search_confluence_pages(payload: ConfluenceSearchRequest):
                 continue
             seen.add(unique_key)
             distance = distances[i]
-            similarity_score = 1.0 - min(distance / 2, 1.0)
+            similarity_score = compute_similarity_score(distance)
             if similarity_score == 0.0:
                 continue  # Skip results with 0.00% similarity
             formatted.append({
@@ -285,6 +305,8 @@ async def search_issues(query: SearchQuery):
     from app.services.vector_service import search_similar_issues
     from app.services.confluence_service import search_similar_confluence_pages
     from app.services.stackoverflow_service import search_similar_stackoverflow_content
+    from app.services.llm_service import generate_summary_from_results # Import LLM service
+    from app.models.models import SearchQuery # Ensure SearchQuery is imported
 
     try:
         vector_task = asyncio.to_thread(search_similar_issues, query.query_text, query.jira_ticket_id, query.limit)
@@ -310,8 +332,8 @@ async def search_issues(query: SearchQuery):
         # Combine all results for single page result
         combined_results = []
         for item in vector_issues:
-            if hasattr(item, "dict"):
-                item_data = item.dict()
+            if hasattr(item, "model_dump"):
+                item_data = item.model_dump()
             else:
                 item_data = dict(item)
             combined_results.append({
@@ -334,11 +356,22 @@ async def search_issues(query: SearchQuery):
         # Sort combined results by similarity_score descending
         combined_results.sort(key=lambda x: x.get("similarity_score", 0), reverse=True)
 
+        llm_summary = ""
+        if query.use_llm and combined_results:
+            try:
+                # Generate summary using the top results
+                llm_summary = generate_summary_from_results(combined_results)
+            except Exception as llm_e:
+                # Log LLM error but don't fail the whole request
+                logger.error(f"LLM Action generation failed: {llm_e}", exc_info=True)
+                llm_summary = f"Error generating action from LLM. Please check backend logs." # Inform frontend about the error
+
         return {
             "results": combined_results,
             "vector_issues": vector_issues,
             "confluence_results": confluence_results,
-            "stackoverflow_results": stackoverflow_results
+            "stackoverflow_results": stackoverflow_results,
+            "llm_summary": llm_summary # Include LLM Action in response
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -383,13 +416,36 @@ async def clear_chroma_collection(collection_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+from app.core.config import settings
+from app.services.faiss_client import FaissClient # Add import for FaissClient
+
 @router.get("/chroma-collections")
 async def get_chroma_collections():
     """
-    Get all ChromaDB collections and their documents.
+    Get all vector database collections (ChromaDB or FAISS) and their basic info.
     """
-    data = get_all_chroma_collections_data()
-    return {"collections": data}
+    if settings.USE_FAISS:
+        try:
+            # Ensure FAISS_INDEX_PATH is configured
+            if not settings.FAISS_INDEX_PATH:
+                raise HTTPException(status_code=500, detail="FAISS_INDEX_PATH is not configured in settings.")
+            faiss_client = FaissClient(base_path=settings.FAISS_INDEX_PATH)
+            data = faiss_client.get_collections_with_records()
+            logger.info(f"Retrieved FAISS collections: {len(data)}")
+        except Exception as e:
+            logger.error(f"Error accessing FAISS collections: {e}")
+            raise HTTPException(status_code=500, detail=f"Error accessing FAISS collections: {str(e)}")
+    else:
+        try:
+            data = get_all_chroma_collections_data() or []
+            if not isinstance(data, list):
+                data = []
+            logger.info(f"Retrieved ChromaDB collections: {len(data)}")
+        except Exception as e:
+            logger.error(f"Error accessing ChromaDB collections: {e}")
+            raise HTTPException(status_code=500, detail=f"Error accessing ChromaDB collections: {str(e)}")
+
+    return {"collections": data if isinstance(data, list) else []}
     
 @router.delete("/issues/{issue_id}")
 async def delete_production_issue(issue_id: str):
