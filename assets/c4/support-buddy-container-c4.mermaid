@@ -1,0 +1,44 @@
+flowchart TB
+    %% C4 Container Diagram - Standard Mermaid Flowchart Syntax
+
+    %% --- Define Elements ---
+
+    %% User (Person)
+    User("User\n<size:1>[Person]</size>\nInteracts via UI")
+
+    %% System Boundary (Implicit)
+
+    %% Containers within our System
+    Frontend("Frontend UI\n<size:1>[Container: React SPA]</size>\nProvides search/admin features")
+    BackendApi("Backend API\n<size:1>[Container: FastAPI/Python]</size>\nHandles requests, orchestrates services")
+    VectorDb("Vector Database\n<size:1>[Container: ChromaDB / FAISS]</size>\nStores embeddings for search")
+
+    %% External Systems
+    ExternalLLM("External LLM Service\n<size:1>[External System: API]</size>\nProvides text summarization")
+    DataSources("Data Sources\n<size:1>[External Systems: APIs/Files]</size>\nJira, Confluence, MSG, SO")
+
+    %% --- Define Relationships ---
+
+    User -- "Uses (HTTPS)" --> Frontend
+
+    Frontend -- "API Calls (HTTPS/JSON)" --> BackendApi
+
+    BackendApi -- "Reads/Writes Vectors (SDK)" --> VectorDb
+    BackendApi -- "Requests Summaries (HTTPS/JSON)" --> ExternalLLM
+    BackendApi -- "Ingests Data (API/File)" --> DataSources
+    BackendApi -- "Returns Results (HTTPS/JSON)" --> Frontend
+
+    %% --- Styling (Applied via classDef/class) ---
+    classDef person fill:#FF9966,stroke:#FF6600,stroke-width:2px
+    classDef containerApp fill:#F0CBFF,stroke:#CC66FF,stroke-width:2px
+    classDef containerApi fill:#BBDDFF,stroke:#3399FF,stroke-width:2px
+    classDef containerDb fill:#CCFFCC,stroke:#33CC33,stroke-width:2px
+    classDef externalSys fill:#FFF0BB,stroke:#FFCC33,stroke-width:2px,color:#333
+    classDef externalData fill:#FFCCCC,stroke:#FF6666,stroke-width:2px,color:#333
+
+    class User person
+    class Frontend containerApp
+    class BackendApi containerApi
+    class VectorDb containerDb
+    class ExternalLLM externalSys
+    class DataSources externalData

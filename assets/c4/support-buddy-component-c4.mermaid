@@ -1,0 +1,82 @@
+flowchart TB
+    %% C4 Component Diagram for Backend API Container - Specific Data Labels
+
+    %% --- Define Elements OUTSIDE the Container Boundary ---
+    Frontend("Frontend UI<size:1>[Container: React SPA]</size>")
+    ExternalLLM("External LLM Service<size:1>[External System: API]</size>")
+    DataSources("Data Sources<size:1>[External Systems: APIs/Files]</size>Jira, Confluence, MSG, SO")
+    VectorDb("Vector Database<size:1>[Container: ChromaDB / FAISS]</size>")
+
+    %% --- Define the Container Boundary and its Internal Components ---
+    subgraph BackendApiContainer [Backend API Container]
+        direction LR
+        %% Arrange components left-to-right if possible
+
+        %% API Entry Point (Implicitly represented by connections to components)
+
+        %% Core Components
+        compVS("Vector Service<size:1>[Component: Python]</size>Handles vector search")
+        compUSA("Unified Search Aggregation<size:1>[Component: Python]</size>Combines search results")
+        compLLM("LLM Summary Service<size:1>[Component: Python]</size>Orchestrates summarization")
+
+        %% Integration Components (No longer in a nested subgraph for connection simplicity)
+        compMSGP("MSG Parser Service<size:1>[Component: Python]</size>Processes MSG files")
+        compJS("Jira Service<size:1>[Component: Python]</size>Interacts with Jira")
+        compCS("Confluence Service<size:1>[Component: Python]</size>Interacts with Confluence")
+        compSOS("StackOverflow Service<size:1>[Component: Python]</size>Interacts with StackOverflow")
+
+    end
+
+    %% --- Define Relationships (Node-to-Node where possible) ---
+
+    %% Interactions INTO the container boundary - Pointing to relevant entry components
+    %% Assuming Search/Summary requests are handled by Aggregation/LLM services initially
+    Frontend -- "Requests Search (HTTPS/JSON)" --> compUSA
+    Frontend -- "Requests Summary (HTTPS/JSON)" --> compLLM
+
+    %% Interactions BETWEEN components within the container
+    compVS   -- "Provides vectors" --> compUSA
+    compLLM  -- "Provides summaries" --> compUSA
+
+    %% Integration Services feed the Vector Service (Specific Labels Added)
+    compMSGP -- "Sends MSG Data" --> compVS
+    compJS   -- "Sends Jira Data" --> compVS
+    compCS   -- "Sends Confluence Data" --> compVS
+    compSOS  -- "Sends StackOverflow Data" --> compVS
+
+    %% Interactions FROM components OUTSIDE to other containers/systems
+    compVS  -- "Reads/Writes Embeddings (SDK)" --> VectorDb
+    compLLM -- "Requests Summarization (HTTPS/JSON)" --> ExternalLLM
+
+    %% Integration components interact with Data Sources
+    compMSGP -- "Reads MSGs (File)" --> DataSources
+    compJS   -- "Reads/Writes Jira (API)" --> DataSources
+    compCS   -- "Reads Confluence (API)" --> DataSources
+    compSOS  -- "Reads StackOverflow (API)" --> DataSources
+
+
+    %% Interactions for the result OUT of the container
+    %% USA provides results directly back to Frontend (simplification)
+    compUSA -- "Sends Aggregated Results (HTTPS/JSON)" --> Frontend
+
+
+    %% --- Styling ---
+    classDef person fill:#FF9966,stroke:#FF6600,stroke-width:2px
+    classDef containerApp fill:#F0CBFF,stroke:#CC66FF,stroke-width:2px
+    classDef containerApi fill:#BBDDFF,stroke:#3399FF,stroke-width:2px
+    %% Style for the container boundary
+    classDef component fill:#D6EBFF,stroke:#3399FF,stroke-width:1px,color:#003366
+    %% Style for internal components
+    classDef containerDb fill:#CCFFCC,stroke:#33CC33,stroke-width:2px
+    classDef externalSys fill:#FFF0BB,stroke:#FFCC33,stroke-width:2px,color:#333
+    classDef externalData fill:#FFCCCC,stroke:#FF6666,stroke-width:2px,color:#333
+
+    %% Apply styles
+    class Frontend containerApp
+    class BackendApiContainer containerApi
+    %% Apply API container style to subgraph
+    class compVS,compUSA,compLLM,compMSGP,compJS,compCS,compSOS component
+    %% Apply component style
+    class VectorDb containerDb
+    class ExternalLLM externalSys
+    class DataSources externalData

@@ -1,0 +1,33 @@
+flowchart TB
+    %% C4 System Context Diagram - Standard Mermaid Syntax
+
+    %% --- Define Elements ---
+
+    %% Person (User)
+    User("User\n<size:1>[Person]</size>\nSearches for information, views summaries")
+
+    %% Our System
+    System("Unified Search System\n<size:1>[Software System]</size>\nProvides unified search, indexing, and summarization across multiple sources")
+
+    %% External Systems
+    LLMApi("External LLM Service\n<size:1>[Software System]</size>\nProvides NLP/summarization capabilities")
+    SourceSystems("Data Sources\n<size:1>[Software Systems]</size>\nExisting repositories of information (Jira, Confluence, MSG, SO, etc.)")
+
+    %% --- Define Relationships ---
+
+    User -- "Uses (HTTPS)" --> System
+    System -- "Gets Data From / Indexes (API/File)" --> SourceSystems
+    System -- "Requests Summarization (API)" --> LLMApi
+
+
+    %% --- Styling ---
+    classDef person fill:#FF9966,stroke:#FF6600,stroke-width:2px
+    classDef system fill:#BBDDFF,stroke:#3399FF,stroke-width:2px
+    classDef external fill:#FFF0BB,stroke:#FFCC33,stroke-width:2px,color:#333
+    classDef externalData fill:#FFCCCC,stroke:#FF6666,stroke-width:2px,color:#333
+
+    %% Apply Styles
+    class User person
+    class System system
+    class LLMApi external
+    class SourceSystems externalData

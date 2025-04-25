@@ -3,7 +3,22 @@
 A GenAI-powered solution for handling support issues / queries by analyzing Microsoft Outlook MSG files, Jira tickets, Confluence pages, and StackOverflow Q&A to identify root causes and solutions.
 
 ## Architecture
-![Support Buddy Architecture](assets/image.png)
+
+## C4 - Context Diagram
+
+![Support Buddy Architecture](assets/c4/support-buddy-context-c4.png)
+
+## C4 - Container Diagram
+
+![Support Buddy Architecture](assets/c4/support-buddy-container-c4.png)
+
+## C4 - Component Diagram
+
+![Support Buddy Architecture](assets/c4/support-buddy-component-c4.png)
+
+
+## End to End Flow
+![Support Buddy Architecture](assets/support-buddy-final-flow.png)
 
 ## Project Structure
 

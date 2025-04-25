@@ -1,0 +1,61 @@
+flowchart TB
+    %% High-Level System Architecture - No Subgraph Boxes
+
+    %% Actors & Nodes
+    User((User))
+
+    %% Frontend Nodes
+    UI[User Interface]
+
+    %% Backend Nodes
+    BL[API & Core Logic]
+
+    %% Storage Nodes
+    VDB[Vector Database]
+
+    %% Data Source Nodes
+    DS[Original Data Sources]
+
+    %% External Service Nodes
+    ExtLLM[External LLM API]
+
+    %% Core Flow (e.g., Search & Summarize)
+    User --> UI
+    UI --> BL
+    %% User request goes to Backend
+    BL --> VDB
+    %% Backend queries Vector DB for search
+    BL --> ExtLLM
+    %% Backend calls External LLM for summary
+    VDB --> BL
+    %% Search results return to Backend
+    ExtLLM --> BL
+    %% Summary results return to Backend
+    BL --> UI
+    %% Combined results sent to UI
+
+    %% Data Ingestion Flow (Simplified)
+    DS --> BL
+    %% Data ingested by Backend
+    BL --> VDB
+    %% Processed data stored in Vector DB
+
+    %% Styling (Applied directly to nodes - Comments Moved)
+    classDef user fill:#FF9966,stroke:#FF6600
+    classDef frontend fill:#F0CBFF,stroke:#CC66FF
+    classDef backend fill:#BBDDFF,stroke:#3399FF
+    classDef storage fill:#CCFFCC,stroke:#33CC33
+    classDef datasrc fill:#FFCCCC,stroke:#FF6666
+    classDef external fill:#FFF0BB,stroke:#FFCC33
+
+    class User user
+    class UI frontend
+    %% Apply frontend style (Comment Moved)
+    class BL backend
+    %% Apply backend style (Comment Moved)
+    class VDB storage
+    %% Apply storage style (Comment Moved)
+    class DS datasrc
+    %% Apply datasrc style (Comment Moved)
+    class ExtLLM external
+    %% Apply external style (Comment Moved)
