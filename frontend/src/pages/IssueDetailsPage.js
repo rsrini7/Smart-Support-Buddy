@@ -25,6 +25,7 @@ import {
   DialogContentText,
   DialogTitle
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 const IssueDetailsPage = () => {
   const { issueId } = useParams();
@@ -38,6 +39,7 @@ const IssueDetailsPage = () => {
   const [tabValue, setTabValue] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const theme = useTheme();
 
   const handleGoBack = () => {
     // Check if we have search state to return to
@@ -111,7 +113,7 @@ const IssueDetailsPage = () => {
     return date.toLocaleString();
   };
 
-  const issueDetailsTextStyle = (theme) => ({
+  const issueDetailsTextStyle = () => ({
     color: theme.palette.mode === 'dark' ? '#f1f1f1' : '#222',
     background: theme.palette.mode === 'dark' ? '#181a1b' : '#fff',
     transition: 'color 0.2s, background 0.2s',

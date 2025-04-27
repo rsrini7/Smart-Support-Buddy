@@ -17,21 +17,42 @@ class RAGHybridFusedRerank(dspy.Module):
         self.llm = llm
         self.rerank_k = rerank_k
 
-    def rerank(self, query, documents):
-        scores = self.reranker.predict([(query, doc) for doc in documents])
-        ranked = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
+    def rerank(self, query, documents_with_meta):
+        """Reranks documents based on query, preserving metadata."""
+        # Extract text for reranking, keep original object
+        texts_to_rank = [doc['long_text'] for doc in documents_with_meta]
+        scores = self.reranker.predict([(query, text) for text in texts_to_rank])
+        # Combine original objects with scores and sort
+        ranked = sorted(zip(documents_with_meta, scores), key=lambda x: x[1], reverse=True)
+        # Return the top K original objects
         return [doc for doc, _ in ranked[:self.rerank_k]]
 
     def forward(self, question, use_llm=True):
-        vector_results = self.vector_retrieve(question)
-        keyword_results = self.keyword_retrieve(question)
-        fused_docs = {doc['long_text']: doc for doc in vector_results + keyword_results}
-        fused_list = list(fused_docs.values())
-        reranked_docs = self.rerank(question, [doc['long_text'] for doc in fused_list])
-        context = "\n".join(reranked_docs)
+        vector_results = self.vector_retrieve(question) # List of dspy.Example
+        keyword_results = self.keyword_retrieve(question) # List of dspy.Example
+
+        # Fuse based on a unique identifier if available (e.g., 'id'), otherwise fallback to text
+        # Assuming retrievers return dspy.Example objects with an 'id' field
+        fused_docs_map = {}
+        for doc in vector_results + keyword_results:
+            doc_id = doc.get('id', doc.get('long_text')) # Use ID if present, else text
+            if doc_id not in fused_docs_map:
+                fused_docs_map[doc_id] = doc
+
+        fused_list = list(fused_docs_map.values()) # List of unique dspy.Example
+
+        # Rerank based on text, but return the full dspy.Example objects
+        reranked_examples = self.rerank(question, fused_list)
+
+        # Prepare context string for LLM generation
+        context_text = "\n".join([ex.long_text for ex in reranked_examples])
+
         if not use_llm:
-            return type('RAGResult', (), {'context': reranked_docs, 'answer': None})()
+            # Return the reranked dspy.Example objects directly
+            return type('RAGResult', (), {'context': reranked_examples, 'answer': None})()
+
         with dspy.settings.context(lm=self.llm):
-            prediction = self.generate(question=question, context=context)
-            prediction.context = reranked_docs
+            prediction = self.generate(question=question, context=context_text)
+            # Attach the full reranked examples (with metadata) to the prediction
+            prediction.context = reranked_examples
             return prediction

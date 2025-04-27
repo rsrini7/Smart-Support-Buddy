@@ -89,9 +89,11 @@ def index_vector_data(
 def create_bm25_index(documents):
     return BM25Processor(documents)
 
-def create_retrievers(collection, embedder, bm25_processor, corpus, k_embed=5, k_bm25=5):
+def create_retrievers(collection, embedder, bm25_processor, corpus, doc_ids: Optional[List[str]] = None, metadatas: Optional[List[Dict[str, Any]]] = None, k_embed=5, k_bm25=5):
+    """Creates vector and BM25 retrievers, passing IDs and metadata to BM25Retriever."""
     vector_retriever = VectorRetriever(collection, embedder, k=k_embed)
-    bm25_retriever = BM25Retriever(bm25_processor, corpus, k=k_bm25)
+    # Pass doc_ids and metadatas to BM25Retriever
+    bm25_retriever = BM25Retriever(bm25_processor, corpus, doc_ids=doc_ids, metadatas=metadatas, k=k_bm25)
     return vector_retriever, bm25_retriever
 
 def create_rag_pipeline(vector_retriever, keyword_retriever, reranker_model, llm, k_rerank=3):

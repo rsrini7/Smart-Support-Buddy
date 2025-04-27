@@ -27,6 +27,7 @@ class IssueResponse(BaseModel):
     root_cause: Optional[str] = None
     solution: Optional[str] = None
     similarity_score: Optional[float] = None  # Used in search results
+    llm_answer: Optional[str] = None  # Optional LLM-generated answer
 
 class SearchQuery(BaseModel):
     """Schema for searching support issues / queries"""

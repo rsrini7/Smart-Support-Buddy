@@ -7,9 +7,8 @@ from app.utils.llm_augmentation import llm_summarize
 from app.models import IssueResponse
 from datetime import datetime
 import logging
-import re
-from app.utils.similarity import compute_similarity_score
-# --- DSPy RAG imports ---
+import os
+from app.utils.similarity import compute_text_similarity_score
 from app.utils.rag_utils import load_components, create_bm25_index, create_retrievers, create_rag_pipeline
 from app.utils.dspy_utils import get_openrouter_llm
 
@@ -28,12 +27,20 @@ def _get_rag_pipeline():
     from app.core.config import settings
     import dspy
     collection = get_collection(COLLECTION_NAME)
-    all_docs = collection.get()["documents"]
-    _corpus = all_docs
+    # Fetch documents, IDs, and metadata together
+    all_data = collection.get(include=['documents', 'metadatas', 'ids'])
+    _corpus = all_data.get("documents", [])
+    _ids = all_data.get("ids", [])
+    _metadatas = all_data.get("metadatas", [])
+    # Store mapping for BM25 retriever if needed, or pass necessary info
+    # For now, just ensure _corpus is the list of documents for BM25 index
+    # The create_retrievers function will need adjustment to pass IDs/Metas to BM25Retriever
     # Determine db_type and db_path robustly
     if isinstance(collection, FaissCollection):
         db_type = 'faiss'
-        db_path = getattr(collection, 'index_path', None)
+        # Use the directory containing the index file
+        index_file_path = getattr(collection, 'index_path', None)
+        db_path = os.path.dirname(index_file_path) if index_file_path else None
     else:
         db_type = 'chroma'
         db_path = getattr(collection, '_client', None)
@@ -49,7 +56,8 @@ def _get_rag_pipeline():
     # Use OpenRouter LLM via DSPy
     llm = get_openrouter_llm()
     bm25_processor = create_bm25_index(_corpus)
-    vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus)
+    # Pass IDs and Metadatas to create_retrievers so BM25Retriever can use them
+    vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus, doc_ids=_ids, metadatas=_metadatas)
     _rag_pipeline = create_rag_pipeline(vector_retriever, bm25_retriever, reranker, llm)
     return _rag_pipeline
 
@@ -153,24 +161,67 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
             return issue_responses
         # Otherwise, use the RAG pipeline
         rag_result = rag_pipeline.forward(query_text)
-        # Return as IssueResponse list (one for each context doc)
+        # Process RAG results, using retrieved IDs and metadata
         responses = []
-        for idx, context in enumerate(rag_result.context):
-            responses.append(IssueResponse(
-                id=f"rag_{idx}",
-                title=context[:60],
-                description=context,
-                jira_ticket_id="",
-                received_date="",
-                created_at=datetime.now(),
-                updated_at=None,
-                msg_data={},
-                jira_data=None,
-                llm_answer=rag_result.answer if idx == 0 else None
-            ))
-        return responses
+        # The context from RAG is now a list of dspy.Example objects with metadata
+        retrieved_examples = rag_result.context
+        logger.debug(f"RAG pipeline returned {len(retrieved_examples)} examples.")
+
+        # Fetch full issue details using the IDs from metadata
+        issue_ids = [ex.get('id') for ex in retrieved_examples if ex.get('id')]
+        logger.debug(f"Extracted issue IDs from RAG context: {issue_ids}") # Added debug log
+
+        # Batch fetch issues if possible, otherwise fetch one by one
+        # (Assuming get_issue fetches one by one for simplicity here)
+        issues_map = {}
+        for issue_id in issue_ids:
+            if not issue_id: # Skip if ID is None or empty
+                logger.warning("Skipping fetch for None/empty issue ID.")
+                continue
+            try:
+                issue = get_issue(issue_id)
+                if issue:
+                    issues_map[issue_id] = issue
+                    logger.debug(f"Successfully fetched issue {issue_id} for map.") # Added debug log
+                else:
+                    logger.warning(f"get_issue returned None for issue ID: {issue_id}") # Modified warning log
+            except Exception as fetch_err:
+                 logger.error(f"Error fetching issue {issue_id} using get_issue: {fetch_err}") # Added error log for fetch exception
+
+        logger.debug(f"Populated issues_map with {len(issues_map)} entries.")
+
+        for idx, example in enumerate(retrieved_examples):
+            # Ensure example is treated as a dictionary-like object for .get()
+            logger.debug(f"Processing RAG example {idx}: {example}") # Added debug log
+            if not hasattr(example, 'get'):
+                logger.warning(f"Skipping RAG example {idx} as it's not dictionary-like: {type(example)}")
+                continue
+
+            issue_id = example.get('id')
+            logger.debug(f"Extracted issue_id from example {idx}: {issue_id}") # Added debug log
+
+            # Check if the issue was successfully fetched and exists in the map
+            if issue_id and issue_id in issues_map:
+                issue = issues_map[issue_id]
+                logger.debug(f"Found issue {issue_id} in issues_map: {issue.model_dump_json(indent=2)}") # Added detailed log
+                # Add similarity score if available from RAG metadata
+                similarity_score = example.get('score') or compute_text_similarity_score(query_text, issue.description)
+                issue.similarity_score = similarity_score
+                # Add LLM answer if it's the top result and available
+                if idx == 0 and rag_result.answer:
+                    issue.llm_answer = rag_result.answer
+                responses.append(issue)
+            else:
+                logger.warning(f"Issue ID {issue_id} from RAG example {idx} not found in issues_map or was None.") # Added warning log
+
+        # Sort by similarity score if available
+        responses.sort(key=lambda x: x.similarity_score if x.similarity_score is not None else -1, reverse=True)
+
+        logger.info(f"Search completed. Found {len(responses)} similar issues.")
+        return responses[:limit]
+
     except Exception as e:
-        logger.error(f"Error in DSPy RAG search_similar_issues: {str(e)}")
+        logger.error(f"Error searching similar issues: {str(e)}", exc_info=True)
         return []
 
 def add_issue_to_vectordb(

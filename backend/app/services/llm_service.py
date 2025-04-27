@@ -1,88 +1,25 @@
 import logging
-import requests
-from fastapi import HTTPException
+import dspy
 from app.core.config import settings
-
-OPENROUTER_API_KEY = settings.OPENROUTER_API_KEY
-OPENROUTER_API_URL = settings.OPENROUTER_API_URL+"/chat/completions"
-OPENROUTER_MODEL = settings.OPENROUTER_MODEL
-
-# Recommended: Set your app's site URL and name for OpenRouter headers
-YOUR_SITE_URL = settings.YOUR_SITE_URL
-YOUR_APP_NAME = settings.YOUR_APP_NAME
+from app.utils import dspy_utils # Import dspy_utils
 
 logger = logging.getLogger(__name__)
 
-def call_openrouter_api(prompt: str, model: str = None) -> str:
-    """
-    Calls the OpenRouter API to get a completion for the given prompt.
+# Define DSPy Signature for Summarization
+class SummarizeActionPoints(dspy.Signature):
+    """Summarize the provided context from technical support search results into key action points."""
+    context = dspy.InputField(desc="Concatenated text from top search results including titles, descriptions, root causes, solutions, and relevant metadata.")
+    action_points = dspy.OutputField(desc="A concise summary or list of key action points based on the context.")
 
-    Args:
-        prompt: The input prompt for the LLM.
-        model: The model to use (default: value from config OPENROUTER_MODEL).
-
-    Returns:
-        The content of the LLM's response.
-
-    Raises:
-        HTTPException: If the API key is missing or the API call fails.
-    """
-    if not OPENROUTER_API_KEY:
-        print("Error: OPENROUTER_API_KEY environment variable not set.")
-        raise HTTPException(status_code=500, detail="OpenRouter API key not configured.")
-
-    if model is None:
-        model = OPENROUTER_MODEL
-
-    try:
-        response = requests.post(
-            url=OPENROUTER_API_URL,
-            headers={
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "HTTP-Referer": YOUR_SITE_URL, # Optional, for OpenRouter analytics
-                "X-Title": YOUR_APP_NAME, # Optional, for OpenRouter analytics
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": "You are a helpful assistant summarizing technical support information. Provide a concise summary or key action points based on the provided context."},
-                    {"role": "user", "content": prompt}
-                ]
-            }
-        )
-
-        print("[DEBUG] OpenRouter API status:", response.status_code)
-        print("[DEBUG] OpenRouter API raw response:", response.text)
-        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
-
-        data = response.json()
-
-        if data.get("choices") and len(data["choices"]) > 0:
-            # Extract the message content
-            message_content = data["choices"][0].get("message", {}).get("content", "")
-            return message_content.strip()
-        else:
-            print(f"Warning: No choices returned from OpenRouter API. Response: {data}")
-            return "LLM did not provide a summary."
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error calling OpenRouter API: {e}")
-        # Check for specific status codes if needed, e.g., 401 for auth errors
-        status_code = 500
-        detail = f"Failed to communicate with OpenRouter API: {e}"
-        if e.response is not None:
-            status_code = e.response.status_code
-            try:
-                error_detail = e.response.json().get('error', {}).get('message', str(e))
-                detail = f"OpenRouter API Error ({status_code}): {error_detail}"
-            except ValueError: # Handle cases where response is not JSON
-                detail = f"OpenRouter API Error ({status_code}): {e.response.text}"
-
-        raise HTTPException(status_code=status_code, detail=detail)
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred while processing LLM request: {e}")
+# Initialize the DSPy Predictor
+try:
+    lm = dspy_utils.get_openrouter_llm() # Get configured LM
+    summarize_predictor = dspy.Predict(SummarizeActionPoints)
+except Exception as e:
+    logger.error(f"Failed to initialize DSPy LM or Predictor: {e}")
+    # Handle initialization failure appropriately, maybe raise an error or use a fallback
+    summarize_predictor = None
+    lm = None
 
 
 def generate_summary_from_results(results: list) -> str:
@@ -185,16 +122,21 @@ def generate_summary_from_results(results: list) -> str:
 
         prompt_context += "\n"
 
+    if not summarize_predictor or not lm:
+        logger.error("DSPy components not initialized. Cannot generate summary.")
+        return "Error: LLM service components failed to initialize."
+
     try:
-        summary = call_openrouter_api(prompt_context)
+        # Configure the LM for the predictor
+        with dspy.context(lm=lm):
+            prediction = summarize_predictor(context=prompt_context)
+            summary = prediction.action_points
+        logger.info(f"Generated summary: {summary}")
         return summary
-    except HTTPException as e:
-        # Log the error or handle it as needed, maybe return an error message
-        print(f"LLM Service Error: {e.detail}")
-        return f"Error generating summary: {e.detail}"
     except Exception as e:
-        print(f"Unexpected error in LLM generation: {e}")
-        return "Error: Could not generate summary due to an unexpected issue."
+        logger.error(f"Error during DSPy prediction: {e}", exc_info=True)
+        # Consider more specific error handling based on potential DSPy exceptions
+        return f"Error generating summary using LLM: {e}"
 
 # Example usage (for testing)
 if __name__ == "__main__":
@@ -225,6 +167,11 @@ if __name__ == "__main__":
     ]
 
     print("--- Generating Action --- ")
-    summary = generate_summary_from_results(mock_results)
-    print("\n--- LLM Action --- ")
-    print(summary)
+    # Ensure DSPy components are initialized before calling
+    if summarize_predictor and lm:
+        summary = generate_summary_from_results(mock_results)
+        print("\n--- LLM Action --- ")
+        print(summary)
+    else:
+        print("\n--- LLM Action --- ")
+        print("Error: DSPy components not initialized, cannot run example.")

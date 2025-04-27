@@ -1,6 +1,7 @@
 import logging
 import hashlib
 import requests
+import os
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from app.services.chroma_client import get_vector_db_client
@@ -10,8 +11,7 @@ from app.utils.similarity import compute_similarity_score
 from app.utils.llm_augmentation import llm_summarize
 from app.models.models import ConfluencePage
 from app.utils.dspy_utils import get_openrouter_llm
-
-from app.core.config import settings
+from app.services.faiss_client import FaissCollection # Add this import if not already present
 
 logger = logging.getLogger(__name__)
 
@@ -48,21 +48,31 @@ def _get_rag_pipeline():
     from app.core.config import settings
     client = get_vector_db_client()
     collection = client.get_or_create_collection(COLLECTION_NAME)
-    all_docs = collection.get()["documents"]
-    _corpus = all_docs
-    # Determine db_type and db_path
-    db_type = getattr(collection, '_client', None)
-    if db_type and 'faiss' in str(type(collection._client)).lower():
+    all_docs_result = collection.get(include=['documents'])
+    _corpus = all_docs_result.get("documents", [])
+
+    # Determine db_type and db_path based on collection type
+    if isinstance(collection, FaissCollection):
         db_type = 'faiss'
-        db_path = getattr(collection._client, 'base_path', None)
-    else:
+        # Use the directory containing the index file as the path
+        db_path = os.path.dirname(collection.index_path) if collection.index_path else None
+        logger.info(f"Detected FAISS collection. Type: {db_type}, Path: {db_path}")
+    elif hasattr(collection, '_client'): # Assuming ChromaDB or similar structure
         db_type = 'chroma'
-        db_path = getattr(collection._client, '_settings', {}).get('path', None)
+        # Attempt to get path from Chroma settings
+        chroma_settings = getattr(collection._client, '_settings', {})
+        db_path = chroma_settings.get('persist_directory', None) or chroma_settings.get('path', None)
+        logger.info(f"Detected ChromaDB-like collection. Type: {db_type}, Path: {db_path}")
+    else:
+        logger.warning("Could not determine DB type or path from collection object.")
+        db_type = 'unknown'
+        db_path = None
+
     embedder, reranker, _, _ = load_components(
         db_type=db_type,
         db_path=db_path,
-        embedder_model=None,
-        reranker_model=None,
+        embedder_model=None, # Let load_components handle default
+        reranker_model=None, # Let load_components handle default
         llm=None
     )
     # Use OpenRouter LLM via DSPy
