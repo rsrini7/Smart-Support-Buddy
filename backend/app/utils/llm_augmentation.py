@@ -22,42 +22,44 @@ class NormalizeLanguageSignature(dspy.Signature):
     normalized_text = dspy.OutputField(desc="The text normalized to the target language.")
 
 # Refactored Functions using dspy.Predict
-def llm_summarize(text: str, llm: Optional[dspy.LM] = None) -> str:
-    """Augment text by summarizing it using dspy.Predict."""
+def llm_predict_with_signature(signature, input_kwargs, llm=None, max_tokens=None):
+    """
+    Generic utility to call a DSPy predictor with a given signature and input kwargs.
+    """
     if llm is None:
         llm = get_openrouter_llm()
     with dspy.context(lm=llm):
-        summarizer = dspy.Predict(SummarizeSignature, max_tokens=150) # Adjust max_tokens as needed
-        result = summarizer(text=text)
-        return result.summary
+        predictor = dspy.Predict(signature, max_tokens=max_tokens) if max_tokens else dspy.Predict(signature)
+        return predictor(**input_kwargs)
+
+
+def llm_summarize(text: str, llm: Optional[dspy.LM] = None) -> str:
+    """Augment text by summarizing it using dspy.Predict."""
+    result = llm_predict_with_signature(SummarizeSignature, {'text': text}, llm=llm, max_tokens=150)
+    return result.summary
+
 
 def llm_extract_metadata(text: str, llm: Optional[dspy.LM] = None) -> Dict[str, Any]:
     """Extract structured metadata from text using dspy.Predict."""
-    if llm is None:
-        llm = get_openrouter_llm()
-    with dspy.context(lm=llm):
-        extractor = dspy.Predict(ExtractMetadataSignature, max_tokens=200) # Adjust max_tokens as needed
-        result = extractor(text=text)
-        try:
-            # Attempt to parse the JSON output
-            metadata = json.loads(result.metadata_json.strip())
-            if isinstance(metadata, dict):
-                return metadata
-            else:
-                 # Handle cases where the LLM might not return a valid JSON object string
-                return {"raw": result.metadata_json.strip()}
-        except json.JSONDecodeError:
-            # Return the raw output if JSON parsing fails
+    result = llm_predict_with_signature(ExtractMetadataSignature, {'text': text}, llm=llm, max_tokens=200)
+    try:
+        metadata = json.loads(result.metadata_json.strip())
+        if isinstance(metadata, dict):
+            return metadata
+        else:
             return {"raw": result.metadata_json.strip()}
-        except Exception:
-             # Fallback for other potential errors
-            return {"raw": result.metadata_json.strip()}
+    except json.JSONDecodeError:
+        return {"raw": result.metadata_json.strip()}
+    except Exception:
+        return {"raw": result.metadata_json.strip()}
+
 
 def llm_normalize_language(text: str, target_language: str = "en", llm: Optional[dspy.LM] = None) -> str:
     """Normalize text to a target language using dspy.Predict."""
-    if llm is None:
-        llm = get_openrouter_llm()
-    with dspy.context(lm=llm):
-        normalizer = dspy.Predict(NormalizeLanguageSignature, max_tokens=len(text) + 50) # Estimate max_tokens
-        result = normalizer(text=text, target_language=target_language)
-        return result.normalized_text
+    result = llm_predict_with_signature(
+        NormalizeLanguageSignature,
+        {'text': text, 'target_language': target_language},
+        llm=llm,
+        max_tokens=len(text) + 50
+    )
+    return result.normalized_text
