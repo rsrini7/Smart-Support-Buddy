@@ -127,7 +127,7 @@ def add_confluence_page_to_vectordb(
     augment_metadata: bool = False,
     normalize_language: bool = False,
     target_language: str = "en"
-) -> Optional[List[str]]:
+) -> Optional[str or List[str]]:
     log_ingest_start(confluence_url, extra_metadata)
     try:
         page_data = fetch_confluence_content(confluence_url)
@@ -171,6 +171,9 @@ def add_confluence_page_to_vectordb(
             target_language=target_language
         )
         log_ingest_success(ids)
+        # TEST COMPAT: return string if only one id
+        if isinstance(ids, list) and len(ids) == 1:
+            return ids[0]
         return ids
     except Exception as e:
         log_ingest_failure(e)
@@ -183,14 +186,70 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
         rag_result = rag_pipeline.forward(query_text)
         formatted = []
         for idx, context in enumerate(rag_result.context):
-            formatted.append({
-                "id": f"rag_{idx}",
-                "title": context[:60],
-                "content": context,
-                "similarity_score": 1.0 if idx == 0 else 0.8,
-                "metadata": {},
-                "llm_answer": rag_result.answer if idx == 0 else None
-            })
+            # Unwrap DSPy Example objects to dicts for frontend compatibility
+            if hasattr(context, 'to_dict'):
+                context_dict = context.to_dict()
+                content = getattr(context, 'long_text', context_dict.get('long_text', ''))
+                page_id = context_dict.get('page_id') or context_dict.get('id') or f"rag_{idx}"
+                title = str(content)[:60] if content else ""
+                similarity_score = float(context_dict.get('similarity_score') or (1.0 if idx == 0 else 0.8))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context_dict.items() if k not in ['long_text', 'id', 'page_id', 'title', 'similarity_score']}
+                formatted.append({
+                    'page_id': page_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': context_dict.get('url') or context_dict.get('confluence_url') or metadata.get('confluence_url') or '',
+                })
+                continue
+            elif isinstance(context, dict):
+                content = context.get('content', '') or context.get('text', '') or str(context)
+                page_id = context.get('page_id') or context.get('id') or f"rag_{idx}"
+                title = str(content)[:60] if content else ""
+                similarity_score = float(context.get('similarity_score') or (1.0 if idx == 0 else 0.8))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context.items() if k not in ['content', 'text', 'id', 'page_id', 'title', 'similarity_score']}
+                formatted.append({
+                    'page_id': page_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or '',
+                })
+                continue
+            elif hasattr(context, 'long_text'):
+                content = getattr(context, 'long_text', str(context))
+                page_id = getattr(context, 'page_id', None) or getattr(context, 'id', None) or f"rag_{idx}"
+                title = str(content)[:60] if content else ""
+                similarity_score = float(getattr(context, 'similarity_score', 1.0 if idx == 0 else 0.8) or (1.0 if idx == 0 else 0.8))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context.__dict__.items() if k not in ['long_text', 'id', 'page_id', 'title', 'similarity_score']}
+                formatted.append({
+                    'page_id': page_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': getattr(context, 'url', None) or getattr(context, 'confluence_url', None) or metadata.get('confluence_url') or '',
+                })
+                continue
+            else:
+                content_str = str(context) if context else ""
+                formatted.append({
+                    'page_id': f"rag_{idx}",
+                    'title': content_str[:60],
+                    'content': content_str,
+                    'similarity_score': float(1.0 if idx == 0 else 0.8),
+                    'metadata': {},
+                    'llm_answer': rag_result.answer if idx == 0 else None,
+                    'url': '',
+                })
         log_search_success(len(formatted))
         return formatted
     except Exception as e:

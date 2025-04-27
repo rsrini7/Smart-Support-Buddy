@@ -20,7 +20,11 @@ class RAGHybridFusedRerank(dspy.Module):
     def rerank(self, query, documents_with_meta):
         """Reranks documents based on query, preserving metadata."""
         # Extract text for reranking, keep original object
+        if not documents_with_meta:
+            return []
         texts_to_rank = [doc['long_text'] for doc in documents_with_meta]
+        if not texts_to_rank:
+            return []
         scores = self.reranker.predict([(query, text) for text in texts_to_rank])
         # Combine original objects with scores and sort
         ranked = sorted(zip(documents_with_meta, scores), key=lambda x: x[1], reverse=True)
@@ -43,6 +47,10 @@ class RAGHybridFusedRerank(dspy.Module):
 
         # Rerank based on text, but return the full dspy.Example objects
         reranked_examples = self.rerank(question, fused_list)
+
+        # If there are no reranked examples, return empty context and None answer
+        if not reranked_examples:
+            return type('RAGResult', (), {'context': [], 'answer': None})()
 
         # Prepare context string for LLM generation
         context_text = "\n".join([ex.long_text for ex in reranked_examples])

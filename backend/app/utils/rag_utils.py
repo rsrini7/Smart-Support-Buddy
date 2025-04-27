@@ -87,6 +87,12 @@ def index_vector_data(
     return final_ids
 
 def create_bm25_index(documents):
+    if not documents:
+        # Return a dummy retriever that always returns an empty list
+        class EmptyBM25Processor:
+            def get_scores(self, query):
+                return []
+        return EmptyBM25Processor()
     return BM25Processor(documents)
 
 def create_retrievers(collection, embedder, bm25_processor, corpus, doc_ids: Optional[List[str]] = None, metadatas: Optional[List[Dict[str, Any]]] = None, k_embed=5, k_bm25=5):

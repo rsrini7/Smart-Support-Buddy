@@ -142,7 +142,21 @@ const ConfluenceIngestPage = () => {
         </Button>
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
         {success && <Alert severity="success" sx={{ mt: 2 }}>Ingest successful!</Alert>}
-        {result && <Box sx={{ mt: 2 }}><pre>{JSON.stringify(result, null, 2)}</pre></Box>}
+        {result && (
+          <Box sx={{
+            mt: 2,
+            maxHeight: 400,
+            overflow: 'auto',
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 2,
+            background: theme.palette.background.paper,
+            p: 2,
+            color: theme.palette.text.primary
+          }}>
+            <Typography variant="subtitle1" sx={{ mb: 1, color: theme.palette.text.secondary }}>Ingest Results</Typography>
+            <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: 'none', color: theme.palette.text.primary }}>{JSON.stringify(result, null, 2)}</pre>
+          </Box>
+        )}
       </Paper>
     </Box>
   );

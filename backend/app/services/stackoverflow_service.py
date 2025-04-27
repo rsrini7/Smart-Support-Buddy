@@ -228,14 +228,91 @@ def search_similar_stackoverflow_content(query_text: str, limit: int = 10):
         # Return as a list of dicts for frontend compatibility
         formatted = []
         for idx, context in enumerate(rag_result.context):
-            formatted.append({
-                "id": f"rag_{idx}",
-                "title": context[:60],
-                "content": context,
-                "similarity_score": 1.0 if idx == 0 else 0.8,
-                "metadata": {},
-                "llm_answer": rag_result.answer if idx == 0 else None
-            })
+            # Unwrap DSPy Example objects to dicts for frontend compatibility
+            if hasattr(context, 'to_dict'):
+                context_dict = context.to_dict()
+                content = getattr(context, 'long_text', context_dict.get('long_text', ''))
+                item_id = context_dict.get('item_id') or context_dict.get('id') or f"rag_{idx}"
+                title = str(content)[:60] if content else ""
+                similarity_score = float(context_dict.get('similarity_score') or (1.0 if idx == 0 else 0.8))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context_dict.items() if k not in ['long_text', 'id', 'item_id', 'title', 'similarity_score']}
+                question_id = context_dict.get('question_id') or metadata.get('question_id')
+                url = (
+                    context_dict.get('url')
+                    or context_dict.get('link')
+                    or metadata.get('url')
+                    or (f"https://stackoverflow.com/questions/{question_id}" if question_id else "")
+                )
+                formatted.append({
+                    'item_id': item_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': url,
+                })
+                continue
+            elif isinstance(context, dict):
+                content = context.get('content', '') or context.get('text', '') or str(context)
+                item_id = context.get('item_id') or context.get('id') or f"rag_{idx}"
+                title = str(content)[:60] if content else ""
+                similarity_score = float(context.get('similarity_score') or (1.0 if idx == 0 else 0.8))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context.items() if k not in ['content', 'text', 'id', 'item_id', 'title', 'similarity_score']}
+                question_id = context.get('question_id') or metadata.get('question_id')
+                url = (
+                    context.get('url')
+                    or context.get('link')
+                    or metadata.get('url')
+                    or (f"https://stackoverflow.com/questions/{question_id}" if question_id else "")
+                )
+                formatted.append({
+                    'item_id': item_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': url,
+                })
+                continue
+            elif hasattr(context, 'long_text'):
+                content = getattr(context, 'long_text', str(context))
+                item_id = getattr(context, 'item_id', None) or getattr(context, 'id', None) or f"rag_{idx}"
+                title = str(content)[:60] if content else ""
+                similarity_score = float(getattr(context, 'similarity_score', 1.0 if idx == 0 else 0.8) or (1.0 if idx == 0 else 0.8))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context.__dict__.items() if k not in ['long_text', 'id', 'item_id', 'title', 'similarity_score']}
+                question_id = getattr(context, 'question_id', None) or metadata.get('question_id')
+                url = (
+                    getattr(context, 'url', None)
+                    or getattr(context, 'link', None)
+                    or metadata.get('url')
+                    or (f"https://stackoverflow.com/questions/{question_id}" if question_id else "")
+                )
+                formatted.append({
+                    'item_id': item_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': url,
+                })
+                continue
+            else:
+                content_str = str(context) if context else ""
+                formatted.append({
+                    'item_id': f"rag_{idx}",
+                    'title': content_str[:60],
+                    'content': content_str,
+                    'similarity_score': float(1.0 if idx == 0 else 0.8),
+                    'metadata': {},
+                    'llm_answer': rag_result.answer if idx == 0 else None,
+                    'url': '',
+                })
         log_search_success(len(formatted))
         return formatted
     except Exception as e:
