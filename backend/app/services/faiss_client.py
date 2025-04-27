@@ -42,7 +42,16 @@ class FaissCollection:
             except Exception as e:
                 logger.error(f"Error loading FAISS index for {self.name} from {self.index_path}: {e}. Re-initializing.")
                 self.index = None
-
+        else:
+            # Only create a new index if the file does not exist
+            logger.info(f"Index file {self.index_path} does not exist. Creating new FAISS index.")
+            try:
+                base_index = faiss.IndexFlatL2(self.dimension)
+                self.index = faiss.IndexIDMap(base_index)
+                loaded_index = True
+            except Exception as e:
+                logger.error(f"Error creating new FAISS index for {self.name}: {e}")
+                self.index = None
         if os.path.exists(self.metadata_path):
             try:
                 with open(self.metadata_path, 'rb') as f:
@@ -53,30 +62,24 @@ class FaissCollection:
                     self.doc_id_to_faiss_id = {v: k for k, v in self.faiss_id_to_doc_id.items()} # Rebuild reverse map
                     self.next_internal_id = saved_data.get('next_id', 0)
                 logger.info(f"Loaded metadata for collection '{self.name}' from {self.metadata_path}. Next ID: {self.next_internal_id}")
-                # If index loading failed but metadata loaded, reset metadata
                 if not loaded_index:
                      logger.warning(f"Index loading failed for {self.name}, resetting metadata.")
                      self._reset_stores()
-
             except Exception as e:
                 logger.error(f"Error loading metadata for {self.name} from {self.metadata_path}: {e}. Resetting metadata.")
                 self._reset_stores()
                 if loaded_index:
                      logger.warning("Metadata loading failed but index loaded. Index will be reset.")
                      self.index = None # Reset index too if metadata failed
-
         if self.index is None:
             logger.info(f"Creating new FAISS index (IndexFlatL2 + IndexIDMap) for collection '{self.name}' with dimension {self.dimension}.")
-            base_index = faiss.IndexFlatL2(self.dimension)
-            self.index = faiss.IndexIDMap(base_index)
+            try:
+                base_index = faiss.IndexFlatL2(self.dimension)
+                self.index = faiss.IndexIDMap(base_index)
+            except Exception as e:
+                logger.error(f"Error creating new FAISS index for {self.name} during fallback: {e}")
+                self.index = None
             self._reset_stores()
-
-    def _reset_stores(self):
-        self.metadata_store = {}
-        self.doc_store = {}
-        self.faiss_id_to_doc_id = {}
-        self.doc_id_to_faiss_id = {}
-        self.next_internal_id = 0
 
     def _save(self):
         """ Save index and metadata to disk. """
@@ -84,6 +87,10 @@ class FaissCollection:
             logger.warning(f"Attempted to save FAISS index for {self.name}, but it's not initialized.")
             return
         try:
+            # Ensure parent directory exists
+            parent_dir = os.path.dirname(self.index_path)
+            if not os.path.exists(parent_dir):
+                os.makedirs(parent_dir, exist_ok=True)
             logger.info(f"Saving FAISS index for {self.name} to {self.index_path} ({self.index.ntotal} vectors)")
             faiss.write_index(self.index, self.index_path)
             logger.info(f"Saving metadata for {self.name} to {self.metadata_path}")
@@ -95,8 +102,21 @@ class FaissCollection:
                     'next_id': self.next_internal_id
                 }, f)
             logger.info(f"FAISS index and metadata for {self.name} saved successfully.")
+        except FileExistsError as fee:
+            logger.warning(f"File already exists when saving FAISS index for {self.name}: {fee}. Overwriting.")
+            try:
+                faiss.write_index(self.index, self.index_path)
+            except Exception as e:
+                logger.error(f"Error overwriting FAISS index for {self.name}: {e}")
         except Exception as e:
             logger.error(f"Error saving FAISS index or metadata for {self.name}: {e}")
+
+    def _reset_stores(self):
+        self.metadata_store = {}
+        self.doc_store = {}
+        self.faiss_id_to_doc_id = {}
+        self.doc_id_to_faiss_id = {}
+        self.next_internal_id = 0
 
     def add(self, ids: List[str], embeddings: List[List[float]], metadatas: Optional[List[Dict]] = None, documents: Optional[List[str]] = None):
         if not ids or not embeddings:
@@ -477,14 +497,14 @@ class FaissClient:
         return results
 
 # Global instance (optional, depends on usage pattern)
-# _global_faiss_client = None
+_global_faiss_client = None
 
-# def get_faiss_client(base_path: str = None) -> FaissClient:
-#     global _global_faiss_client
-#     if _global_faiss_client is None:
-#         path = base_path or settings.FAISS_INDEX_PATH
-#         _global_faiss_client = FaissClient(path)
-#     # Ensure base path matches if called again?
-#     # elif base_path and _global_faiss_client.base_path != base_path:
-#     #     logger.warning("Requesting FAISS client with different base path. Returning existing instance.")
-#     return _global_faiss_client
+def get_faiss_client(base_path: str = None) -> 'FaissClient':
+    global _global_faiss_client
+    if _global_faiss_client is None:
+        path = base_path or settings.FAISS_INDEX_PATH
+        _global_faiss_client = FaissClient(path)
+    # If a different base_path is requested, warn but return the existing instance
+    elif base_path and _global_faiss_client.base_path != base_path:
+        logger.warning("Requesting FAISS client with different base path. Returning existing instance.")
+    return _global_faiss_client

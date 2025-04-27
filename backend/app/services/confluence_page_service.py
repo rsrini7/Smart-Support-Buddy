@@ -8,11 +8,37 @@ from app.models.models import ConfluencePage
 import logging
 from datetime import datetime
 
+# DEPRECATION WARNING: This service is deprecated and not used by any API routes. Please remove after migration verification.
+# All ingestion should use app.services.confluence_service.add_confluence_page_to_vectordb which uses the unified index_vector_data utility.
+
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "confluence_pages"
 
-def add_confluence_page_to_vectordb(confluence_url: str, extra_metadata: Optional[Dict[str, Any]] = None) -> Optional[str]:
+def add_confluence_page_to_vectordb_with_aug(
+    confluence_url: str,
+    extra_metadata: Optional[Dict[str, Any]] = None,
+    llm_augment: Optional[Any] = None,
+    augment_metadata: bool = True,
+    normalize_language: bool = True,
+    target_language: str = "en"
+) -> Optional[str]:
+    """
+    Wrapper to call the new add_confluence_page_to_vectordb with augmentation options.
+    """
+    return add_confluence_page_to_vectordb(
+        confluence_url=confluence_url,
+        extra_metadata=extra_metadata,
+        llm_augment=llm_augment,
+        augment_metadata=augment_metadata,
+        normalize_language=normalize_language,
+        target_language=target_language
+    )
+
+def add_confluence_page_to_vectordb(
+    confluence_url: str, extra_metadata: Optional[Dict[str, Any]] = None, llm_augment: Optional[Any] = None, augment_metadata: bool = True, normalize_language: bool = True, target_language: str = "en"
+) -> Optional[str]:
+    # DEPRECATION WARNING: This function is deprecated and not used by any API routes. Please remove after migration verification.
     try:
         content = fetch_confluence_content(confluence_url)
         if not content:

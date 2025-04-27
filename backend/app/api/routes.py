@@ -27,8 +27,18 @@ from app.services.stackoverflow_service import (
 
 from app.utils.similarity import compute_similarity_score
 
+from app.services.unified_rag_service import unified_rag_search
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+router = APIRouter()
+
 class JiraIngestRequest(BaseModel):
     jira_ticket_ids: List[str]
+    augment_metadata: bool = True
+    normalize_language: bool = True
+    target_language: str = "en"
 
 class IngestDirRequest(BaseModel):
     directory_path: str
@@ -38,12 +48,19 @@ class SimilarityThresholdRequest(BaseModel):
 
 class ConfluenceIngestRequest(BaseModel):
     confluence_urls: List[str]
+    augment_metadata: bool = True
+    normalize_language: bool = True
+    target_language: str = "en"
 
 class ConfluenceSearchRequest(BaseModel):
     query_text: str
     limit: int = 10
+
 class StackOverflowIngestRequest(BaseModel):
     stackoverflow_urls: List[str]
+    augment_metadata: bool = False
+    normalize_language: bool = False
+    target_language: str = "en"
 
 class StackOverflowSearchRequest(BaseModel):
     query_text: str
@@ -118,7 +135,12 @@ async def ingest_confluence_page(payload: ConfluenceIngestRequest):
     results = []
     for url in payload.confluence_urls:
         try:
-            page_id = add_confluence_page_to_vectordb(url)
+            page_id = add_confluence_page_to_vectordb(
+                url,
+                augment_metadata=payload.augment_metadata,
+                normalize_language=payload.normalize_language,
+                target_language=payload.target_language
+            )
             if not page_id:
                 results.append({
                     "confluence_url": url,
@@ -150,7 +172,12 @@ async def ingest_stackoverflow_qa(payload: StackOverflowIngestRequest):
     results = []
     for url in payload.stackoverflow_urls:
         try:
-            ids = add_stackoverflow_qa_to_vectordb(url)
+            ids = add_stackoverflow_qa_to_vectordb(
+                url,
+                augment_metadata=payload.augment_metadata,
+                normalize_language=payload.normalize_language,
+                target_language=payload.target_language
+            )
             if not ids:
                 results.append({
                     "stackoverflow_url": url,
@@ -193,7 +220,12 @@ async def ingest_jira_ticket(payload: JiraIngestRequest):
                     "message": f"Jira ticket {jira_id} not found or could not be fetched"
                 })
                 continue
-            issue_id = add_issue_to_vectordb(jira_data=jira_data)
+            issue_id = add_issue_to_vectordb(
+                jira_data=jira_data,
+                augment_metadata=payload.augment_metadata,
+                normalize_language=payload.normalize_language,
+                target_language=payload.target_language
+            )
             results.append({
                 "jira_ticket_id": jira_id,
                 "status": "success",
@@ -376,6 +408,19 @@ async def search_issues(query: SearchQuery):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/search/unified")
+def unified_search_endpoint(payload: dict):
+    """
+    Unified RAG search across Issues, Jira, and MSG files.
+    Expects: { "query_text": str, "limit": int (optional, default 10) }
+    """
+    query_text = payload.get("query_text", "")
+    limit = payload.get("limit", 10)
+    if not query_text:
+        raise HTTPException(status_code=400, detail="query_text is required")
+    results = unified_rag_search(query_text, limit)
+    return {"results": results}
+
 @router.get("/issues", response_model=List[IssueResponse])
 async def list_issues(
     limit: int = Query(10, ge=1, le=100),
@@ -460,10 +505,16 @@ async def delete_production_issue(issue_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/ingest-msg-dir")
-async def ingest_msg_dir(files: List[UploadFile] = File(...)):
+async def ingest_msg_dir(
+    files: List[UploadFile] = File(...),
+    augment_metadata: bool = True,
+    normalize_language: bool = True,
+    target_language: str = "en"
+):
     import traceback
     try:
         logger.info(f"/ingest-msg-dir called. Number of files received: {len(files)}")
+        logger.info(f"Augment metadata: {augment_metadata}, Normalize language: {normalize_language}, Target language: {target_language}")
         for idx, file in enumerate(files):
             logger.info(f"File {idx}: filename={file.filename}, content_type={file.content_type}")
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -487,7 +538,13 @@ async def ingest_msg_dir(files: List[UploadFile] = File(...)):
                     results.append(msg_data)
                     continue
                 try:
-                    issue_id = add_issue_to_vectordb(msg_data=msg_data)
+                    # Pass augmentation params to add_issue_to_vectordb
+                    issue_id = add_issue_to_vectordb(
+                        msg_data=msg_data,
+                        augment_metadata=augment_metadata,
+                        normalize_language=normalize_language,
+                        target_language=target_language
+                    )
                     msg_data["issue_id"] = issue_id
                     msg_data["status"] = "success"
                 except Exception as e:

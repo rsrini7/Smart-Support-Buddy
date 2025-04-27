@@ -57,11 +57,24 @@ def get_all_chroma_collections_data() -> list:
         logging.error(f"Error fetching ChromaDB collections data: {str(e)}")
         return []
 
-def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: Optional[Dict[str, Any]] = None) -> str:
+def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: Optional[Dict[str, Any]] = None,
+                        augment_metadata: bool = True, normalize_language: bool = True, target_language: str = "en") -> str:
     # Defensive patch: if msg_data is an error dict, raise ValueError immediately
     if isinstance(msg_data, dict) and msg_data.get("status") == "error":
         raise ValueError(f"MSG parse error: {msg_data.get('error')}")
-    return original_add_issue_to_vectordb(msg_data, jira_data)
+    # Compose the issue dict for the underlying implementation
+    issue = {}
+    if msg_data is not None:
+        issue["msg_data"] = msg_data
+    if jira_data is not None:
+        issue["jira_data"] = jira_data
+    # Call the unified add_issue_to_vectordb in vector_issue_service with LLM params
+    return original_add_issue_to_vectordb(
+        issue=issue,
+        augment_metadata=augment_metadata,
+        normalize_language=normalize_language,
+        target_language=target_language
+    )
 
 # Defensive patch: avoid infinite recursion by calling the real implementation
 def delete_issue(issue_id: str) -> bool:

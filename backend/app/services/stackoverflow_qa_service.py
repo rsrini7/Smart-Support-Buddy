@@ -1,81 +1,88 @@
 from typing import Optional, Dict, Any, List
 from app.services.chroma_client import get_collection
-from app.services.embedding_service import get_embedding
+from app.services.embedding_service import get_embedding_model
+from app.utils.rag_utils import index_vector_data
+from app.utils.llm_augmentation import llm_summarize
 from app.services.deduplication_utils import compute_content_hash
 from app.services.stackoverflow_service import fetch_stackoverflow_content
-from app.utils.similarity import compute_similarity_score
 from app.models.models import StackOverflowQA
 import logging
 from datetime import datetime
+
+# DEPRECATION WARNING: This service is deprecated and not used by any API routes. Please remove after migration verification.
+# All ingestion should use app.services.stackoverflow_service.add_stackoverflow_qa_to_vectordb which uses the unified index_vector_data utility.
 
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "stackoverflow_qa"
 
-def add_stackoverflow_qa_to_vectordb(stackoverflow_url: str, extra_metadata: Optional[Dict[str, Any]] = None) -> Optional[List[str]]:
+def add_stackoverflow_qa_to_vectordb(
+    stackoverflow_url: str,
+    extra_metadata: Optional[Dict[str, Any]] = None,
+    llm_augment: Optional[Any] = None,
+    augment_metadata: bool = False,
+    normalize_language: bool = False,
+    target_language: str = "en"
+) -> Optional[List[str]]:
+    # DEPRECATION WARNING: This function is deprecated and not used by any API routes. Please remove after migration verification.
     try:
         content = fetch_stackoverflow_content(stackoverflow_url)
         if not content:
             raise ValueError("Failed to fetch content from Stack Overflow URL")
-        collection = get_collection(COLLECTION_NAME)
-        ids = []
-        embeddings = []
-        metadatas = []
-        documents = []
+        client = get_collection(COLLECTION_NAME)._client
+        embedder = get_embedding_model()
+        ids, documents, metadatas = [], [], []
         # Add question
         question_id = content["question_id"]
         question_hash = compute_content_hash(content["question_text"])
-        existing_q = collection.get(where={"content_hash": question_hash})
-        if existing_q and existing_q.get("ids"):
-            ids.append(existing_q["ids"][0])
-        else:
-            qid = f"soq_{question_id}"
-            ids.append(qid)
-            question_obj = StackOverflowQA(
-                question_id=question_id,
-                question_text=content["question_text"],
-                tags=content.get("tags"),
-                author=content.get("author"),
-                creation_date=content.get("creation_date"),
-                score=content.get("score"),
-                link=content.get("link"),
-                content_hash=question_hash,
-                metadata=extra_metadata,
-            )
-            embeddings.append(get_embedding(content["question_text"]))
-            metadatas.append(question_obj.model_dump())
-            documents.append(content["question_text"])
+        qid = f"soq_{question_id}"
+        question_obj = StackOverflowQA(
+            question_id=question_id,
+            question_text=content["question_text"],
+            tags=content.get("tags"),
+            author=content.get("author"),
+            creation_date=content.get("creation_date"),
+            score=content.get("score"),
+            link=content.get("link"),
+            content_hash=question_hash,
+            metadata=extra_metadata,
+        )
+        ids.append(qid)
+        documents.append(content["question_text"])
+        metadatas.append(question_obj.model_dump())
         # Add answers
         for ans in content.get("answers", []):
+            aid = f"soa_{ans['answer_id']}"
             ans_hash = compute_content_hash(ans["text"])
-            existing_a = collection.get(where={"content_hash": ans_hash})
-            if existing_a and existing_a.get("ids"):
-                ids.append(existing_a["ids"][0])
-            else:
-                aid = f"soa_{ans["answer_id"]}"
-                ids.append(aid)
-                answer_obj = StackOverflowQA(
-                    question_id=ans["question_id"],
-                    question_text=ans["text"],
-                    tags=None,
-                    author=ans.get("author"),
-                    creation_date=ans.get("creation_date"),
-                    score=ans.get("score"),
-                    link=None,
-                    content_hash=ans_hash,
-                    metadata=None,
-                )
-                embeddings.append(get_embedding(ans["text"]))
-                metadatas.append(answer_obj.model_dump())
-                documents.append(ans["text"])
-        # Only add if there are new documents
-        if embeddings:
-            collection.add(
-                ids=ids[-len(embeddings):],
-                embeddings=embeddings,
-                metadatas=metadatas,
-                documents=documents
+            answer_obj = StackOverflowQA(
+                question_id=ans["question_id"],
+                question_text=ans["text"],
+                tags=None,
+                author=ans.get("author"),
+                creation_date=ans.get("creation_date"),
+                score=ans.get("score"),
+                link=None,
+                content_hash=ans_hash,
+                metadata=None,
             )
+            ids.append(aid)
+            documents.append(ans["text"])
+            metadatas.append(answer_obj.model_dump())
+        # Use unified ingest utility with configurable augmentation
+        index_vector_data(
+            client=client,
+            embedder=embedder,
+            documents=documents,
+            doc_ids=ids,
+            collection_name=COLLECTION_NAME,
+            metadatas=metadatas,
+            clear_existing=False,
+            deduplicate=True,
+            llm_augment=llm_augment or llm_summarize,
+            augment_metadata=augment_metadata,
+            normalize_language=normalize_language,
+            target_language=target_language
+        )
         return ids
     except Exception as e:
         logger.error(f"Error adding Stack Overflow Q&A to vector database: {str(e)}")

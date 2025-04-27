@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from app.core.config import settings
 
 OPENROUTER_API_KEY = settings.OPENROUTER_API_KEY
-OPENROUTER_API_URL = settings.OPENROUTER_API_URL
+OPENROUTER_API_URL = settings.OPENROUTER_API_URL+"/chat/completions"
 OPENROUTER_MODEL = settings.OPENROUTER_MODEL
 
 # Recommended: Set your app's site URL and name for OpenRouter headers
@@ -52,6 +52,8 @@ def call_openrouter_api(prompt: str, model: str = None) -> str:
             }
         )
 
+        print("[DEBUG] OpenRouter API status:", response.status_code)
+        print("[DEBUG] OpenRouter API raw response:", response.text)
         response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
 
         data = response.json()

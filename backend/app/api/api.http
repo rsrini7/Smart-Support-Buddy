@@ -1,0 +1,144 @@
+### Get similarity threshold
+GET http://localhost:9000/api/config/similarity-threshold
+
+### Set similarity threshold
+POST http://localhost:9000/api/config/similarity-threshold
+Content-Type: application/json
+
+{
+  "similarity_threshold": 0.8
+}
+
+### Get LLM top results count
+GET http://localhost:9000/api/config/llm-top-results-count
+
+### Set LLM top results count
+POST http://localhost:9000/api/config/llm-top-results-count
+Content-Type: application/json
+
+{
+  "llm_top_results_count": 3
+}
+
+### Get Jira ticket info
+GET http://localhost:9000/api/jira-ticket/MYS-13
+
+### Ingest Confluence pages
+POST http://localhost:9000/api/ingest-confluence
+Content-Type: application/json
+
+{
+  "confluence_urls": ["http://localhost:8090/pages/viewpage.action?pageId=98322"],
+  "augment_metadata": true,
+  "normalize_language": true,
+  "target_language": "en"
+}
+
+### Ingest Stack Overflow Q&A
+POST http://localhost:9000/api/ingest-stackoverflow
+Content-Type: application/json
+
+{
+  "stackoverflow_urls": ["https://stackoverflow.com/questions/78951491/is-there-a-way-to-implement-multiple-csvs-as-rag"],
+  "augment_metadata": false,
+  "normalize_language": false,
+  "target_language": "en"
+}
+
+### Ingest Jira tickets
+POST http://localhost:9000/api/ingest-jira
+Content-Type: application/json
+
+{
+  "jira_ticket_ids": ["MYS-13"],
+  "augment_metadata": true,
+  "normalize_language": true,
+  "target_language": "en"
+}
+
+### Ingest MSG files (upload)
+# Single file upload with default options
+# @name uploadMsgFileAutoBoundary
+POST http://localhost:9000/api/ingest-msg-dir
+Content-Type: multipart/form-data; boundary=----WebAppBoundary
+
+------WebAppBoundary
+Content-Disposition: form-data; name="files"; filename="sample1.msg"
+Content-Type: application/vnd.ms-outlook
+
+< ./sample1.msg
+------WebAppBoundary--
+
+### Ingest MSG files (multiple, with options)
+# @name uploadMultipleMsgFiles
+POST http://localhost:9000/api/ingest-msg-dir?augment_metadata=true&normalize_language=true&target_language=en
+Content-Type: multipart/form-data; boundary=----WebAppBoundary
+
+# File 1 Part
+------WebAppBoundary
+Content-Disposition: form-data; name="files"; filename="sample1.msg"
+Content-Type: application/vnd.ms-outlook
+
+< ./sample1.msg
+
+# File 2 Part
+------WebAppBoundary
+Content-Disposition: form-data; name="files"; filename="sample2.msg"
+Content-Type: application/vnd.ms-outlook
+
+< ./sample2.msg
+
+# End marker
+------WebAppBoundary--
+
+
+### Search Stack Overflow Q&A
+POST http://localhost:9000/api/search-stackoverflow
+Content-Type: application/json
+
+{
+  "query_text": "ingest large csv file in python?",
+  "limit": 5
+}
+
+### Search Confluence pages
+POST http://localhost:9000/api/search-confluence
+Content-Type: application/json
+
+{
+  "query_text": "Explain editor toolbar in Confluence?",
+  "limit": 5
+}
+
+### Search Issues (legacy)
+POST http://localhost:9000/api/search
+Content-Type: application/json
+
+{
+  "query_text": "How do I resolve login failures in Jira or related support emails?",
+  "limit": 5
+}
+
+### Unified RAG Search (all sources)
+POST http://localhost:9000/api/search/unified
+Content-Type: application/json
+
+{
+  "query_text": "How do I resolve login failures in Jira or related support emails?",
+  "limit": 5
+}
+
+### List all issues
+GET http://localhost:9000/api/issues?limit=10&offset=0
+
+### Get specific issue
+GET http://localhost:9000/api/issues/MYS-13
+
+### Clear a ChromaDB collection
+DELETE http://localhost:9000/api/chroma-clear/issues
+
+### Get all ChromaDB collections
+GET http://localhost:9000/api/chroma-collections
+
+### Delete a production issue
+DELETE http://localhost:9000/api/issues/MYS-13

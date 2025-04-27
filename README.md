@@ -1,19 +1,19 @@
 # Support Buddy
 
-A GenAI-powered solution for handling support issues / queries by analyzing Microsoft Outlook MSG files, Jira tickets, Confluence pages, and StackOverflow Q&A to identify root causes and solutions.
+A GenAI-powered RAG solution for handling support issues / queries by analyzing Microsoft Outlook MSG files, Jira tickets, Confluence pages, and StackOverflow Q&A to identify root causes and solutions.
 
 ## Architecture
 
-## C4 - Container Diagram
+### C4 - Container Diagram
 
 ![Support Buddy Architecture](assets/c4/support-buddy-container-c4.png)
 
-## C4 - Component Diagram
+### C4 - Component Diagram
 
 ![Support Buddy Architecture](assets/c4/support-buddy-component-c4.png)
 
 
-## End to End Flow
+### End to End Flow
 ![Support Buddy Architecture](assets/support-buddy-final-flow.png)
 
 ## Project Structure
@@ -70,7 +70,7 @@ This application helps teams manage support issues / queries by:
 4. Storing the extracted information in a vector database for semantic search
 5. Providing a simple UI to query historical issues and find relevant solutions, and to configure search parameters
 6. Dual vector database support: Use either ChromaDB (local/server) or FAISS for semantic search and storage. Switchable via `USE_FAISS` environment variable.
-7. LLM integration: Summarize and recommend actions using OpenRouter LLM, configurable via environment and runtime API.
+7. **LLM integration:** Summarize and recommend actions using DSPy-powered LLMs (e.g., OpenRouter), configurable via environment and runtime API.
 8. Modular, pluggable backend: Easily extend to new data sources, vector DBs, or LLM providers.
 
 ## Features
@@ -81,11 +81,11 @@ This application helps teams manage support issues / queries by:
 - **StackOverflow Integration:** Ingests, indexes, and enables semantic search across StackOverflow Q&A for relevant solutions.
 - **Unified Semantic Search:** Aggregates and ranks results from all sources (MSG, Jira, Confluence, StackOverflow) in a single, similarity-sorted response for the frontend.
 - **Automatic Deduplication:** Detects and removes duplicate issues across all data sources using robust content-based hashing.
-- **Advanced Semantic Search:** Utilizes sentence transformer models to power deep semantic retrieval and similarity matching.
+- **Advanced Semantic Search:** Utilizes sentence transformer models and DSPy-powered LLM reranking for deep semantic retrieval and similarity matching.
 - **Bulk Ingestion:** Supports bulk import of MSG files, Confluence pages, and StackOverflow Q&A for rapid knowledge base expansion.
 - **Configurable Vector Search:** Allows tuning of similarity thresholds to control search precision and recall.
 - **Pluggable Vector Database:** Supports both ChromaDB (local/server) and FAISS (local, high-performance) as interchangeable backends, selectable via the `USE_FAISS` environment variable.
-- **LLM-Powered Summarization:** Integrates with OpenRouter LLM to generate summaries and recommended actions from top search results, with runtime toggling per query.
+- **LLM-Powered Summarization:** Integrates with DSPy LLMs (e.g., OpenRouter) to generate summaries and recommended actions from top search results, with runtime toggling per query.
 - **Modern, Responsive UI:** Provides a feature-rich, Material UI-based frontend for search, configuration, and management.
 - **ChromaDB Admin UI:** Includes support for ChromaDB’s Admin UI for monitoring and managing vector collections.
 - **Jira ID Search Boost:** Guarantees exact Jira ticket ID matches are always ranked as the top result (similarity score 1.0), regardless of embedding similarity.
@@ -101,6 +101,7 @@ This application helps teams manage support issues / queries by:
    - **StackOverflow Service:** Ingests and indexes StackOverflow Q&A, enabling semantic retrieval of community knowledge.
    - **Vector Service:** Abstracts vector database operations (add/search/delete), semantic search, and deduplication logic.
    - **Unified Search Aggregation:** Combines, deduplicates, and sorts results from all sources, returning a single, similarity-ranked array for the frontend.
+   - **DSPy-Orchestrated RAG Pipelines:** All major services now use DSPy for LLM orchestration and reranking.
 
 2. **Vector Database Layer**
    - **ChromaDB:** Persistent or server mode vector database for storing and searching embeddings, with content-based deduplication and per-source collections.
@@ -122,13 +123,13 @@ This application helps teams manage support issues / queries by:
    - **Configuration Management:** UI for adjusting search parameters, managing sources, and toggling features.
 
 5. **LLM Integration**
-   - **Summarization & Recommendations:** Uses OpenRouter LLM to generate concise summaries and action points from top search results.
+   - **Summarization & Recommendations:** Uses DSPy-powered LLMs (e.g., OpenRouter) to generate concise summaries and action points from top search results.
    - **Configurable:** Number of results sent to LLM and model selection are runtime-configurable.
    - **Frontend Toggle:** Users can enable or disable LLM-powered summaries per search.
 
-## LLM Integration (OpenRouter)
+## LLM Integration (DSPy & OpenRouter)
 
-Support Buddy supports LLM-powered summarization of search results using OpenRouter. This feature provides concise summaries and action points for your search queries, powered by models like GPT-3.5/4 and others via OpenRouter.
+Support Buddy supports LLM-powered summarization and reranking of search results using DSPy. This feature provides concise summaries and action points for your search queries, powered by models like OpenRouter (e.g., GPT-3.5/4) and others via DSPy.
 
 ### Enabling LLM Summaries
 
@@ -146,16 +147,37 @@ Support Buddy supports LLM-powered summarization of search results using OpenRou
    YOUR_APP_NAME=SupportBuddy            # For analytics (optional)
    ```
 
-## **Frontend Usage:**
+### **Frontend Usage:**
    - On the Search page, enable the "LLM" checkbox before searching to get an LLM-generated summary of the results.
    - The summary will appear at the top of the results, styled for both dark and light mode.
 
-## **Backend:**
-   - The backend will use the configured OpenRouter API key and model to generate summaries when requested.
-   - You can change the default model by updating `OPENROUTER_MODEL` in your `.env`.
+### **Backend:**
+   - The backend uses DSPy to orchestrate LLM calls and reranking. All LLM and reranker calls are handled via DSPy modules (see service code for details).
+   - You can change the default model by updating the argument to `dspy.LM()` in the relevant service, or update `OPENROUTER_MODEL` in your `.env` for legacy wrappers.
 
 ### Security Note
 - **Never commit your real API key to version control.** Use `.env` for secrets and `.env.example` for templates only.
+
+## DSPy Integration Changes (April 2025)
+
+### What Was Updated
+- **RAG Pipelines** for Stack Overflow, Jira, and MSG parser services now use DSPy for LLM orchestration and reranking.
+- **Reranker**: All `_get_rag_pipeline()` functions now instantiate the reranker using `get_reranker()` (a CrossEncoder model) instead of passing `None`.
+- **LLM Provider**: All RAG pipelines now instantiate the LLM using `dspy.LM` (via DSPy) instead of custom or legacy LLM service wrappers.
+
+### How to Use
+- LLM calls and reranking are now handled via the DSPy library. To change models, update the argument to `dspy.LM` in the relevant service.
+- All LLM and reranker calls are abstracted through DSPy modules; you do not need to call OpenRouter APIs directly.
+- For custom LLM logic, see the new `_get_rag_pipeline()` implementations in `app/services/stackoverflow_service.py`, `jira_service.py`, and `msg_parser.py`.
+
+### Why This Matters
+- Unified, robust, and maintainable RAG pipeline logic for all major data sources.
+- Eliminates direct OpenRouter API handling and error-prone custom wrappers.
+- Easy to upgrade or swap LLMs and rerankers using DSPy’s modular approach.
+
+---
+
+**For more details, see the code in `backend/app/services/stackoverflow_service.py`, `jira_service.py`, and `msg_parser.py`.**
 
 ## Index Data: ChromaDB & FAISS Support
 
@@ -196,8 +218,8 @@ Support Buddy provides flexible vector database support, allowing you to choose 
 
 ## Admin UI: Viewing & Managing Index Data
 
-- The Admin page (formerly "Admin Chroma") is now labeled **"View Index Data"** and displays all collections and their records for the active backend (ChromaDB or FAISS).
-- The "Clear" action is now labeled **"Clear Index Data"**.
+- The Admin page View Index Data displays all collections and their records for the active backend (ChromaDB or FAISS).
+- The Clear Index Data action deletes all collections and their records for the active backend.
 - The UI and backend seamlessly support both backends, presenting collections and records in a unified format for consistency.
 
 ## Backend API: `/chroma-collections`
@@ -268,9 +290,8 @@ Support Buddy provides flexible vector database support, allowing you to choose 
    - For **Jira**, use:
      ```env
      JIRA_USERNAME=your-jira-username
-     JIRA_PASSWORD=your-jira-password
-     # Or, for Jira Cloud:
-     # JIRA_API_TOKEN=your-jira-api-token
+     JIRA_PASSWORD=your-jira-password      # For local/server instance
+     JIRA_API_TOKEN=          # For cloud instance
      ```
 4. Start the services:
    - Development mode:

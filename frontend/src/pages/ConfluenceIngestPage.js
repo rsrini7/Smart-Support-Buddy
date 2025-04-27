@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert, FormGroup, FormControlLabel, Checkbox, Select, MenuItem } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { BACKEND_API_BASE, CONFLUENCE_URL_PATTERN } from '../settings';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,9 @@ const ConfluenceIngestPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [result, setResult] = useState(null);
+  const [augmentMetadata, setAugmentMetadata] = useState(true);
+  const [normalizeLanguage, setNormalizeLanguage] = useState(true);
+  const [targetLanguage, setTargetLanguage] = useState('en');
   const navigate = useNavigate();
   const theme = useTheme();
 
@@ -21,6 +24,7 @@ const ConfluenceIngestPage = () => {
     setResult(null);
   };
 
+  // Backward compatible: if backend does not support new fields, fallback to old payload
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
@@ -47,14 +51,32 @@ const ConfluenceIngestPage = () => {
       return;
     }
 
+    const payload = {
+      confluence_urls: confluenceUrls,
+      augment_metadata: augmentMetadata,
+      normalize_language: normalizeLanguage,
+      target_language: targetLanguage
+    };
+
     try {
-      const response = await fetch(`${BACKEND_API_BASE}/ingest-confluence`, {
+      let response = await fetch(`${BACKEND_API_BASE}/ingest-confluence`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ confluence_urls: confluenceUrls }),
+        body: JSON.stringify(payload),
       });
+
+      // If backend returns 422 or 400, try fallback (backward compatibility)
+      if (response.status === 422 || response.status === 400) {
+        response = await fetch(`${BACKEND_API_BASE}/ingest-confluence`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ confluence_urls: confluenceUrls }),
+        });
+      }
 
       const data = await response.json();
 
@@ -72,7 +94,7 @@ const ConfluenceIngestPage = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ backgroundColor: theme.palette.background.default }}>
       <Paper sx={{ p: 4, mb: 4, maxWidth: '70vw', mx: 'auto', mt: 6 }}>
         <Button variant="outlined" onClick={() => navigate(-1)} sx={{ mb: 2 }}>
           Back
@@ -81,92 +103,46 @@ const ConfluenceIngestPage = () => {
           Ingest Confluence Pages
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          Enter the Confluence Page URL to ingest its content into the system.
+          Enter one or more Confluence page URLs (comma or newline separated).
         </Typography>
         <TextField
           fullWidth
           multiline
           minRows={3}
-          label="Confluence Page URLs"
-          variant="outlined"
+          label="Confluence URLs"
           value={confluenceUrlsInput}
           onChange={handleConfluenceUrlChange}
-          placeholder="Enter one or more Confluence page URLs, separated by commas or new lines"
           sx={{ mb: 2 }}
         />
-        <Button
-          variant="contained"
-          color="info"
-          onClick={handleSubmit}
-          disabled={loading || !confluenceUrlsInput.trim()}
-        >
-          {loading ? <CircularProgress size={24} /> : 'Ingest Confluence'}
+        <FormGroup row sx={{ mb: 2 }}>
+          <FormControlLabel
+            control={<Checkbox checked={augmentMetadata} onChange={e => setAugmentMetadata(e.target.checked)} />}
+            label="Extract Metadata"
+          />
+          <FormControlLabel
+            control={<Checkbox checked={normalizeLanguage} onChange={e => setNormalizeLanguage(e.target.checked)} />}
+            label="Normalize Language"
+          />
+          <Select
+            value={targetLanguage}
+            onChange={e => setTargetLanguage(e.target.value)}
+            displayEmpty
+            sx={{ minWidth: 120, ml: 2 }}
+          >
+            <MenuItem value="en">English</MenuItem>
+            <MenuItem value="fr">French</MenuItem>
+            <MenuItem value="de">German</MenuItem>
+            <MenuItem value="es">Spanish</MenuItem>
+            <MenuItem value="zh">Chinese</MenuItem>
+            {/* Add more languages as needed */}
+          </Select>
+        </FormGroup>
+        <Button variant="contained" color="primary" onClick={handleSubmit} disabled={loading}>
+          {loading ? <CircularProgress size={24} /> : 'Ingest'}
         </Button>
-        {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {error}
-          </Alert>
-        )}
-        {success && result && result.results && (
-          <Box sx={{ mt: 2 }}>
-            <Alert severity="success">Ingestion complete. See results below.</Alert>
-            {result.results.map((res, idx) => (
-              <Paper
-                key={idx}
-                sx={{
-                  p: 2,
-                  mt: 2,
-                  backgroundColor: res.status === 'success'
-                    ? (theme.palette.mode === 'dark' ? theme.palette.success.dark : '#e8f5e9')
-                    : (theme.palette.mode === 'dark' ? theme.palette.error.dark : '#ffebee')
-                }}
-              >
-                <Typography variant="subtitle1">
-                  URL: {res.confluence_url}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color:
-                      theme.palette.mode === 'dark'
-                        ? (res.status === 'success'
-                            ? theme.palette.success.light
-                            : theme.palette.error.light)
-                        : (res.status === 'success'
-                            ? theme.palette.success.main
-                            : theme.palette.error.main),
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {res.status === 'success' ? res.message : `Error: ${res.message}`}
-                </Typography>
-                {res.status === 'success' && res.page_id && (
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    Page ID: {res.page_id}
-                  </Typography>
-                )}
-                {res.status === 'success' && res.page_data && (
-                  <pre
-                    style={{
-                      background: theme.palette.mode === 'dark'
-                        ? theme.palette.background.paper
-                        : '#f5f5f5',
-                      padding: 8,
-                      marginTop: 8,
-                      fontSize: 12,
-                      color: theme.palette.text.primary,
-                      maxWidth: '100%',
-                      overflowX: 'auto',
-                      whiteSpace: 'pre'
-                    }}
-                  >
-                    {JSON.stringify(res.page_data, null, 2)}
-                  </pre>
-                )}
-              </Paper>
-            ))}
-          </Box>
-        )}
+        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ mt: 2 }}>Ingest successful!</Alert>}
+        {result && <Box sx={{ mt: 2 }}><pre>{JSON.stringify(result, null, 2)}</pre></Box>}
       </Paper>
     </Box>
   );

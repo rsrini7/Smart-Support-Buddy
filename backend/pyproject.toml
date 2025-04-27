@@ -31,4 +31,7 @@ dependencies = [
     "marimo==0.12.10",
     "chroma-migrate>=0.0.7",
     "faiss-cpu>=1.7.4", # Added for FAISS support
+    "rank-bm25>=0.2.2",
+    "nltk>=3.9.1",
+    "dspy-ai>=2.6.19",
 ]

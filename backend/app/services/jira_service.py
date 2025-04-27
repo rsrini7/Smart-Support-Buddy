@@ -224,3 +224,119 @@ def get_jira_ticket(ticket_id: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Error getting Jira ticket {ticket_id}: {str(e)}")
         return None
+
+COLLECTION_NAME = "jira_tickets"
+
+# --- LOGGING INSTRUMENTATION START ---
+def log_ingest_start(ticket_id, extra_metadata):
+    logger.info(f"[INGEST][START] Jira ingest called. Ticket ID: {ticket_id}, Extra metadata keys: {list(extra_metadata.keys()) if extra_metadata else None}")
+
+def log_ingest_success(ids):
+    logger.info(f"[INGEST][SUCCESS] Jira ticket(s) successfully ingested. IDs: {ids}")
+
+def log_ingest_failure(error):
+    logger.error(f"[INGEST][FAILURE] Jira ingest failed: {error}")
+
+def log_search_start(query_text, limit):
+    logger.info(f"[SEARCH][START] Jira search called. Query: '{query_text}', Limit: {limit}")
+
+def log_search_success(results_count):
+    logger.info(f"[SEARCH][SUCCESS] Jira search returned {results_count} results.")
+
+def log_search_failure(error):
+    logger.error(f"[SEARCH][FAILURE] Jira search failed: {error}")
+# --- LOGGING INSTRUMENTATION END ---
+
+from app.utils.rag_utils import load_components, index_vector_data, create_bm25_index, create_retrievers, create_rag_pipeline
+from app.services.embedding_service import get_embedding_model
+from app.services.chroma_client import get_vector_db_client
+from app.utils.llm_augmentation import llm_summarize
+from app.utils.dspy_utils import get_openrouter_llm
+from app.services.rerank_service import get_reranker
+
+# Cache pipeline at module level to avoid reloading every call
+_rag_pipeline = None
+_corpus = None
+
+def add_jira_ticket_to_vectordb(ticket_id: str, extra_metadata: Optional[Dict[str, Any]] = None, llm_augment: Optional[Any] = None, augment_metadata: bool = True, normalize_language: bool = True, target_language: str = "en") -> Optional[str]:
+    log_ingest_start(ticket_id, extra_metadata)
+    try:
+        jira_data = get_jira_ticket(ticket_id)
+        if not jira_data:
+            raise ValueError(f"Failed to fetch Jira ticket {ticket_id}")
+        summary = jira_data.get("summary", "")
+        description = jira_data.get("description", "")
+        comments = jira_data.get("comments", [])
+        # Combine all text for embedding
+        doc_text = f"Summary: {summary}\nDescription: {description}\n"
+        if comments:
+            doc_text += "Comments:\n" + "\n".join([c.get("body", "") for c in comments])
+        # Use ticket_id as doc_id
+        doc_id = ticket_id
+        # Merge metadata
+        metadata = {"jira_ticket_id": ticket_id, **jira_data}
+        if extra_metadata:
+            metadata.update(extra_metadata)
+        client = get_vector_db_client()
+        embedder = get_embedding_model()
+        ids = index_vector_data(
+            client=client,
+            embedder=embedder,
+            documents=[doc_text],
+            doc_ids=[doc_id],
+            collection_name=COLLECTION_NAME,
+            metadatas=[metadata],
+            clear_existing=False,
+            deduplicate=True,
+            llm_augment=llm_augment or llm_summarize,
+            augment_metadata=augment_metadata,
+            normalize_language=normalize_language,
+            target_language=target_language
+        )
+        log_ingest_success(ids)
+        return ids[0] if ids else None
+    except Exception as e:
+        log_ingest_failure(e)
+        return None
+
+def _get_rag_pipeline():
+    global _rag_pipeline, _corpus
+    if _rag_pipeline is not None:
+        return _rag_pipeline
+    from app.core.config import settings
+    import dspy
+    client = get_vector_db_client()
+    collection = client.get_collection(COLLECTION_NAME)
+    # Load all docs for BM25
+    results = collection.get()
+    documents = results.get("documents", [])
+    _corpus = documents
+    embedder = get_embedding_model()
+    reranker = get_reranker()  # FIX: use actual reranker model
+    # Use OpenRouter LLM via DSPy
+    llm = get_openrouter_llm()
+    bm25_processor = create_bm25_index(_corpus)
+    vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus)
+    _rag_pipeline = create_rag_pipeline(vector_retriever, bm25_retriever, reranker, llm)
+    return _rag_pipeline
+
+def search_similar_jira_tickets(query_text: str, limit: int = 10):
+    log_search_start(query_text, limit)
+    try:
+        rag_pipeline = _get_rag_pipeline()
+        rag_result = rag_pipeline.forward(query_text)
+        formatted = []
+        for idx, context in enumerate(rag_result.context):
+            formatted.append({
+                "id": f"rag_{idx}",
+                "title": context[:60],
+                "content": context,
+                "similarity_score": 1.0 if idx == 0 else 0.8,
+                "metadata": {},
+                "llm_answer": rag_result.answer if idx == 0 else None
+            })
+        log_search_success(len(formatted))
+        return formatted
+    except Exception as e:
+        log_search_failure(e)
+        return []
