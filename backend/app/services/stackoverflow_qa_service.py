@@ -107,7 +107,7 @@ def search_similar_stackoverflow_content(query_text: str, limit: int = 10):
             document = documents[i] if i < len(documents) else ""
             distance = distances[i] if i < len(distances) else 0.0
             similarity_score = compute_similarity_score(distance)
-            if similarity_score < 0.1:  # TODO: Use settings.SIMILARITY_THRESHOLD
+            if similarity_score < settings.SIMILARITY_THRESHOLD:
                 continue
             formatted.append({
                 "id": so_id,

@@ -102,7 +102,7 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
     """
     return real_get_issue(issue_id)
 
-def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10) -> List[IssueResponse]:
+def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10, similarity_threshold: Optional[float] = None) -> List[IssueResponse]:
     """
     Search for similar support issues / queries based on a query text or Jira ticket ID.
     
@@ -110,11 +110,19 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
         query_text: Text to search for (optional)
         jira_ticket_id: Optional Jira ticket ID to filter results
         limit: Maximum number of results to return
+        similarity_threshold: Optional minimum similarity score (0-1) to filter results
         
     Returns:
         List of IssueResponse objects representing similar issues
     """
-    return real_search_similar_issues(query_text, jira_ticket_id, limit)
+    results = real_search_similar_issues(query_text, jira_ticket_id, limit)
+    
+    if similarity_threshold is not None:
+        from app.core.config import Settings
+        threshold = similarity_threshold if similarity_threshold is not None else Settings.SIMILARITY_THRESHOLD
+        results = [r for r in results if getattr(r, 'similarity_score', 0) >= threshold]
+    
+    return results
 
 def clear_all_issues() -> bool:
     return real_clear_collection("issues")
