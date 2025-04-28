@@ -213,7 +213,8 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
                     'similarity_score': similarity_score,
                     'metadata': metadata,
                     'llm_answer': llm_answer,
-                    'url': context_dict.get('url') or context_dict.get('confluence_url') or metadata.get('confluence_url') or '',
+                    'url': context_dict.get('url') or context_dict.get('confluence_url') or metadata.get('confluence_url') or context_dict.get('confluence_url') or metadata.get('url') or '',
+                    'link': context_dict.get('url') or context_dict.get('confluence_url') or metadata.get('confluence_url') or context_dict.get('confluence_url') or metadata.get('url') or ''
                 })
                 continue
             elif isinstance(context, dict):
@@ -232,7 +233,8 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
                     'similarity_score': similarity_score,
                     'metadata': metadata,
                     'llm_answer': llm_answer,
-                    'url': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or '',
+                    'url': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or '',
+                    'link': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or ''
                 })
                 continue
             elif hasattr(context, 'long_text'):
@@ -251,7 +253,8 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
                     'similarity_score': similarity_score,
                     'metadata': metadata,
                     'llm_answer': llm_answer,
-                    'url': '',
+                    'url': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or '',
+                    'link': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or ''
                 })
                 continue
             else:
