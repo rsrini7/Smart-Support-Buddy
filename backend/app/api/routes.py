@@ -339,15 +339,24 @@ async def search_issues(query: SearchQuery):
     from app.services.stackoverflow_service import search_similar_stackoverflow_content
     from app.services.llm_service import generate_summary_from_results # Import LLM service
     from app.models.models import SearchQuery # Ensure SearchQuery is imported
+    from concurrent.futures import ThreadPoolExecutor
 
     try:
-        vector_task = asyncio.to_thread(search_similar_issues, query.query_text, query.jira_ticket_id, query.limit)
-        confluence_task = asyncio.to_thread(search_similar_confluence_pages, query.query_text, query.limit)
-        stackoverflow_task = asyncio.to_thread(search_similar_stackoverflow_content, query.query_text, query.limit)
+        # Use a ThreadPoolExecutor with proper cleanup
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            vector_task = asyncio.get_event_loop().run_in_executor(
+                executor, search_similar_issues, query.query_text, query.jira_ticket_id, query.limit
+            )
+            confluence_task = asyncio.get_event_loop().run_in_executor(
+                executor, search_similar_confluence_pages, query.query_text, query.limit
+            )
+            stackoverflow_task = asyncio.get_event_loop().run_in_executor(
+                executor, search_similar_stackoverflow_content, query.query_text, query.limit
+            )
 
-        vector_issues, confluence_results, stackoverflow_results = await asyncio.gather(
-            vector_task, confluence_task, stackoverflow_task
-        )
+            vector_issues, confluence_results, stackoverflow_results = await asyncio.gather(
+                vector_task, confluence_task, stackoverflow_task
+            )
 
         # Defensive: ensure no NoneType for iterables
         if vector_issues is None:
