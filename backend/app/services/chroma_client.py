@@ -59,11 +59,26 @@ def get_vector_db_client(db_path: str = None):
 def get_collection(collection_name: str):
     """
     Gets or creates a collection from the configured vector database (ChromaDB or FAISS).
+    If collection does not exist, it will be created.
     """
     client = get_vector_db_client()
-    # The client object (either Chroma or FAISS) should have a 'get_or_create_collection' method
-    return client.get_or_create_collection(collection_name)
-
+    # Try to get or create the collection, robust to non-existence
+    try:
+        # Many Chroma/FAISS clients support get_or_create_collection, but fallback if not
+        if hasattr(client, 'get_or_create_collection'):
+            return client.get_or_create_collection(collection_name)
+        elif hasattr(client, 'get_collection') and hasattr(client, 'create_collection'):
+            try:
+                return client.get_collection(collection_name)
+            except Exception:
+                return client.create_collection(collection_name)
+        else:
+            raise RuntimeError("Vector DB client does not support collection creation.")
+    except Exception as e:
+        # Last resort: try to create the collection
+        if hasattr(client, 'create_collection'):
+            return client.create_collection(collection_name)
+        raise
 
 def clear_collection(collection_name: str) -> bool:
     """
