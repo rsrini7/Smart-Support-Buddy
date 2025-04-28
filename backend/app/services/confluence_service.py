@@ -122,6 +122,13 @@ def fetch_confluence_content(confluence_url: str) -> Optional[dict]:
         logger.error(f"Error fetching Confluence content: {str(e)}")
         return None
 
+def sanitize_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    sanitized_metadata = {}
+    for key, value in metadata.items():
+        if value is not None:
+            sanitized_metadata[key] = value
+    return sanitized_metadata
+
 def add_confluence_page_to_vectordb(
     confluence_url: str,
     extra_metadata: Optional[Dict[str, Any]] = None,
@@ -154,9 +161,9 @@ def add_confluence_page_to_vectordb(
             updated=page_data.get("updated"),
             content=content,
             similarity_score=None,
-            metadata=extra_metadata,
+            metadata=None if extra_metadata is None else sanitize_metadata(extra_metadata),
         )
-        metadata = page_obj.model_dump()
+        metadata = sanitize_metadata(page_obj.model_dump())
         # Use unified ingest utility with configurable augmentation
         ids = index_vector_data(
             client=client,
