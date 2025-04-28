@@ -158,36 +158,42 @@ def add_stackoverflow_qa_to_vectordb(
         question_id = content["question_id"]
         qid = f"soq_{question_id}"
         question_obj = StackOverflowQA(
-            question_id=question_id,
+            question_id=str(question_id),
             question_text=content["question_text"],
+            answer_id=None,
+            answer_text=None,
             tags=content.get("tags"),
             author=content.get("author"),
             creation_date=content.get("creation_date"),
             score=content.get("score"),
             link=content.get("link"),
             content_hash=None,
-            metadata=extra_metadata,
+            similarity_score=None,
+            metadata=None if extra_metadata is None else sanitize_metadata(extra_metadata),
         )
         ids.append(qid)
         documents.append(content["question_text"])
-        metadatas.append(question_obj.model_dump())
+        metadatas.append(sanitize_metadata(question_obj.model_dump()))
         # Add answers
         for ans in content.get("answers", []):
             aid = f"soa_{ans['answer_id']}"
             answer_obj = StackOverflowQA(
-                question_id=ans["question_id"],
+                question_id=str(ans["question_id"]),
                 question_text=ans["text"],
+                answer_id=str(ans.get("answer_id")) if ans.get("answer_id") is not None else None,
+                answer_text=ans.get("text"),
                 tags=None,
                 author=ans.get("author"),
                 creation_date=ans.get("creation_date"),
                 score=ans.get("score"),
                 link=None,
                 content_hash=None,
+                similarity_score=None,
                 metadata=None,
             )
             ids.append(aid)
             documents.append(ans["text"])
-            metadatas.append(answer_obj.model_dump())
+            metadatas.append(sanitize_metadata(answer_obj.model_dump()))
         # Use unified ingest utility with configurable augmentation
         index_vector_data(
             client=client,
