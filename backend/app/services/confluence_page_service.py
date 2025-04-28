@@ -8,11 +8,37 @@ from app.models.models import ConfluencePage
 import logging
 from datetime import datetime
 
+# DEPRECATION WARNING: This service is deprecated and not used by any API routes. Please remove after migration verification.
+# All ingestion should use app.services.confluence_service.add_confluence_page_to_vectordb which uses the unified index_vector_data utility.
+
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "confluence_pages"
 
-def add_confluence_page_to_vectordb(confluence_url: str, extra_metadata: Optional[Dict[str, Any]] = None) -> Optional[str]:
+def add_confluence_page_to_vectordb_with_aug(
+    confluence_url: str,
+    extra_metadata: Optional[Dict[str, Any]] = None,
+    llm_augment: Optional[Any] = None,
+    augment_metadata: bool = True,
+    normalize_language: bool = True,
+    target_language: str = "en"
+) -> Optional[str]:
+    """
+    Wrapper to call the new add_confluence_page_to_vectordb with augmentation options.
+    """
+    return add_confluence_page_to_vectordb(
+        confluence_url=confluence_url,
+        extra_metadata=extra_metadata,
+        llm_augment=llm_augment,
+        augment_metadata=augment_metadata,
+        normalize_language=normalize_language,
+        target_language=target_language
+    )
+
+def add_confluence_page_to_vectordb(
+    confluence_url: str, extra_metadata: Optional[Dict[str, Any]] = None, llm_augment: Optional[Any] = None, augment_metadata: bool = True, normalize_language: bool = True, target_language: str = "en"
+) -> Optional[str]:
+    # DEPRECATION WARNING: This function is deprecated and not used by any API routes. Please remove after migration verification.
     try:
         content = fetch_confluence_content(confluence_url)
         if not content:
@@ -48,7 +74,8 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
             include=['metadatas', 'documents', 'distances']
         )
         formatted = []
-        ids = results.get("ids", [])[0] if results.get("ids") else []
+        # ChromaDB: ids may not be present unless always returned by backend; FAISS: ids always present
+        ids = results.get("ids", [])[0] if "ids" in results and results.get("ids") else [str(i) for i in range(len(results.get("documents", [[]])[0]))]
         metadatas = results.get("metadatas", [])[0] if results.get("metadatas") else []
         documents = results.get("documents", [])[0] if results.get("documents") else []
         distances = results.get("distances", [])[0] if results.get("distances") else []
@@ -57,7 +84,7 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
             document = documents[i] if i < len(documents) else ""
             distance = distances[i] if i < len(distances) else 0.0
             similarity_score = compute_similarity_score(distance)
-            if similarity_score < 0.1:  # TODO: Use settings.SIMILARITY_THRESHOLD
+            if similarity_score < settings.SIMILARITY_THRESHOLD:
                 continue
             # Use ConfluencePage model for structured metadata
             page_obj = ConfluencePage(

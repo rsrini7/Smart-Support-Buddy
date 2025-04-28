@@ -4,13 +4,61 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 from app.services.chroma_client import get_vector_db_client
 from app.services.embedding_service import get_embedding_model
+from app.services.rerank_service import get_reranker
 import re
 import requests
-from app.utils.similarity import compute_similarity_score
-
-from app.core.config import settings
+from app.utils.similarity import compute_similarity_score, compute_text_similarity_score
+from app.utils.rag_utils import load_components, create_bm25_index, create_retrievers, create_rag_pipeline, index_vector_data
+from app.utils.llm_augmentation import llm_summarize
+from app.models.models import StackOverflowQA
+from app.utils.dspy_utils import get_openrouter_llm
+import dspy
 
 logger = logging.getLogger(__name__)
+
+COLLECTION_NAME = "stackoverflow_qa"
+
+# --- LOGGING INSTRUMENTATION START ---
+def log_ingest_start(url, extra_metadata):
+    logger.info(f"[INGEST][START] Stack Overflow ingest called. URL: {url}, Extra metadata keys: {list(extra_metadata.keys()) if extra_metadata else None}")
+
+def log_ingest_success(ids):
+    logger.info(f"[INGEST][SUCCESS] Stack Overflow Q&A successfully ingested. IDs: {ids}")
+
+def log_ingest_failure(error):
+    logger.error(f"[INGEST][FAILURE] Stack Overflow ingest failed: {error}")
+
+def log_search_start(query_text, limit):
+    logger.info(f"[SEARCH][START] Stack Overflow search called. Query: '{query_text}', Limit: {limit}")
+
+def log_search_success(results_count):
+    logger.info(f"[SEARCH][SUCCESS] Stack Overflow search returned {results_count} results.")
+
+def log_search_failure(error):
+    logger.error(f"[SEARCH][FAILURE] Stack Overflow search failed: {error}")
+# --- LOGGING INSTRUMENTATION END ---
+
+# Cache pipeline at module level to avoid reloading every call
+_rag_pipeline = None
+_corpus = None
+
+def _get_rag_pipeline():
+    global _rag_pipeline, _corpus
+    if _rag_pipeline is not None:
+        return _rag_pipeline
+    client = get_vector_db_client()
+    collection = client.get_collection(COLLECTION_NAME)
+    results = collection.get()
+    documents = results.get("documents", [])
+    _corpus = documents
+    embedder = get_embedding_model()
+    reranker = get_reranker()  # FIX: use actual reranker model
+    # Use OpenRouter LLM via DSPy
+    llm = get_openrouter_llm()
+    bm25_processor = create_bm25_index(_corpus)
+    vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus)
+    _rag_pipeline = create_rag_pipeline(vector_retriever, bm25_retriever, reranker, llm)
+    return _rag_pipeline
 
 def extract_question_id(stackoverflow_url: str) -> Optional[str]:
     """
@@ -61,6 +109,7 @@ def fetch_stackoverflow_content(stackoverflow_url: str) -> Optional[Dict[str, An
             ans_text = strip_html_tags(ans_text)
             answers.append({
                 "answer_id": ans.get("answer_id"),
+                "question_id": question_id,  # Ensure question_id is present in every answer
                 "text": ans_text,
                 "is_accepted": ans.get("is_accepted", False),
                 "score": ans.get("score", 0)
@@ -89,95 +138,81 @@ def strip_html_tags(html: str) -> str:
         logger.error(f"Error stripping HTML tags: {str(e)}")
         return html
 
-def add_stackoverflow_qa_to_vectordb(stackoverflow_url: str, extra_metadata: Optional[Dict[str, Any]] = None) -> Optional[List[str]]:
-    """
-    Fetch Stack Overflow Q&A, embed question and answers, and store in ChromaDB.
-    Returns list of added IDs.
-    """
+def add_stackoverflow_qa_to_vectordb(
+    stackoverflow_url: str,
+    extra_metadata: Optional[Dict[str, Any]] = None,
+    llm_augment: Optional[Any] = None,
+    augment_metadata: bool = False,
+    normalize_language: bool = False,
+    target_language: str = "en"
+) -> Optional[List[str]]:
+    log_ingest_start(stackoverflow_url, extra_metadata)
     try:
         content = fetch_stackoverflow_content(stackoverflow_url)
         if not content:
             raise ValueError("Failed to fetch content from Stack Overflow URL")
-
         client = get_vector_db_client()
-        model = get_embedding_model()
-        collection = client.get_or_create_collection("stackoverflow_qa")
-
-        ids = []
-        metadatas = []
-        embeddings = []
-        documents = []
-
-        # Add question with deduplication
-        q_id = f"stackoverflow_q_{content['question_id']}"
-        q_hash_str = (content["question_title"] or "") + (content["question_text"] or "")
-        q_content_hash = hashlib.sha256(q_hash_str.encode("utf-8")).hexdigest()
-        # Check for existing question with same hash
-        existing_q = collection.get(where={"content_hash": q_content_hash})
-        if not (existing_q and existing_q.get("ids")):
-            q_metadata = {
-                "type": "question",
-                "question_id": content["question_id"],
-                "title": content["question_title"],
-                "url": content["question_url"],
-                "created_date": datetime.now().isoformat(),
-                "content_hash": q_content_hash
-            }
-            if extra_metadata:
-                q_metadata.update(extra_metadata)
-            q_metadata = sanitize_metadata(q_metadata)
-            q_embedding = model.encode(content["question_text"]).tolist()
-
-            ids.append(q_id)
-            metadatas.append(q_metadata)
-            embeddings.append(q_embedding)
-            documents.append(content["question_text"])
-        else:
-            # If duplicate, return existing question ID
-            ids.append(existing_q["ids"][0])
-
-        # Add answers with deduplication
-        for ans in content["answers"]:
-            a_id = f"stackoverflow_a_{ans['answer_id']}"
-            a_hash_str = (ans["text"] or "") + str(content["question_id"])
-            a_content_hash = hashlib.sha256(a_hash_str.encode("utf-8")).hexdigest()
-            existing_a = collection.get(where={"content_hash": a_content_hash})
-            if not (existing_a and existing_a.get("ids")):
-                a_metadata = {
-                    "type": "answer",
-                    "question_id": content["question_id"],
-                    "answer_id": ans["answer_id"],
-                    "title": content["question_title"],
-                    "url": content["question_url"],
-                    "is_accepted": ans["is_accepted"],
-                    "score": ans["score"],
-                    "created_date": datetime.now().isoformat(),
-                    "content_hash": a_content_hash
-                }
-                if extra_metadata:
-                    a_metadata.update(extra_metadata)
-                a_metadata = sanitize_metadata(a_metadata)
-                a_embedding = model.encode(ans["text"]).tolist()
-
-                ids.append(a_id)
-                metadatas.append(a_metadata)
-                embeddings.append(a_embedding)
-                documents.append(ans["text"])
-            else:
-                # If duplicate, return existing answer ID
-                ids.append(existing_a["ids"][0])
-
-        # Only add if there are new documents to add
-        if embeddings:
-            collection.add(
-                ids=ids,
-                embeddings=embeddings,
-                metadatas=metadatas,
-                documents=documents
+        embedder = get_embedding_model()
+        ids, documents, metadatas = [], [], []
+        # Add question
+        question_id = content["question_id"]
+        qid = f"soq_{question_id}"
+        question_obj = StackOverflowQA(
+            question_id=str(question_id),
+            question_text=content["question_text"],
+            answer_id=None,
+            answer_text=None,
+            tags=content.get("tags"),
+            author=content.get("author"),
+            creation_date=content.get("creation_date"),
+            score=content.get("score"),
+            link=content.get("link"),
+            content_hash=None,
+            similarity_score=None,
+            metadata=None if extra_metadata is None else sanitize_metadata(extra_metadata),
+        )
+        ids.append(qid)
+        documents.append(content["question_text"])
+        metadatas.append(sanitize_metadata(question_obj.model_dump()))
+        # Add answers
+        for ans in content.get("answers", []):
+            aid = f"soa_{ans['answer_id']}"
+            answer_obj = StackOverflowQA(
+                question_id=str(ans["question_id"]),
+                question_text=ans["text"],
+                answer_id=str(ans.get("answer_id")) if ans.get("answer_id") is not None else None,
+                answer_text=ans.get("text"),
+                tags=None,
+                author=ans.get("author"),
+                creation_date=ans.get("creation_date"),
+                score=ans.get("score"),
+                link=None,
+                content_hash=None,
+                similarity_score=None,
+                metadata=None,
             )
+            ids.append(aid)
+            documents.append(ans["text"])
+            metadatas.append(sanitize_metadata(answer_obj.model_dump()))
+        # Use unified ingest utility with configurable augmentation
+        index_vector_data(
+            client=client,
+            embedder=embedder,
+            documents=documents,
+            doc_ids=ids,
+            collection_name=COLLECTION_NAME,
+            metadatas=metadatas,
+            clear_existing=False,
+            deduplicate=True,
+            llm_augment=llm_augment or llm_summarize,
+            augment_metadata=augment_metadata,
+            normalize_language=normalize_language,
+            target_language=target_language
+        )
+        log_ingest_success(ids)
         return ids
     except Exception as e:
-        logger.error(f"Error adding Stack Overflow Q&A to vector database: {str(e)}")
+        log_ingest_failure(e)
         return None
 
 def sanitize_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
@@ -192,55 +227,122 @@ def sanitize_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
     return sanitized
 
 def search_similar_stackoverflow_content(query_text: str, limit: int = 10):
-    """
-    Search for similar Stack Overflow Q&A based on a query.
-    """
+    log_search_start(query_text, limit)
     try:
-        client = get_vector_db_client()
-        collection = client.get_or_create_collection("stackoverflow_qa")
-        model = get_embedding_model()
-        query_embedding = model.encode(query_text).tolist()
-        results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=limit,
-            include=['metadatas', 'documents', 'distances']
-        )
-        if isinstance(results, list):
-            results = {"ids": [], "metadatas": [], "documents": [], "distances": []}
-
-        # Format results as a list of objects for the frontend
+        rag_pipeline = _get_rag_pipeline()
+        rag_result = rag_pipeline.forward(query_text)
+        # Return as a list of dicts for frontend compatibility
         formatted = []
-        ids = results.get("ids", [])
-        metadatas = results.get("metadatas", [])
-        documents = results.get("documents", [])
-        distances = results.get("distances", [])
-
-        # Handle possible nested lists from ChromaDB
-        if ids and isinstance(ids[0], list):
-            ids = ids[0]
-        if metadatas and isinstance(metadatas[0], list):
-            metadatas = metadatas[0]
-        if documents and isinstance(documents[0], list):
-            documents = documents[0]
-        if distances and isinstance(distances[0], list):
-            distances = distances[0]
-
-        for i, so_id in enumerate(ids):
-            metadata = metadatas[i] if i < len(metadatas) else {}
-            document = documents[i] if i < len(documents) else ""
-            distance = distances[i] if i < len(distances) else 0.0
-            similarity_score = compute_similarity_score(distance)
-            logger.info(f"Similarity threshold: {settings.SIMILARITY_THRESHOLD}, Calculated similarity: {similarity_score:.6f} for StackOverflow ID: {so_id}")
-            if similarity_score < settings.SIMILARITY_THRESHOLD:
-                continue  # Skip results below threshold
-            formatted.append({
-                "id": so_id,
-                "title": metadata.get("title", "Stack Overflow Q&A"),
-                "content": document,
-                "similarity_score": similarity_score,
-                "metadata": metadata
-            })
+        for idx, context in enumerate(rag_result.context):
+            # Unwrap DSPy Example objects to dicts for frontend compatibility
+            if hasattr(context, 'to_dict'):
+                context_dict = context.to_dict()
+                content = getattr(context, 'long_text', context_dict.get('long_text', ''))
+                item_id = context_dict.get('item_id') or context_dict.get('id') or f"rag_{idx}"
+                title = str(content)[:] if content else ""
+                similarity_score = context_dict.get('similarity_score')
+                if similarity_score is not None:
+                    try:
+                        similarity_score = float(similarity_score)
+                    except Exception:
+                        similarity_score = None
+                if similarity_score is None:
+                    similarity_score = compute_text_similarity_score(query_text, str(content))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context_dict.items() if k not in ['long_text', 'id', 'item_id', 'title', 'similarity_score']}
+                question_id = context_dict.get('question_id') or metadata.get('question_id')
+                url = (
+                    context_dict.get('url')
+                    or context_dict.get('link')
+                    or metadata.get('url')
+                    or (f"https://stackoverflow.com/questions/{question_id}" if question_id else "")
+                )
+                formatted.append({
+                    'item_id': item_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': url,
+                })
+                continue
+            elif isinstance(context, dict):
+                content = context.get('content', '') or context.get('text', '') or str(context)
+                item_id = context.get('item_id') or context.get('id') or f"rag_{idx}"
+                title = str(content)[:] if content else ""
+                similarity_score = context.get('similarity_score')
+                if similarity_score is not None:
+                    try:
+                        similarity_score = float(similarity_score)
+                    except Exception:
+                        similarity_score = None
+                if similarity_score is None:
+                    similarity_score = compute_text_similarity_score(query_text, str(content))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context.items() if k not in ['content', 'text', 'id', 'item_id', 'title', 'similarity_score']}
+                question_id = context.get('question_id') or metadata.get('question_id')
+                url = (
+                    context.get('url')
+                    or context.get('link')
+                    or metadata.get('url')
+                    or (f"https://stackoverflow.com/questions/{question_id}" if question_id else "")
+                )
+                formatted.append({
+                    'item_id': item_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': url,
+                })
+                continue
+            elif hasattr(context, 'long_text'):
+                content = getattr(context, 'long_text', str(context))
+                item_id = getattr(context, 'item_id', None) or getattr(context, 'id', None) or f"rag_{idx}"
+                title = str(content)[:] if content else ""
+                similarity_score = getattr(context, 'similarity_score', None)
+                if similarity_score is not None:
+                    try:
+                        similarity_score = float(similarity_score)
+                    except Exception:
+                        similarity_score = None
+                if similarity_score is None:
+                    similarity_score = compute_text_similarity_score(query_text, str(content))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context.__dict__.items() if k not in ['long_text', 'id', 'item_id', 'title', 'similarity_score']}
+                question_id = getattr(context, 'question_id', None) or metadata.get('question_id')
+                url = (
+                    getattr(context, 'url', None)
+                    or getattr(context, 'link', None)
+                    or metadata.get('url')
+                    or (f"https://stackoverflow.com/questions/{question_id}" if question_id else "")
+                )
+                formatted.append({
+                    'item_id': item_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': url,
+                })
+                continue
+            else:
+                content_str = str(context) if context else ""
+                similarity_score = compute_text_similarity_score(query_text, content_str)
+                formatted.append({
+                    'item_id': f"rag_{idx}",
+                    'title': content_str[:],
+                    'content': content_str,
+                    'similarity_score': similarity_score,
+                    'metadata': {},
+                    'llm_answer': rag_result.answer if idx == 0 else None,
+                    'url': '',
+                })
+        log_search_success(len(formatted))
         return formatted
     except Exception as e:
-        logger.error(f"Error searching similar Stack Overflow content: {str(e)}")
-        return None
+        log_search_failure(e)
+        return []

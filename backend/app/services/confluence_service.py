@@ -1,16 +1,88 @@
 import logging
 import hashlib
 import requests
-from typing import Optional, Dict, Any
+import os
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from app.services.chroma_client import get_vector_db_client
 from app.services.embedding_service import get_embedding_model
-from app.utils.similarity import compute_similarity_score
+from app.utils.rag_utils import load_components, create_bm25_index, create_retrievers, create_rag_pipeline, index_vector_data
+from app.utils.similarity import compute_similarity_score, compute_text_similarity_score
+from app.utils.llm_augmentation import llm_summarize
 from app.models.models import ConfluencePage
-
-from app.core.config import settings
+from app.utils.dspy_utils import get_openrouter_llm
+from app.services.faiss_client import FaissCollection # Add this import if not already present
 
 logger = logging.getLogger(__name__)
+
+COLLECTION_NAME = "confluence_pages"
+
+# --- LOGGING INSTRUMENTATION START ---
+def log_ingest_start(url, extra_metadata):
+    logger.info(f"[INGEST][START] Confluence ingest called. URL: {url}, Extra metadata keys: {list(extra_metadata.keys()) if extra_metadata else None}")
+
+def log_ingest_success(ids):
+    logger.info(f"[INGEST][SUCCESS] Confluence page(s) successfully ingested. IDs: {ids}")
+
+def log_ingest_failure(error):
+    logger.error(f"[INGEST][FAILURE] Confluence ingest failed: {error}")
+
+def log_search_start(query_text, limit):
+    logger.info(f"[SEARCH][START] Confluence search called. Query: '{query_text}', Limit: {limit}")
+
+def log_search_success(results_count):
+    logger.info(f"[SEARCH][SUCCESS] Confluence search returned {results_count} results.")
+
+def log_search_failure(error):
+    logger.error(f"[SEARCH][FAILURE] Confluence search failed: {error}")
+# --- LOGGING INSTRUMENTATION END ---
+
+# Cache pipeline at module level to avoid reloading every call
+_rag_pipeline = None
+_corpus = None
+
+def _get_rag_pipeline():
+    global _rag_pipeline, _corpus
+    if _rag_pipeline is not None:
+        return _rag_pipeline
+    from app.core.config import settings
+    client = get_vector_db_client()
+    collection = client.get_or_create_collection(COLLECTION_NAME)
+    all_docs_result = collection.get(include=['documents'])
+    _corpus = all_docs_result.get("documents", [])
+
+    # Determine db_type and db_path based on collection type
+    if isinstance(collection, FaissCollection):
+        db_type = 'faiss'
+        # Use the directory containing the index file as the path
+        db_path = os.path.dirname(collection.index_path) if collection.index_path else None
+        logger.info(f"Detected FAISS collection. Type: {db_type}, Path: {db_path}")
+    elif hasattr(collection, '_client'): # Assuming ChromaDB or similar structure
+        db_type = 'chroma'
+        chroma_settings = getattr(collection._client, '_settings', None)
+        if isinstance(chroma_settings, dict):
+            db_path = chroma_settings.get('persist_directory', None) or chroma_settings.get('path', None)
+        else:
+            db_path = None
+        logger.info(f"Detected ChromaDB-like collection. Type: {db_type}, Path: {db_path}")
+    else:
+        logger.warning("Could not determine DB type or path from collection object.")
+        db_type = 'unknown'
+        db_path = None
+
+    embedder, reranker, _, _ = load_components(
+        db_type=db_type,
+        db_path=db_path,
+        embedder_model=None, # Let load_components handle default
+        reranker_model=None, # Let load_components handle default
+        llm=None
+    )
+    # Use OpenRouter LLM via DSPy
+    llm = get_openrouter_llm()
+    bm25_processor = create_bm25_index(_corpus)
+    vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus)
+    _rag_pipeline = create_rag_pipeline(vector_retriever, bm25_retriever, reranker, llm)
+    return _rag_pipeline
 
 def fetch_confluence_content(confluence_url: str) -> Optional[dict]:
     """
@@ -50,11 +122,22 @@ def fetch_confluence_content(confluence_url: str) -> Optional[dict]:
         logger.error(f"Error fetching Confluence content: {str(e)}")
         return None
 
-def add_confluence_page_to_vectordb(confluence_url: str, extra_metadata: Optional[Dict[str, Any]] = None) -> Optional[str]:
-    """
-    Fetch a Confluence page, embed its content, and store in ChromaDB.
-    Also store display_title and html_body in metadata for richer search results.
-    """
+def sanitize_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    sanitized_metadata = {}
+    for key, value in metadata.items():
+        if value is not None:
+            sanitized_metadata[key] = value
+    return sanitized_metadata
+
+def add_confluence_page_to_vectordb(
+    confluence_url: str,
+    extra_metadata: Optional[Dict[str, Any]] = None,
+    llm_augment: Optional[Any] = None,
+    augment_metadata: bool = False,
+    normalize_language: bool = False,
+    target_language: str = "en"
+) -> Optional[str or List[str]]:
+    log_ingest_start(confluence_url, extra_metadata)
     try:
         page_data = fetch_confluence_content(confluence_url)
         if not page_data or not page_data.get("content"):
@@ -62,19 +145,10 @@ def add_confluence_page_to_vectordb(confluence_url: str, extra_metadata: Optiona
         content = page_data["content"]
         display_title = page_data.get("display_title")
         html_body = page_data.get("html_body")
-
         client = get_vector_db_client()
-        model = get_embedding_model()
-
+        embedder = get_embedding_model()
         content_hash = hashlib.sha256((content or "").encode("utf-8")).hexdigest()
-        collection = client.get_or_create_collection("confluence_pages")
-        existing = collection.get(where={"content_hash": content_hash})
-        if existing and existing.get("ids"):
-            return existing["ids"][0]
-
         page_id = f"confluence_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        embedding = model.encode(content).tolist()
-        
         # Use ConfluencePage model for structured metadata
         page_obj = ConfluencePage(
             page_id=page_id,
@@ -87,127 +161,116 @@ def add_confluence_page_to_vectordb(confluence_url: str, extra_metadata: Optiona
             updated=page_data.get("updated"),
             content=content,
             similarity_score=None,
-            metadata=extra_metadata,
+            metadata=None if extra_metadata is None else sanitize_metadata(extra_metadata),
         )
-        metadata = page_obj.model_dump()
-        
-        collection.add(
-            ids=[page_id],
-            embeddings=[embedding],
+        metadata = sanitize_metadata(page_obj.model_dump())
+        # Use unified ingest utility with configurable augmentation
+        ids = index_vector_data(
+            client=client,
+            embedder=embedder,
+            documents=[content],
+            doc_ids=[page_id],
+            collection_name="confluence_pages",
             metadatas=[metadata],
-            documents=[content]
+            clear_existing=False,
+            deduplicate=True,
+            llm_augment=llm_augment or llm_summarize,
+            augment_metadata=augment_metadata,
+            normalize_language=normalize_language,
+            target_language=target_language
         )
-        return page_id
+        log_ingest_success(ids)
+        # TEST COMPAT: return string if only one id
+        if isinstance(ids, list) and len(ids) == 1:
+            return ids[0]
+        return ids
     except Exception as e:
-        logger.error(f"Error adding Confluence page to vector database: {str(e)}")
+        log_ingest_failure(e)
         return None
 
 def search_similar_confluence_pages(query_text: str, limit: int = 10):
-    """
-    Search for similar Confluence pages based on a query, and return section-level match info if possible.
-    """
+    log_search_start(query_text, limit)
     try:
-        client = get_vector_db_client()
-        collection = client.get_or_create_collection("confluence_pages")
-        model = get_embedding_model()
-        query_embedding = model.encode(query_text).tolist()
-        results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=limit,
-            include=['metadatas', 'documents', 'distances']
-        )
-        # Defensive fix: if results is a list, convert to empty dict structure
-        if isinstance(results, list):
-            results = {"ids": [], "metadatas": [], "documents": [], "distances": []}
-
+        rag_pipeline = _get_rag_pipeline()
+        rag_result = rag_pipeline.forward(query_text)
         formatted = []
-        ids = results.get("ids", [])
-        metadatas = results.get("metadatas", [])
-        documents = results.get("documents", [])
-        distances = results.get("distances", [])
-        if ids and isinstance(ids[0], list):
-            ids = ids[0]
-        if metadatas and isinstance(metadatas[0], list):
-            metadatas = metadatas[0]
-        if documents and isinstance(documents[0], list):
-            documents = documents[0]
-        if distances and isinstance(distances[0], list):
-            distances = distances[0]
-
-        from bs4 import BeautifulSoup
-        import re
-        seen = set()
-        for i, page_id in enumerate(ids):
-            metadata = metadatas[i] if i < len(metadatas) else {}
-            document = documents[i] if i < len(documents) else ""
-            confluence_url = metadata.get("confluence_url", "")
-            unique_key = (str(page_id), confluence_url, document)
-            if unique_key in seen:
+        for idx, context in enumerate(rag_result.context):
+            # Unwrap DSPy Example objects to dicts for frontend compatibility
+            if hasattr(context, 'to_dict'):
+                context_dict = context.to_dict()
+                content = getattr(context, 'long_text', context_dict.get('long_text', ''))
+                page_id = context_dict.get('page_id') or context_dict.get('id') or f"rag_{idx}"
+                title = str(content)[:] if content else ""
+                similarity_score = float(context_dict.get('similarity_score')) if context_dict.get('similarity_score') is not None else None
+                if similarity_score is None:
+                    similarity_score = compute_text_similarity_score(query_text, str(content))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context_dict.items() if k not in ['long_text', 'id', 'page_id', 'title', 'similarity_score']}
+                formatted.append({
+                    'page_id': page_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': context_dict.get('url') or context_dict.get('confluence_url') or metadata.get('confluence_url') or context_dict.get('confluence_url') or metadata.get('url') or '',
+                    'link': context_dict.get('url') or context_dict.get('confluence_url') or metadata.get('confluence_url') or context_dict.get('confluence_url') or metadata.get('url') or ''
+                })
                 continue
-            seen.add(unique_key)
-            distance = distances[i] if i < len(distances) else 0.0
-            similarity_score = compute_similarity_score(distance)
-            if similarity_score < settings.SIMILARITY_THRESHOLD:
+            elif isinstance(context, dict):
+                content = context.get('content', '') or context.get('text', '') or str(context)
+                page_id = context.get('page_id') or context.get('id') or f"rag_{idx}"
+                title = str(content)[:] if content else ""
+                similarity_score = float(context.get('similarity_score')) if context.get('similarity_score') is not None else None
+                if similarity_score is None:
+                    similarity_score = compute_text_similarity_score(query_text, str(content))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context.items() if k not in ['content', 'text', 'id', 'page_id', 'title', 'similarity_score']}
+                formatted.append({
+                    'page_id': page_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or '',
+                    'link': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or ''
+                })
                 continue
-
-            # SECTION MATCHING LOGIC
-            section_anchor = None
-            section_text = None
-            best_section_score = 0
-            if document:
-                soup = BeautifulSoup(document, "html.parser")
-                # Find all sections by heading tags (h1-h6)
-                sections = []
-                for heading in soup.find_all(re.compile('^h[1-6]$')):
-                    # Section anchor: id or text
-                    anchor = heading.get('id') or re.sub(r'[^a-zA-Z0-9]+', '-', heading.get_text().strip()).strip('-').lower()
-                    # Section text: all content until next heading
-                    section_content = []
-                    for sib in heading.next_siblings:
-                        if sib.name and re.match(r'^h[1-6]$', sib.name):
-                            break
-                        if hasattr(sib, 'get_text'):
-                            section_content.append(sib.get_text(separator=' ', strip=True))
-                        elif isinstance(sib, str):
-                            section_content.append(sib.strip())
-                    section_fulltext = heading.get_text(separator=' ', strip=True) + '\n' + ' '.join(section_content)
-                    sections.append({
-                        'anchor': anchor,
-                        'text': section_fulltext
-                    })
-                # Find best matching section by embedding similarity
-                if sections:
-                    section_texts = [s['text'] for s in sections]
-                    section_embeddings = model.encode(section_texts)
-                    from numpy import dot
-                    from numpy.linalg import norm
-                    def cosine_sim(a, b):
-                        return dot(a, b)/(norm(a)*norm(b))
-                    best_idx = None
-                    best_score = -1
-                    for idx, emb in enumerate(section_embeddings):
-                        score = cosine_sim(emb, query_embedding)
-                        if score > best_score:
-                            best_score = score
-                            best_idx = idx
-                    # Only add if section is reasonably relevant
-                    if best_idx is not None and best_score > 0.4:
-                        section_anchor = sections[best_idx]['anchor']
-                        section_text = sections[best_idx]['text'][:500]
-            # Add section_anchor and section_text to metadata if found
-            if section_anchor:
-                metadata = dict(metadata)
-                metadata['section_anchor'] = section_anchor
-                if section_text:
-                    metadata['section_text'] = section_text
-            formatted.append({
-                "page_id": page_id,
-                "title": confluence_url or "Confluence Page",
-                "content": document,
-                "similarity_score": similarity_score,
-                "metadata": metadata
-            })
+            elif hasattr(context, 'long_text'):
+                content = getattr(context, 'long_text', str(context))
+                page_id = getattr(context, 'page_id', None) or getattr(context, 'id', None) or f"rag_{idx}"
+                title = str(content)[:] if content else ""
+                similarity_score = getattr(context, 'similarity_score', None)
+                if similarity_score is None:
+                    similarity_score = compute_text_similarity_score(query_text, str(content))
+                llm_answer = rag_result.answer if idx == 0 else None
+                metadata = {k: v for k, v in context.__dict__.items() if k not in ['long_text', 'id', 'page_id', 'title', 'similarity_score']}
+                formatted.append({
+                    'page_id': page_id,
+                    'title': title,
+                    'content': str(content) if content else "",
+                    'similarity_score': similarity_score,
+                    'metadata': metadata,
+                    'llm_answer': llm_answer,
+                    'url': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or '',
+                    'link': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or ''
+                })
+                continue
+            else:
+                content_str = str(context) if context else ""
+                similarity_score = compute_text_similarity_score(query_text, content_str)
+                formatted.append({
+                    'page_id': f"rag_{idx}",
+                    'title': content_str[:],
+                    'content': content_str,
+                    'similarity_score': similarity_score,
+                    'metadata': {},
+                    'llm_answer': rag_result.answer if idx == 0 else None,
+                    'url': '',
+                })
+        log_search_success(len(formatted))
         return formatted
     except Exception as e:
-        logger.error(f"Error searching similar Confluence pages: {str(e)}")
-        return None
+        log_search_failure(e)
+        return []

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, CircularProgress, Alert, FormGroup, FormControlLabel, Checkbox, Select, MenuItem } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { BACKEND_API_BASE } from '../settings';
@@ -10,6 +10,9 @@ const JiraIngestPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [result, setResult] = useState(null);
+  const [augmentMetadata, setAugmentMetadata] = useState(true);
+  const [normalizeLanguage, setNormalizeLanguage] = useState(true);
+  const [targetLanguage, setTargetLanguage] = useState('en');
   const navigate = useNavigate();
   const theme = useTheme();
 
@@ -21,6 +24,7 @@ const JiraIngestPage = () => {
     setResult(null);
   };
 
+  // Backward compatible: if backend does not support new fields, fallback to old payload
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
@@ -39,14 +43,32 @@ const JiraIngestPage = () => {
       return;
     }
 
+    const payload = {
+      jira_ticket_ids: jiraIds,
+      augment_metadata: augmentMetadata,
+      normalize_language: normalizeLanguage,
+      target_language: targetLanguage
+    };
+
     try {
-      const response = await fetch(`${BACKEND_API_BASE}/ingest-jira`, {
+      let response = await fetch(`${BACKEND_API_BASE}/ingest-jira`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ jira_ticket_ids: jiraIds }),
+        body: JSON.stringify(payload),
       });
+
+      // If backend returns 422 or 400, try fallback (backward compatibility)
+      if (response.status === 422 || response.status === 400) {
+        response = await fetch(`${BACKEND_API_BASE}/ingest-jira`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ jira_ticket_ids: jiraIds }),
+        });
+      }
 
       const data = await response.json();
 
@@ -87,6 +109,29 @@ const JiraIngestPage = () => {
           placeholder="Enter one or more Jira ticket IDs, separated by commas or new lines"
           sx={{ mb: 2 }}
         />
+        <FormGroup row sx={{ mb: 2 }}>
+          <FormControlLabel
+            control={<Checkbox checked={augmentMetadata} onChange={e => setAugmentMetadata(e.target.checked)} />}
+            label="Extract Metadata"
+          />
+          <FormControlLabel
+            control={<Checkbox checked={normalizeLanguage} onChange={e => setNormalizeLanguage(e.target.checked)} />}
+            label="Normalize Language"
+          />
+          <Select
+            value={targetLanguage}
+            onChange={e => setTargetLanguage(e.target.value)}
+            displayEmpty
+            sx={{ minWidth: 120, ml: 2 }}
+          >
+            <MenuItem value="en">English</MenuItem>
+            <MenuItem value="fr">French</MenuItem>
+            <MenuItem value="de">German</MenuItem>
+            <MenuItem value="es">Spanish</MenuItem>
+            <MenuItem value="zh">Chinese</MenuItem>
+            {/* Add more languages as needed */}
+          </Select>
+        </FormGroup>
         <Button
           variant="contained"
           color="success"

@@ -9,6 +9,130 @@ import traceback
 
 logger = logging.getLogger(__name__)
 
+COLLECTION_NAME = "msg_files"
+
+# --- LOGGING INSTRUMENTATION START ---
+def log_ingest_start(file_path, extra_metadata):
+    logger.info(f"[INGEST][START] MSG ingest called. File: {file_path}, Extra metadata keys: {list(extra_metadata.keys()) if extra_metadata else None}")
+
+def log_ingest_success(ids):
+    logger.info(f"[INGEST][SUCCESS] MSG file(s) successfully ingested. IDs: {ids}")
+
+def log_ingest_failure(error):
+    logger.error(f"[INGEST][FAILURE] MSG ingest failed: {error}")
+
+def log_search_start(query_text, limit):
+    logger.info(f"[SEARCH][START] MSG search called. Query: '{query_text}', Limit: {limit}")
+
+def log_search_success(results_count):
+    logger.info(f"[SEARCH][SUCCESS] MSG search returned {results_count} results.")
+
+def log_search_failure(error):
+    logger.error(f"[SEARCH][FAILURE] MSG search failed: {error}")
+# --- LOGGING INSTRUMENTATION END ---
+
+from app.utils.rag_utils import load_components, index_vector_data, create_bm25_index, create_retrievers, create_rag_pipeline
+from app.services.embedding_service import get_embedding_model
+from app.services.chroma_client import get_vector_db_client
+from app.utils.llm_augmentation import llm_summarize
+from app.utils.dspy_utils import get_openrouter_llm
+
+_rag_pipeline = None
+_corpus = None
+
+def add_msg_file_to_vectordb(file_path: str, extra_metadata: dict = None, llm_augment=None, augment_metadata=True, normalize_language=True, target_language="en") -> str:
+    log_ingest_start(file_path, extra_metadata)
+    try:
+        msg_data = parse_msg_file(file_path)
+        if msg_data.get("status") == "error":
+            raise ValueError(f"Failed to parse MSG file: {msg_data.get('error')}")
+        subject = msg_data.get("subject", "")
+        body = msg_data.get("body", "")
+        sender = msg_data.get("sender", "")
+        received_date = msg_data.get("received_date", None)
+        recipients = msg_data.get("recipients", [])
+        jira_info = extract_issue_details(msg_data)
+        jira_id = jira_info.get("jira_id")
+        jira_url = jira_info.get("jira_url")
+        # Combine all text for embedding
+        doc_text = f"Subject: {subject}\nBody: {body}\nSender: {sender}\nRecipients: {', '.join(recipients)}"
+        if jira_id:
+            doc_text += f"\nJira ID: {jira_id}"
+        if jira_url:
+            doc_text += f"\nJira URL: {jira_url}"
+        doc_id = file_path
+        metadata = {
+            "msg_file_path": file_path,
+            "msg_subject": subject,
+            "msg_body": body,
+            "msg_sender": sender,
+            "msg_received_date": str(received_date) if received_date else None,
+            "recipients": recipients,
+            "jira_id": jira_id,
+            "jira_url": jira_url,
+        }
+        if extra_metadata:
+            metadata.update(extra_metadata)
+        client = get_vector_db_client()
+        embedder = get_embedding_model()
+        ids = index_vector_data(
+            client=client,
+            embedder=embedder,
+            documents=[doc_text],
+            doc_ids=[doc_id],
+            collection_name=COLLECTION_NAME,
+            metadatas=[metadata],
+            clear_existing=False,
+            deduplicate=True,
+            llm_augment=llm_augment or llm_summarize,
+            augment_metadata=augment_metadata,
+            normalize_language=normalize_language,
+            target_language=target_language
+        )
+        log_ingest_success(ids)
+        return ids[0] if ids else None
+    except Exception as e:
+        log_ingest_failure(e)
+        return None
+
+def _get_rag_pipeline():
+    global _rag_pipeline, _corpus
+    if _rag_pipeline is not None:
+        return _rag_pipeline
+    from app.core.config import settings
+    client = get_vector_db_client()
+    collection = client.get_collection(COLLECTION_NAME)
+    results = collection.get()
+    documents = results.get("documents", [])
+    _corpus = documents
+    embedder = get_embedding_model()
+    reranker = None
+    llm = get_openrouter_llm()
+    bm25_processor = create_bm25_index(_corpus)
+    vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus)
+    _rag_pipeline = create_rag_pipeline(vector_retriever, bm25_retriever, reranker, llm)
+    return _rag_pipeline
+
+def search_similar_msg_files(query_text: str, limit: int = 10):
+    log_search_start(query_text, limit)
+    try:
+        rag_pipeline = _get_rag_pipeline()
+        rag_result = rag_pipeline.forward(query_text)
+        formatted = []
+        for idx, context in enumerate(rag_result.context):
+            formatted.append({
+                "id": f"rag_{idx}",
+                "title": context[:],
+                "content": context,
+                "similarity_score": 1.0 if idx == 0 else 0.8,
+                "metadata": {},
+                "llm_answer": rag_result.answer if idx == 0 else None
+            })
+        log_search_success(len(formatted))
+        return formatted
+    except Exception as e:
+        log_search_failure(e)
+        return []
 
 def parse_msg_file(file_path: str) -> Dict[str, Any]:
     logger.info(f"parse_msg_file called with file_path: {file_path}")

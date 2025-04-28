@@ -12,12 +12,36 @@ logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "issues"
 
-def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: Optional[Dict[str, Any]] = None) -> str:
+# NOTE: This service is the canonical implementation for issue/msg ingestion and is used by all API routes via vector_service.py.
+# DO NOT deprecate unless/until a new unified service replaces it in all routes.
+
+# --- LOGGING INSTRUMENTATION START ---
+def log_ingest_start(issue, extra_metadata):
+    logger.info(f"[INGEST][START] Issue ingest called. Issue keys: {list(issue.keys())}, Extra metadata keys: {list(extra_metadata.keys()) if extra_metadata else None}")
+
+def log_ingest_success(issue_id):
+    logger.info(f"[INGEST][SUCCESS] Issue successfully ingested with ID: {issue_id}")
+
+def log_ingest_failure(error):
+    logger.error(f"[INGEST][FAILURE] Issue ingest failed: {error}")
+
+# --- LOGGING INSTRUMENTATION END ---
+
+def add_issue_to_vectordb(
+    issue: Dict[str, Any],
+    extra_metadata: Optional[Dict[str, Any]] = None,
+    llm_augment: Optional[Any] = None,
+    augment_metadata: bool = True,
+    normalize_language: bool = True,
+    target_language: str = "en"
+) -> Optional[str]:
+    log_ingest_start(issue, extra_metadata)
     try:
-        if msg_data is None:
-            msg_data = {}
-        if jira_data is None:
-            jira_data = {}
+        if not issue:
+            raise ValueError("Issue data must be provided")
+
+        msg_data = issue.get("msg_data", {})
+        jira_data = issue.get("jira_data", {})
         if not msg_data and not jira_data:
             raise ValueError("Either MSG data or Jira data must be provided")
 
@@ -128,7 +152,29 @@ def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: 
             metadatas=[metadata],
             documents=[full_text]
         )
+        log_ingest_success(issue_id)
         return issue_id
     except Exception as e:
+        log_ingest_failure(e)
         logger.error(f"Error adding issue to vector database: {str(e)}")
         raise
+
+def add_issue_to_vectordb_wrapper(
+    issue: Dict[str, Any],
+    extra_metadata: Optional[Dict[str, Any]] = None,
+    llm_augment: Optional[Any] = None,
+    augment_metadata: bool = True,
+    normalize_language: bool = True,
+    target_language: str = "en"
+) -> Optional[str]:
+    """
+    Wrapper to call the new add_issue_to_vectordb with augmentation options.
+    """
+    return add_issue_to_vectordb(
+        issue=issue,
+        extra_metadata=extra_metadata,
+        llm_augment=llm_augment,
+        augment_metadata=augment_metadata,
+        normalize_language=normalize_language,
+        target_language=target_language
+    )

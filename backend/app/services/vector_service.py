@@ -57,11 +57,24 @@ def get_all_chroma_collections_data() -> list:
         logging.error(f"Error fetching ChromaDB collections data: {str(e)}")
         return []
 
-def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: Optional[Dict[str, Any]] = None) -> str:
+def add_issue_to_vectordb(msg_data: Optional[Dict[str, Any]] = None, jira_data: Optional[Dict[str, Any]] = None,
+                        augment_metadata: bool = True, normalize_language: bool = True, target_language: str = "en") -> str:
     # Defensive patch: if msg_data is an error dict, raise ValueError immediately
     if isinstance(msg_data, dict) and msg_data.get("status") == "error":
         raise ValueError(f"MSG parse error: {msg_data.get('error')}")
-    return original_add_issue_to_vectordb(msg_data, jira_data)
+    # Compose the issue dict for the underlying implementation
+    issue = {}
+    if msg_data is not None:
+        issue["msg_data"] = msg_data
+    if jira_data is not None:
+        issue["jira_data"] = jira_data
+    # Call the unified add_issue_to_vectordb in vector_issue_service with LLM params
+    return original_add_issue_to_vectordb(
+        issue=issue,
+        augment_metadata=augment_metadata,
+        normalize_language=normalize_language,
+        target_language=target_language
+    )
 
 # Defensive patch: avoid infinite recursion by calling the real implementation
 def delete_issue(issue_id: str) -> bool:
@@ -89,7 +102,7 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
     """
     return real_get_issue(issue_id)
 
-def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10) -> List[IssueResponse]:
+def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10, similarity_threshold: Optional[float] = None) -> List[IssueResponse]:
     """
     Search for similar support issues / queries based on a query text or Jira ticket ID.
     
@@ -97,11 +110,19 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
         query_text: Text to search for (optional)
         jira_ticket_id: Optional Jira ticket ID to filter results
         limit: Maximum number of results to return
+        similarity_threshold: Optional minimum similarity score (0-1) to filter results
         
     Returns:
         List of IssueResponse objects representing similar issues
     """
-    return real_search_similar_issues(query_text, jira_ticket_id, limit)
+    results = real_search_similar_issues(query_text, jira_ticket_id, limit)
+    
+    if similarity_threshold is not None:
+        from app.core.config import Settings
+        threshold = similarity_threshold if similarity_threshold is not None else Settings.SIMILARITY_THRESHOLD
+        results = [r for r in results if getattr(r, 'similarity_score', 0) >= threshold]
+    
+    return results
 
 def clear_all_issues() -> bool:
     return real_clear_collection("issues")
