@@ -1,0 +1,71 @@
+C4Component
+    title Support Buddy System - C4 Component Diagram
+
+    Person(user, "Support Engineer", "Uses the system to search knowledge and ingest support data")
+
+    Container_Boundary(frontend, "Frontend Layer") {
+        Component(reactUI, "Frontend SPA", "React, Material-UI", "Single page application providing user interface")
+    }
+
+    Container_Boundary(backend, "Backend Layer") {
+        Component(fastAPI, "FastAPI Entrypoint", "Python, FastAPI", "REST API endpoint handling all requests")
+        
+        Container_Boundary(ingestionServices, "Ingestion Services") {
+            Component(msgParser, "MSG Parser", "Python", "Parses Outlook MSG files")
+            Component(jiraService, "Jira Service", "Python", "Connects to Jira for ticket data")
+            Component(confluenceService, "Confluence Service", "Python", "Extracts documentation from Confluence")
+            Component(stackoverflowService, "StackOverflow Service", "Python", "Retrieves Q&A content")
+        }
+        
+        Container_Boundary(ragPipeline, "RAG Pipeline") {
+            Component(hybridRetriever, "Hybrid Retriever", "Python", "Combines vector and BM25 search techniques")
+            Component(deduplication, "Deduplication", "Python", "Filters out duplicate information")
+            Component(neuralReranker, "Neural Reranker", "Python", "Optimizes result ordering")
+            Component(dspyOrchestrator, "DSPy LLM Orchestrator", "Python, DSPy", "Manages LLM interactions")
+        }
+        
+        Container_Boundary(vectorLayer, "Vector DB Abstraction") {
+            Component(chromaClient, "ChromaClient", "Python", "Interface to ChromaDB")
+            Component(faissClient, "FaissClient", "Python", "Interface to FAISS")
+        }
+    }
+
+    Container_Boundary(infra, "Infrastructure") {
+        Component(dockerCompose, "Docker Compose", "Docker", "Orchestrates the containers for the system")
+    }
+
+    System_Ext(outlookFiles, "Outlook MSG Files", "Contains support tickets and correspondence")
+    System_Ext(jiraSystem, "Jira Server/Data Center", "Issue tracking system")
+    System_Ext(confluenceSystem, "Confluence Server/Data Center", "Knowledge base with documentation")
+    System_Ext(stackoverflowAPI, "StackOverflow API", "Technical Q&A content")
+    System_Ext(openRouter, "OpenRouter", "LLM Provider")
+
+    Rel(user, reactUI, "Uses")
+    
+    Rel(reactUI, fastAPI, "Makes API calls to", "REST/HTTP")
+    
+    Rel(fastAPI, msgParser, "Invokes for ingestion")
+    Rel(fastAPI, jiraService, "Invokes for ingestion")
+    Rel(fastAPI, confluenceService, "Invokes for ingestion")
+    Rel(fastAPI, stackoverflowService, "Invokes for ingestion")
+    Rel(fastAPI, hybridRetriever, "Invokes for search")
+    
+    Rel(hybridRetriever, deduplication, "Passes results to")
+    Rel(deduplication, neuralReranker, "Passes filtered results to")
+    Rel(neuralReranker, dspyOrchestrator, "Passes ranked results to")
+    Rel(dspyOrchestrator, fastAPI, "Returns enhanced response to")
+    
+    Rel(fastAPI, chromaClient, "Uses for vector operations")
+    Rel(fastAPI, faissClient, "Uses for vector operations")
+    
+    Rel(msgParser, outlookFiles, "Reads and processes")
+    Rel(jiraService, jiraSystem, "Retrieves data from", "API")
+    Rel(confluenceService, confluenceSystem, "Retrieves data from", "API")
+    Rel(stackoverflowService, stackoverflowAPI, "Retrieves data from", "API")
+    Rel(dspyOrchestrator, openRouter, "Makes LLM requests to", "API")
+    
+    Rel(dockerCompose, reactUI, "Deploys and manages")
+    Rel(dockerCompose, fastAPI, "Deploys and manages")
+    Rel(dockerCompose, chromaClient, "Deploys and manages")
+    
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")

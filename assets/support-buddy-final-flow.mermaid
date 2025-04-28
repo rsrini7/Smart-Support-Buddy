@@ -1,170 +1,94 @@
-flowchart TB
-    %% === Element Definitions (Order Swapped: Storage, User, Backend...) ===
+graph TB
+    %% External User
+    User["User"]:::external
 
-    %% Storage Layer (Moved to top definition spot)
-    subgraph Storage["Vector Storage"]
-        direction TB
-        subgraph VectorDB["Vector Database Options"]
-            direction TB
-            ChromaClient[ChromaDB Client]
-            ChromaServer[ChromaDB Server]
-            FAISSIndex[FAISS Index]
-        end
-        subgraph Collections["Index Collections"]
-            direction TB
-            IssueCol[Issues Collection]
-            JiraCol[Jira Tickets Collection]
-            ConfCol[Confluence Pages Collection]
-            SOCol[StackOverflow Q&A Collection]
-        end
+    %% Frontend Layer
+    subgraph "Frontend Layer"
+        UI["Frontend SPA (React + Material-UI)"]:::frontend
     end
 
-    %% User - Top (Moved to second definition spot)
-    User((User))
+    User -->|uses| UI
 
-    %% Backend Layer (Remains in original position relative to others)
-    subgraph Backend["Backend Layer"]
-        direction TB
-        API[FastAPI Backend]
-        subgraph CoreServices["Core Services"]
-            direction TB
-            VS[Vector Service]
-            %% Placed first as key service
-            USA[Unified Search Aggregation]
-            LLM[LLM Summary Service]
+    %% Backend Layer
+    subgraph "Backend Layer"
+        API["Backend API (FastAPI)"]:::backend
+
+        subgraph "Ingestion Services"
+            MSG["MSG Parser"]:::service
+            JiraTicket["Jira Service"]:::service
+            ConfluencePage["Confluence Service"]:::service
+            SOQA["StackOverflow Service"]:::service
         end
-        subgraph IntegrationServices["Integration Services"]
-            direction TB
-            MSGP[MSG Parser Service]
-            %% Reordered for consistency
-            JS[Jira Service]
-            CS[Confluence Service]
-            SOS[StackOverflow Service]
+
+        subgraph "RAG Pipeline"
+            HybridRetriever["Hybrid Retriever (Vector+BM25)"]:::pipeline
+            Dedup["Deduplication"]:::pipeline
+            Rerank["Neural Reranker"]:::pipeline
+            DSPy["DSPy LLM Orchestrator"]:::llm
         end
-    end
 
-    %% Frontend Layer (Moved to where Storage was defined)
-    subgraph Frontend["Frontend Layer"]
-        direction TB
-        UI[React/Material UI Interface]
-        subgraph UIComponents["UI Components"]
-            direction TB
-            SearchUI[Search Interface]
-            AdminUI[Admin/Index Data UI]
-            LLMSwitch[LLM Summary Toggle]
+        subgraph "Vector DB Abstraction"
+            Chroma["ChromaClient"]:::db
+            FAISS["FaissClient"]:::db
         end
+
+        %% Backend interactions
+        UI -->|REST calls| API
+        API -->|ingest| MSG
+        API -->|ingest| JiraTicket
+        API -->|ingest| ConfluencePage
+        API -->|ingest| SOQA
+        API -->|search| HybridRetriever
+        HybridRetriever -->|results| Dedup
+        Dedup -->|filtered| Rerank
+        Rerank -->|ranked| DSPy
+        DSPy -->|response| API
+        API -->|vector ops| Chroma
+        API -->|vector ops| FAISS
     end
 
-    %% Data Sources Layer (Remains in original position relative to others)
-    subgraph DataSources["Data Sources"]
-        direction TB
-        MSGFiles[MSG Files]
-        %% Reordered for consistency
-        JiraInst[Jira Instance]
-        ConfInst[Confluence Instance]
-        SOData[StackOverflow Q&A]
+    %% External Systems
+    subgraph "External Systems"
+        Outlook["Outlook MSG Files"]:::external
+        JiraSys["Jira Server/Data Center"]:::external
+        ConfluenceSys["Confluence Server/Data Center"]:::external
+        StackOverflow["StackOverflow API"]:::external
+        OpenRouter["OpenRouter (LLM Provider)"]:::external
     end
 
-    %% External Services Layer (Remains in original position relative to others)
-    subgraph ExternalServices["External Services"]
-        direction TB
-        LLMService[LLM Service API]
-    end
+    %% External interactions
+    MSG -->|reads| Outlook
+    JiraTicket -->|calls| JiraSys
+    ConfluencePage -->|calls| ConfluenceSys
+    SOQA -->|calls| StackOverflow
+    DSPy -->|calls| OpenRouter
 
-    %% === Connections (Unchanged - Should Dictate Final Layout) ===
+    %% Docker Compose Orchestration
+    Docker["docker-compose"]:::infra
+    Docker --> UI
+    Docker --> API
+    Docker --> Chroma
 
-    %% User -> Frontend
-    User --> UI
-    UI --> SearchUI
-    UI --> AdminUI
-    UI --> LLMSwitch
+    %% Click Events
+    click UI "https://github.com/rsrini7/support-buddy/tree/main/frontend/"
+    click API "https://github.com/rsrini7/support-buddy/blob/main/backend/app/main.py"
+    click MSG "https://github.com/rsrini7/support-buddy/blob/main/backend/app/services/msg_parser.py"
+    click JiraTicket "https://github.com/rsrini7/support-buddy/blob/main/backend/app/services/jira_service.py"
+    click ConfluencePage "https://github.com/rsrini7/support-buddy/blob/main/backend/app/services/confluence_service.py"
+    click SOQA "https://github.com/rsrini7/support-buddy/blob/main/backend/app/services/stackoverflow_service.py"
+    click Chroma "https://github.com/rsrini7/support-buddy/blob/main/backend/app/services/chroma_client.py"
+    click FAISS "https://github.com/rsrini7/support-buddy/blob/main/backend/app/services/faiss_client.py"
+    click HybridRetriever "https://github.com/rsrini7/support-buddy/blob/main/backend/app/utils/rag_pipeline.py"
+    click Dedup "https://github.com/rsrini7/support-buddy/blob/main/backend/app/services/deduplication_utils.py"
+    click Rerank "https://github.com/rsrini7/support-buddy/blob/main/backend/app/services/rerank_service.py"
+    click DSPy "https://github.com/rsrini7/support-buddy/blob/main/backend/app/utils/dspy_utils.py"
 
-    %% Frontend -> Backend API
-    SearchUI --> API
-    AdminUI --> API
-    LLMSwitch --> API
-
-    %% API -> Backend Core Services
-    API --> VS
-    API --> USA
-    API --> LLM
-
-    %% API -> Backend Integration Services
-    API --> MSGP
-    API --> JS
-    API --> CS
-    API --> SOS
-
-    %% Backend Core -> Dependencies
-    LLM --> LLMService
-    %% Core to External
-    VS --> ChromaClient
-    %% Core to Storage (Example - adjust labels as needed)
-    VS --> FAISSIndex
-    %% Core to Storage (Example - adjust labels as needed)
-
-    %% Backend Integration -> Dependencies
-    MSGP --> VS
-    %% Integration feeding Core
-    JS   --> VS
-    %% Integration feeding Core
-    CS   --> VS
-    %% Integration feeding Core
-    SOS  --> VS
-    %% Integration feeding Core
-
-    MSGP --> MSGFiles
-    %% Integration to Data Source
-    JS   <--> JiraInst
-    %% Integration to Data Source (Bi-directional)
-    CS   --> ConfInst
-    %% Integration to Data Source
-    SOS  --> SOData
-    %% Integration to Data Source
-
-    %% Storage Internal Connections
-    ChromaClient --> ChromaServer
-    %% Example Client->Server
-    ChromaClient --> Collections
-    %% Example Direct Write
-    ChromaServer --> Collections
-    %% Example Server Write
-    FAISSIndex   --> Collections
-    %% Example FAISS Write
-
-    %% Results Flow (Dependencies -> Core -> Frontend)
-    Collections  --> VS
-    %% Storage back to Core Service
-    VS           --> USA
-    %% Core Service to Aggregator
-    LLM          --> USA
-    %% Core Service to Aggregator
-    USA          --> SearchUI
-    %% Aggregator back to Frontend UI (Likely crossing)
-
-
-    %% === Styling (Unchanged) ===
-    classDef user fill:#FF9966,stroke:#FF6600,stroke-width:3px,color:#333333,font-weight:bold
-    classDef frontendGroup fill:#F0CBFF,stroke:#CC66FF,stroke-width:2px,color:#660099
-    classDef uiComponents fill:#FADBFF,stroke:#CC66FF,stroke-width:1px,color:#660099
-    classDef backendGroup fill:#BBDDFF,stroke:#3399FF,stroke-width:2px,color:#003366
-    classDef coreServices fill:#D6EBFF,stroke:#3399FF,stroke-width:1px,color:#003366
-    classDef integrationServices fill:#C2E0FF,stroke:#3399FF,stroke-width:1px,color:#003366
-    classDef storageGroup fill:#CCFFCC,stroke:#33CC33,stroke-width:2px,color:#006600
-    classDef vectorDB fill:#E6FFE6,stroke:#33CC33,stroke-width:1px,color:#006600
-    classDef collections fill:#D6FFD6,stroke:#33CC33,stroke-width:1px,color:#006600
-    classDef externalGroup fill:#FFF0BB,stroke:#FFCC33,stroke-width:2px,color:#996600
-    classDef dataSourcesGroup fill:#FFCCCC,stroke:#FF6666,stroke-width:2px,color:#990000
-
-    %% Apply styles
-    class User user
-    class Frontend,UI frontendGroup
-    class UIComponents,SearchUI,AdminUI,LLMSwitch uiComponents
-    class Backend,API backendGroup
-    class CoreServices,USA,VS,LLM coreServices
-    class IntegrationServices,MSGP,JS,CS,SOS integrationServices
-    class Storage storageGroup
-    class VectorDB,ChromaClient,ChromaServer,FAISSIndex vectorDB
-    class Collections,IssueCol,JiraCol,ConfCol,SOCol collections
-    class ExternalServices,LLMService externalGroup
-    class DataSources,MSGFiles,JiraInst,ConfInst,SOData dataSourcesGroup
+    %% Styles
+    classDef external fill:#cccccc,stroke:#333,stroke-width:1px
+    classDef frontend fill:#80bfff,stroke:#333,stroke-width:1px
+    classDef backend fill:#b3ffb3,stroke:#333,stroke-width:1px
+    classDef service fill:#d9f2d9,stroke:#333,stroke-width:1px
+    classDef pipeline fill:#ffe0b3,stroke:#333,stroke-width:1px
+    classDef db fill:#ffcc80,stroke:#333,stroke-width:1px
+    classDef llm fill:#d6b3ff,stroke:#333,stroke-width:1px
+    classDef infra fill:#ff9999,stroke:#333,stroke-width:1px

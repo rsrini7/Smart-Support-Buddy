@@ -1,0 +1,170 @@
+flowchart TB
+    %% === Element Definitions (Order Swapped: Storage, User, Backend...) ===
+
+    %% Storage Layer (Moved to top definition spot)
+    subgraph Storage["Vector Storage"]
+        direction TB
+        subgraph VectorDB["Vector Database Options"]
+            direction TB
+            ChromaClient[ChromaDB Client]
+            ChromaServer[ChromaDB Server]
+            FAISSIndex[FAISS Index]
+        end
+        subgraph Collections["Index Collections"]
+            direction TB
+            IssueCol[Issues Collection]
+            JiraCol[Jira Tickets Collection]
+            ConfCol[Confluence Pages Collection]
+            SOCol[StackOverflow Q&A Collection]
+        end
+    end
+
+    %% User - Top (Moved to second definition spot)
+    User((User))
+
+    %% Backend Layer (Remains in original position relative to others)
+    subgraph Backend["Backend Layer"]
+        direction TB
+        API[FastAPI Backend]
+        subgraph CoreServices["Core Services"]
+            direction TB
+            VS[Vector Service]
+            %% Placed first as key service
+            USA[Unified Search Aggregation]
+            LLM[LLM Summary Service]
+        end
+        subgraph IntegrationServices["Integration Services"]
+            direction TB
+            MSGP[MSG Parser Service]
+            %% Reordered for consistency
+            JS[Jira Service]
+            CS[Confluence Service]
+            SOS[StackOverflow Service]
+        end
+    end
+
+    %% Frontend Layer (Moved to where Storage was defined)
+    subgraph Frontend["Frontend Layer"]
+        direction TB
+        UI[React/Material UI Interface]
+        subgraph UIComponents["UI Components"]
+            direction TB
+            SearchUI[Search Interface]
+            AdminUI[Admin/Index Data UI]
+            LLMSwitch[LLM Summary Toggle]
+        end
+    end
+
+    %% Data Sources Layer (Remains in original position relative to others)
+    subgraph DataSources["Data Sources"]
+        direction TB
+        MSGFiles[MSG Files]
+        %% Reordered for consistency
+        JiraInst[Jira Instance]
+        ConfInst[Confluence Instance]
+        SOData[StackOverflow Q&A]
+    end
+
+    %% External Services Layer (Remains in original position relative to others)
+    subgraph ExternalServices["External Services"]
+        direction TB
+        LLMService[LLM Service API]
+    end
+
+    %% === Connections (Unchanged - Should Dictate Final Layout) ===
+
+    %% User -> Frontend
+    User --> UI
+    UI --> SearchUI
+    UI --> AdminUI
+    UI --> LLMSwitch
+
+    %% Frontend -> Backend API
+    SearchUI --> API
+    AdminUI --> API
+    LLMSwitch --> API
+
+    %% API -> Backend Core Services
+    API --> VS
+    API --> USA
+    API --> LLM
+
+    %% API -> Backend Integration Services
+    API --> MSGP
+    API --> JS
+    API --> CS
+    API --> SOS
+
+    %% Backend Core -> Dependencies
+    LLM --> LLMService
+    %% Core to External
+    VS --> ChromaClient
+    %% Core to Storage (Example - adjust labels as needed)
+    VS --> FAISSIndex
+    %% Core to Storage (Example - adjust labels as needed)
+
+    %% Backend Integration -> Dependencies
+    MSGP --> VS
+    %% Integration feeding Core
+    JS   --> VS
+    %% Integration feeding Core
+    CS   --> VS
+    %% Integration feeding Core
+    SOS  --> VS
+    %% Integration feeding Core
+
+    MSGP --> MSGFiles
+    %% Integration to Data Source
+    JS   <--> JiraInst
+    %% Integration to Data Source (Bi-directional)
+    CS   --> ConfInst
+    %% Integration to Data Source
+    SOS  --> SOData
+    %% Integration to Data Source
+
+    %% Storage Internal Connections
+    ChromaClient --> ChromaServer
+    %% Example Client->Server
+    ChromaClient --> Collections
+    %% Example Direct Write
+    ChromaServer --> Collections
+    %% Example Server Write
+    FAISSIndex   --> Collections
+    %% Example FAISS Write
+
+    %% Results Flow (Dependencies -> Core -> Frontend)
+    Collections  --> VS
+    %% Storage back to Core Service
+    VS           --> USA
+    %% Core Service to Aggregator
+    LLM          --> USA
+    %% Core Service to Aggregator
+    USA          --> SearchUI
+    %% Aggregator back to Frontend UI (Likely crossing)
+
+
+    %% === Styling (Unchanged) ===
+    classDef user fill:#FF9966,stroke:#FF6600,stroke-width:3px,color:#333333,font-weight:bold
+    classDef frontendGroup fill:#F0CBFF,stroke:#CC66FF,stroke-width:2px,color:#660099
+    classDef uiComponents fill:#FADBFF,stroke:#CC66FF,stroke-width:1px,color:#660099
+    classDef backendGroup fill:#BBDDFF,stroke:#3399FF,stroke-width:2px,color:#003366
+    classDef coreServices fill:#D6EBFF,stroke:#3399FF,stroke-width:1px,color:#003366
+    classDef integrationServices fill:#C2E0FF,stroke:#3399FF,stroke-width:1px,color:#003366
+    classDef storageGroup fill:#CCFFCC,stroke:#33CC33,stroke-width:2px,color:#006600
+    classDef vectorDB fill:#E6FFE6,stroke:#33CC33,stroke-width:1px,color:#006600
+    classDef collections fill:#D6FFD6,stroke:#33CC33,stroke-width:1px,color:#006600
+    classDef externalGroup fill:#FFF0BB,stroke:#FFCC33,stroke-width:2px,color:#996600
+    classDef dataSourcesGroup fill:#FFCCCC,stroke:#FF6666,stroke-width:2px,color:#990000
+
+    %% Apply styles
+    class User user
+    class Frontend,UI frontendGroup
+    class UIComponents,SearchUI,AdminUI,LLMSwitch uiComponents
+    class Backend,API backendGroup
+    class CoreServices,USA,VS,LLM coreServices
+    class IntegrationServices,MSGP,JS,CS,SOS integrationServices
+    class Storage storageGroup
+    class VectorDB,ChromaClient,ChromaServer,FAISSIndex vectorDB
+    class Collections,IssueCol,JiraCol,ConfCol,SOCol collections
+    class ExternalServices,LLMService externalGroup
+    class DataSources,MSGFiles,JiraInst,ConfInst,SOData dataSourcesGroup

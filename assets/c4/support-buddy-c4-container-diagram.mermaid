@@ -1,0 +1,44 @@
+C4Container
+    title Support Buddy System - C4 Container Diagram
+
+    Person(user, "Support Engineer", "Uses the system to search and ingest support information")
+
+    System_Boundary(supportBuddy, "Support Buddy System") {
+        Container(webApp, "Frontend Application", "React, Material-UI", "Provides UI for search, configuration, and ingestion")
+        
+        Container(backendAPI, "Backend API", "Python, FastAPI", "Handles HTTP requests and orchestrates system operations")
+        
+        Container(ingestionServices, "Ingestion Services", "Python", "Processes and imports data from various external sources")
+        
+        Container(ragSystem, "RAG System", "Python, DSPy", "Retrieval Augmented Generation pipeline for intelligent search")
+        
+        Container(vectorDB, "Vector Database", "ChromaDB, FAISS", "Stores vector embeddings for semantic search")
+    }
+
+    System_Ext(outlookSystem, "Outlook MSG Files", "Email correspondence and support tickets")
+    System_Ext(jiraServer, "Jira Server", "Issue tracking and project management")
+    System_Ext(confluenceServer, "Confluence Server", "Knowledge base and documentation")
+    System_Ext(stackOverflowAPI, "StackOverflow API", "Technical Q&A content")
+    System_Ext(llmProvider, "OpenRouter", "LLM API provider")
+    
+    Rel(user, webApp, "Uses", "HTTPS")
+    
+    Rel(webApp, backendAPI, "Makes API calls to", "JSON/HTTPS")
+    
+    Rel(backendAPI, ingestionServices, "Coordinates")
+    Rel(backendAPI, ragSystem, "Sends queries to")
+    Rel(backendAPI, vectorDB, "Manages")
+    
+    Rel(ingestionServices, outlookSystem, "Reads and processes")
+    Rel(ingestionServices, jiraServer, "Extracts tickets from", "API")
+    Rel(ingestionServices, confluenceServer, "Extracts knowledge from", "API")
+    Rel(ingestionServices, stackOverflowAPI, "Retrieves Q&A from", "API")
+    
+    Rel(ingestionServices, vectorDB, "Stores vectorized content in")
+    
+    Rel(ragSystem, vectorDB, "Retrieves relevant vectors from")
+    Rel(ragSystem, llmProvider, "Sends prompts to", "API")
+    
+    Rel(ragSystem, backendAPI, "Returns enhanced responses to")
+    
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
