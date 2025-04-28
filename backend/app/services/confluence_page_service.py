@@ -74,7 +74,8 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
             include=['metadatas', 'documents', 'distances']
         )
         formatted = []
-        ids = results.get("ids", [])[0] if results.get("ids") else []
+        # ChromaDB: ids may not be present unless always returned by backend; FAISS: ids always present
+        ids = results.get("ids", [])[0] if "ids" in results and results.get("ids") else [str(i) for i in range(len(results.get("documents", [[]])[0]))]
         metadatas = results.get("metadatas", [])[0] if results.get("metadatas") else []
         documents = results.get("documents", [])[0] if results.get("documents") else []
         distances = results.get("distances", [])[0] if results.get("distances") else []

@@ -59,9 +59,11 @@ def _get_rag_pipeline():
         logger.info(f"Detected FAISS collection. Type: {db_type}, Path: {db_path}")
     elif hasattr(collection, '_client'): # Assuming ChromaDB or similar structure
         db_type = 'chroma'
-        # Attempt to get path from Chroma settings
-        chroma_settings = getattr(collection._client, '_settings', {})
-        db_path = chroma_settings.get('persist_directory', None) or chroma_settings.get('path', None)
+        chroma_settings = getattr(collection._client, '_settings', None)
+        if isinstance(chroma_settings, dict):
+            db_path = chroma_settings.get('persist_directory', None) or chroma_settings.get('path', None)
+        else:
+            db_path = None
         logger.info(f"Detected ChromaDB-like collection. Type: {db_type}, Path: {db_path}")
     else:
         logger.warning("Could not determine DB type or path from collection object.")

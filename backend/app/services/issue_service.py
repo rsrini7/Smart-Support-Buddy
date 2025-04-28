@@ -28,7 +28,7 @@ def _get_rag_pipeline():
     import dspy
     collection = get_collection(COLLECTION_NAME)
     # Fetch documents, IDs, and metadata together
-    all_data = collection.get(include=['documents', 'metadatas', 'ids'])
+    all_data = collection.get(include=['documents', 'metadatas'])
     _corpus = all_data.get("documents", [])
     _ids = all_data.get("ids", [])
     _metadatas = all_data.get("metadatas", [])
@@ -43,9 +43,11 @@ def _get_rag_pipeline():
         db_path = os.path.dirname(index_file_path) if index_file_path else None
     else:
         db_type = 'chroma'
-        db_path = getattr(collection, '_client', None)
-        if db_path:
-            db_path = getattr(collection._client, '_settings', {}).get('path', None)
+        chroma_settings = getattr(collection._client, '_settings', None)
+        if isinstance(chroma_settings, dict):
+            db_path = chroma_settings.get('persist_directory', None) or chroma_settings.get('path', None)
+        else:
+            db_path = None
     embedder, reranker, client, _ = load_components(
         db_type=db_type,
         db_path=db_path,

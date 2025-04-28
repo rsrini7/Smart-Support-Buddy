@@ -11,18 +11,19 @@ class VectorRetriever(dspy.Retrieve):
     def forward(self, query, k=None):
         k = k or self._k
         query_emb = self._embedder.encode([query], show_progress_bar=False).tolist()
-        # Include 'documents', 'metadatas', and 'ids' to retrieve necessary info
-        results = self._collection.query(query_embeddings=query_emb, n_results=k, include=['documents', 'metadatas', 'ids'])
+        # Only include valid Chroma/FAISS fields
+        results = self._collection.query(query_embeddings=query_emb, n_results=k, include=['documents', 'metadatas'])
 
         # Ensure results are not None and contain expected keys
-        if not results or not results.get('ids') or not results['ids'][0]:
+        if not results or not results.get('documents') or not results['documents'][0]:
             return [] # Return empty list if no results or malformed
 
-        # Construct dspy.Example with document text and metadata (including the ID)
+        # Construct dspy.Example with document text and metadata (including the ID if available)
         docs = []
+        docs_ids = results.get('ids', [None])[0] if 'ids' in results and results['ids'] else [str(i) for i in range(len(results['documents'][0]))]
         for i, doc_text in enumerate(results['documents'][0]):
             metadata = results['metadatas'][0][i] if results['metadatas'] and results['metadatas'][0] and i < len(results['metadatas'][0]) else {}
-            doc_id = results['ids'][0][i] if results['ids'] and results['ids'][0] and i < len(results['ids'][0]) else None
+            doc_id = docs_ids[i] if docs_ids and i < len(docs_ids) else None
             # Add the document ID to the metadata if it's not already there
             if doc_id and 'id' not in metadata:
                 metadata['id'] = doc_id
