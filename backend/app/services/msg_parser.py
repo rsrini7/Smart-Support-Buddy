@@ -122,7 +122,7 @@ def search_similar_msg_files(query_text: str, limit: int = 10):
         for idx, context in enumerate(rag_result.context):
             formatted.append({
                 "id": f"rag_{idx}",
-                "title": context[:60],
+                "title": context[:],
                 "content": context,
                 "similarity_score": 1.0 if idx == 0 else 0.8,
                 "metadata": {},

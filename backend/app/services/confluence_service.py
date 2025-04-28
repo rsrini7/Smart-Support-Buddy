@@ -200,7 +200,7 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
                 context_dict = context.to_dict()
                 content = getattr(context, 'long_text', context_dict.get('long_text', ''))
                 page_id = context_dict.get('page_id') or context_dict.get('id') or f"rag_{idx}"
-                title = str(content)[:60] if content else ""
+                title = str(content)[:] if content else ""
                 similarity_score = float(context_dict.get('similarity_score')) if context_dict.get('similarity_score') is not None else None
                 if similarity_score is None:
                     similarity_score = compute_text_similarity_score(query_text, str(content))
@@ -219,7 +219,7 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
             elif isinstance(context, dict):
                 content = context.get('content', '') or context.get('text', '') or str(context)
                 page_id = context.get('page_id') or context.get('id') or f"rag_{idx}"
-                title = str(content)[:60] if content else ""
+                title = str(content)[:] if content else ""
                 similarity_score = float(context.get('similarity_score')) if context.get('similarity_score') is not None else None
                 if similarity_score is None:
                     similarity_score = compute_text_similarity_score(query_text, str(content))
@@ -238,7 +238,7 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
             elif hasattr(context, 'long_text'):
                 content = getattr(context, 'long_text', str(context))
                 page_id = getattr(context, 'page_id', None) or getattr(context, 'id', None) or f"rag_{idx}"
-                title = str(content)[:60] if content else ""
+                title = str(content)[:] if content else ""
                 similarity_score = getattr(context, 'similarity_score', None)
                 if similarity_score is None:
                     similarity_score = compute_text_similarity_score(query_text, str(content))
@@ -259,7 +259,7 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
                 similarity_score = compute_text_similarity_score(query_text, content_str)
                 formatted.append({
                     'page_id': f"rag_{idx}",
-                    'title': content_str[:60],
+                    'title': content_str[:],
                     'content': content_str,
                     'similarity_score': similarity_score,
                     'metadata': {},

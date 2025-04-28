@@ -239,7 +239,7 @@ def search_similar_stackoverflow_content(query_text: str, limit: int = 10):
                 context_dict = context.to_dict()
                 content = getattr(context, 'long_text', context_dict.get('long_text', ''))
                 item_id = context_dict.get('item_id') or context_dict.get('id') or f"rag_{idx}"
-                title = str(content)[:60] if content else ""
+                title = str(content)[:] if content else ""
                 similarity_score = context_dict.get('similarity_score')
                 if similarity_score is not None:
                     try:
@@ -270,7 +270,7 @@ def search_similar_stackoverflow_content(query_text: str, limit: int = 10):
             elif isinstance(context, dict):
                 content = context.get('content', '') or context.get('text', '') or str(context)
                 item_id = context.get('item_id') or context.get('id') or f"rag_{idx}"
-                title = str(content)[:60] if content else ""
+                title = str(content)[:] if content else ""
                 similarity_score = context.get('similarity_score')
                 if similarity_score is not None:
                     try:
@@ -301,7 +301,7 @@ def search_similar_stackoverflow_content(query_text: str, limit: int = 10):
             elif hasattr(context, 'long_text'):
                 content = getattr(context, 'long_text', str(context))
                 item_id = getattr(context, 'item_id', None) or getattr(context, 'id', None) or f"rag_{idx}"
-                title = str(content)[:60] if content else ""
+                title = str(content)[:] if content else ""
                 similarity_score = getattr(context, 'similarity_score', None)
                 if similarity_score is not None:
                     try:
@@ -334,7 +334,7 @@ def search_similar_stackoverflow_content(query_text: str, limit: int = 10):
                 similarity_score = compute_text_similarity_score(query_text, content_str)
                 formatted.append({
                     'item_id': f"rag_{idx}",
-                    'title': content_str[:60],
+                    'title': content_str[:],
                     'content': content_str,
                     'similarity_score': similarity_score,
                     'metadata': {},
