@@ -75,6 +75,11 @@ This application helps teams manage support issues / queries by:
 
 ## Features
 
+- **RAG Pipeline:** Implements a hybrid retrieval-augmented generation pipeline with:
+  - Vector + BM25 hybrid retrieval
+  - Fusion with deduplication
+  - Neural reranking (CrossEncoder)
+  - LLM generation
 - **MSG File Parsing:** Extracts metadata, attachments, and content from Microsoft Outlook MSG files for downstream analysis.
 - **Jira Integration:** Bi-directional synchronization and linking with Jira tickets, enabling seamless correlation between email issues and ticketing workflows.
 - **Confluence Integration:** Ingests and semantically searches Confluence pages, supporting Basic Auth for Server/Data Center deployments.
