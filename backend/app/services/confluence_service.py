@@ -7,7 +7,7 @@ from datetime import datetime
 from app.services.chroma_client import get_vector_db_client
 from app.services.embedding_service import get_embedding_model
 from app.utils.rag_utils import load_components, create_bm25_index, create_retrievers, create_rag_pipeline, index_vector_data
-from app.utils.similarity import compute_similarity_score
+from app.utils.similarity import compute_similarity_score, compute_text_similarity_score
 from app.utils.llm_augmentation import llm_summarize
 from app.models.models import ConfluencePage
 from app.utils.dspy_utils import get_openrouter_llm
@@ -201,7 +201,9 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
                 content = getattr(context, 'long_text', context_dict.get('long_text', ''))
                 page_id = context_dict.get('page_id') or context_dict.get('id') or f"rag_{idx}"
                 title = str(content)[:60] if content else ""
-                similarity_score = float(context_dict.get('similarity_score') or (1.0 if idx == 0 else 0.8))
+                similarity_score = float(context_dict.get('similarity_score')) if context_dict.get('similarity_score') is not None else None
+                if similarity_score is None:
+                    similarity_score = compute_text_similarity_score(query_text, str(content))
                 llm_answer = rag_result.answer if idx == 0 else None
                 metadata = {k: v for k, v in context_dict.items() if k not in ['long_text', 'id', 'page_id', 'title', 'similarity_score']}
                 formatted.append({
@@ -218,7 +220,9 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
                 content = context.get('content', '') or context.get('text', '') or str(context)
                 page_id = context.get('page_id') or context.get('id') or f"rag_{idx}"
                 title = str(content)[:60] if content else ""
-                similarity_score = float(context.get('similarity_score') or (1.0 if idx == 0 else 0.8))
+                similarity_score = float(context.get('similarity_score')) if context.get('similarity_score') is not None else None
+                if similarity_score is None:
+                    similarity_score = compute_text_similarity_score(query_text, str(content))
                 llm_answer = rag_result.answer if idx == 0 else None
                 metadata = {k: v for k, v in context.items() if k not in ['content', 'text', 'id', 'page_id', 'title', 'similarity_score']}
                 formatted.append({
@@ -235,7 +239,9 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
                 content = getattr(context, 'long_text', str(context))
                 page_id = getattr(context, 'page_id', None) or getattr(context, 'id', None) or f"rag_{idx}"
                 title = str(content)[:60] if content else ""
-                similarity_score = float(getattr(context, 'similarity_score', 1.0 if idx == 0 else 0.8) or (1.0 if idx == 0 else 0.8))
+                similarity_score = getattr(context, 'similarity_score', None)
+                if similarity_score is None:
+                    similarity_score = compute_text_similarity_score(query_text, str(content))
                 llm_answer = rag_result.answer if idx == 0 else None
                 metadata = {k: v for k, v in context.__dict__.items() if k not in ['long_text', 'id', 'page_id', 'title', 'similarity_score']}
                 formatted.append({
@@ -245,16 +251,17 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
                     'similarity_score': similarity_score,
                     'metadata': metadata,
                     'llm_answer': llm_answer,
-                    'url': getattr(context, 'url', None) or getattr(context, 'confluence_url', None) or metadata.get('confluence_url') or '',
+                    'url': '',
                 })
                 continue
             else:
                 content_str = str(context) if context else ""
+                similarity_score = compute_text_similarity_score(query_text, content_str)
                 formatted.append({
                     'page_id': f"rag_{idx}",
                     'title': content_str[:60],
                     'content': content_str,
-                    'similarity_score': float(1.0 if idx == 0 else 0.8),
+                    'similarity_score': similarity_score,
                     'metadata': {},
                     'llm_answer': rag_result.answer if idx == 0 else None,
                     'url': '',

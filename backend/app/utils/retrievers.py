@@ -53,6 +53,8 @@ class BM25Retriever(dspy.Retrieve):
     def forward(self, query, k=None):
         k = k or self._k
         scores = self._bm25_processor.get_scores(query)
+        # Ensure all scores are floats (handle str/float mix)
+        scores = [float(s) if not isinstance(s, float) else s for s in scores]
         # Get indices and scores, sorted by score
         ranked_indices_scores = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)
 

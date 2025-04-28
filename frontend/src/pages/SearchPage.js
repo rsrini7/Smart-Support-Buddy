@@ -264,7 +264,7 @@ const SearchPage = () => {
           <Grid container spacing={3}>
             {combinedResults.length > 0 ? (
               combinedResults.map((result, idx) => (
-                <Grid item xs={12} key={result.id || idx}>
+                <Grid item xs={12} key={result.id ? `all-${result.id}` : `all-${idx}`}>
                   <Card variant="outlined">
                     <CardContent>
                       <Typography variant="h6" gutterBottom>
@@ -428,8 +428,8 @@ const SearchPage = () => {
                 Issue Results ({combinedResults.filter((result) => result.type === 'jira' || result.type === 'msg' || result.type === 'vector_issue').length})
               </Typography>
               <Grid container spacing={3}>
-                {combinedResults.filter((result) => result.type === 'jira' || result.type === 'msg' || result.type === 'vector_issue').map((issue) => (
-                  <Grid item xs={12} key={issue.id}>
+                {combinedResults.filter((result) => result.type === 'jira' || result.type === 'msg' || result.type === 'vector_issue').map((issue, idx) => (
+                  <Grid item xs={12} key={issue.id ? `issue-${issue.id}` : `issue-${idx}`}>
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom>
@@ -502,8 +502,8 @@ const SearchPage = () => {
                 Confluence Results ({combinedResults.filter((result) => result.type === 'confluence').length})
               </Typography>
               <Grid container spacing={3}>
-                {combinedResults.filter((result) => result.type === 'confluence').map((page) => (
-                  <Grid item xs={12} key={page.id}>
+                {combinedResults.filter((result) => result.type === 'confluence').map((page, idx) => (
+                  <Grid item xs={12} key={page.id ? `confluence-${page.id}` : `confluence-${idx}`}>
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom>
@@ -587,7 +587,7 @@ const SearchPage = () => {
               </Typography>
               <Grid container spacing={3}>
                 {combinedResults.filter((result) => result.type === 'stackoverflow').map((item, idx) => (
-                  <Grid item xs={12} key={item.id || idx}>
+                  <Grid item xs={12} key={item.id ? `so-${item.id}` : `so-${idx}`}>
                     <Card variant="outlined">
                       <CardContent>
                         <Typography variant="h6" gutterBottom>

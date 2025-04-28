@@ -24,10 +24,30 @@ def ensure_nltk_resources():
         nltk.download('punkt_tab', download_dir=nltk_data_dir)
         nltk.download('stopwords', download_dir=nltk_data_dir)
 
+# Robust stopwords loader
+def get_english_stopwords():
+    import os
+    import nltk
+    from nltk.corpus import stopwords
+    # Use the same nltk_data_dir logic as ensure_nltk_resources
+    nltk_data_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..', '..', '.venv', 'nltk_data')
+    )
+    if not os.path.exists(nltk_data_dir):
+        os.makedirs(nltk_data_dir, exist_ok=True)
+    if nltk_data_dir not in nltk.data.path:
+        nltk.data.path.insert(0, nltk_data_dir)
+    try:
+        return set(stopwords.words('english'))
+    except Exception:
+        # Force re-download if corrupted, to the correct path
+        nltk.download('stopwords', download_dir=nltk_data_dir)
+        return set(stopwords.words('english'))
+
 class BM25Processor:
     def __init__(self, documents: List[str]):
         ensure_nltk_resources()
-        stop_words = set(stopwords.words('english'))
+        stop_words = get_english_stopwords()
         self.tokenized_docs = [
             [word.lower() for word in word_tokenize(doc) if word.isalnum() and word.lower() not in stop_words]
             for doc in documents
@@ -37,7 +57,7 @@ class BM25Processor:
 
     def get_scores(self, query: str) -> List[float]:
         ensure_nltk_resources()
-        stop_words = set(stopwords.words('english'))
+        stop_words = get_english_stopwords()
         tokenized_query = [
             word.lower() for word in word_tokenize(query)
             if word.isalnum() and word.lower() not in stop_words
