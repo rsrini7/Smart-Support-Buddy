@@ -188,89 +188,29 @@ def add_confluence_page_to_vectordb(
         log_ingest_failure(e)
         return None
 
-def search_similar_confluence_pages(query_text: str, limit: int = 10):
+def confluence_search(query_text: str, limit: int = 10, use_llm: bool = False) -> List[Dict[str, Any]]:
+    """
+    Hybrid RAG search for Confluence pages.
+    Returns fused, reranked, and LLM-augmented results.
+    """
     log_search_start(query_text, limit)
     try:
-        rag_pipeline = _get_rag_pipeline()
-        rag_result = rag_pipeline.forward(query_text)
+        _get_rag_pipeline()
+        rag_result = _rag_pipeline.forward(query_text, use_llm=use_llm)
         formatted = []
         for idx, context in enumerate(rag_result.context):
-            # Unwrap DSPy Example objects to dicts for frontend compatibility
-            if hasattr(context, 'to_dict'):
-                context_dict = context.to_dict()
-                content = getattr(context, 'long_text', context_dict.get('long_text', ''))
-                page_id = context_dict.get('page_id') or context_dict.get('id') or f"rag_{idx}"
-                title = str(content)[:] if content else ""
-                similarity_score = float(context_dict.get('similarity_score')) if context_dict.get('similarity_score') is not None else None
-                if similarity_score is None:
-                    similarity_score = compute_text_similarity_score(query_text, str(content))
-                llm_answer = rag_result.answer if idx == 0 else None
-                metadata = {k: v for k, v in context_dict.items() if k not in ['long_text', 'id', 'page_id', 'title', 'similarity_score']}
-                formatted.append({
-                    'page_id': page_id,
-                    'title': title,
-                    'content': str(content) if content else "",
-                    'similarity_score': similarity_score,
-                    'metadata': metadata,
-                    'llm_answer': llm_answer,
-                    'url': context_dict.get('url') or context_dict.get('confluence_url') or metadata.get('confluence_url') or context_dict.get('confluence_url') or metadata.get('url') or '',
-                    'link': context_dict.get('url') or context_dict.get('confluence_url') or metadata.get('confluence_url') or context_dict.get('confluence_url') or metadata.get('url') or ''
-                })
-                continue
-            elif isinstance(context, dict):
-                content = context.get('content', '') or context.get('text', '') or str(context)
-                page_id = context.get('page_id') or context.get('id') or f"rag_{idx}"
-                title = str(content)[:] if content else ""
-                similarity_score = float(context.get('similarity_score')) if context.get('similarity_score') is not None else None
-                if similarity_score is None:
-                    similarity_score = compute_text_similarity_score(query_text, str(content))
-                llm_answer = rag_result.answer if idx == 0 else None
-                metadata = {k: v for k, v in context.items() if k not in ['content', 'text', 'id', 'page_id', 'title', 'similarity_score']}
-                formatted.append({
-                    'page_id': page_id,
-                    'title': title,
-                    'content': str(content) if content else "",
-                    'similarity_score': similarity_score,
-                    'metadata': metadata,
-                    'llm_answer': llm_answer,
-                    'url': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or '',
-                    'link': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or ''
-                })
-                continue
-            elif hasattr(context, 'long_text'):
-                content = getattr(context, 'long_text', str(context))
-                page_id = getattr(context, 'page_id', None) or getattr(context, 'id', None) or f"rag_{idx}"
-                title = str(content)[:] if content else ""
-                similarity_score = getattr(context, 'similarity_score', None)
-                if similarity_score is None:
-                    similarity_score = compute_text_similarity_score(query_text, str(content))
-                llm_answer = rag_result.answer if idx == 0 else None
-                metadata = {k: v for k, v in context.__dict__.items() if k not in ['long_text', 'id', 'page_id', 'title', 'similarity_score']}
-                formatted.append({
-                    'page_id': page_id,
-                    'title': title,
-                    'content': str(content) if content else "",
-                    'similarity_score': similarity_score,
-                    'metadata': metadata,
-                    'llm_answer': llm_answer,
-                    'url': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or '',
-                    'link': context.get('url') or context.get('confluence_url') or metadata.get('confluence_url') or context.get('confluence_url') or metadata.get('url') or ''
-                })
-                continue
-            else:
-                content_str = str(context) if context else ""
-                similarity_score = compute_text_similarity_score(query_text, content_str)
-                formatted.append({
-                    'page_id': f"rag_{idx}",
-                    'title': content_str[:],
-                    'content': content_str,
-                    'similarity_score': similarity_score,
-                    'metadata': {},
-                    'llm_answer': rag_result.answer if idx == 0 else None,
-                    'url': '',
-                })
+            formatted.append({
+                "id": f"confluence_{idx}",
+                "title": context[:],
+                "content": context,
+                "similarity_score": 1.0 if idx == 0 else 0.8,
+                "metadata": {},
+            })
         log_search_success(len(formatted))
         return formatted
+    except Exception as e:
+        log_search_failure(str(e))
+        raise
     except Exception as e:
         log_search_failure(e)
         return []

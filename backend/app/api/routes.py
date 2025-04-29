@@ -15,18 +15,16 @@ from app.models import  IssueResponse, SearchQuery
 from pydantic import BaseModel
 from app.services.vector_service import clear_collection
 
-from app.services.confluence_service import (
-    add_confluence_page_to_vectordb,
-    search_similar_confluence_pages
-)
-
+from app.services.vector_service import search_similar_issues
+from app.services.confluence_page_service import search_similar_confluence_pages
+from app.services.stackoverflow_qa_service import search_similar_stackoverflow_content
+from app.services.llm_service import generate_summary_from_results # Import LLM service
+from app.services.confluence_service import add_confluence_page_to_vectordb
 from app.services.stackoverflow_service import (
     add_stackoverflow_qa_to_vectordb,
     search_similar_stackoverflow_content
 )
-
 from app.utils.similarity import compute_similarity_score
-
 from app.services.unified_rag_service import unified_rag_search
 
 logger = logging.getLogger(__name__)
@@ -334,10 +332,7 @@ async def search_issues(query: SearchQuery):
     Returns a dict with results from all sources.
     """
     import asyncio
-    from app.services.vector_service import search_similar_issues
-    from app.services.confluence_service import search_similar_confluence_pages
-    from app.services.stackoverflow_service import search_similar_stackoverflow_content
-    from app.services.llm_service import generate_summary_from_results # Import LLM service
+    
     from app.models.models import SearchQuery # Ensure SearchQuery is imported
     from concurrent.futures import ThreadPoolExecutor
 
@@ -345,7 +340,7 @@ async def search_issues(query: SearchQuery):
         # Use a ThreadPoolExecutor with proper cleanup
         with ThreadPoolExecutor(max_workers=3) as executor:
             vector_task = asyncio.get_event_loop().run_in_executor(
-                executor, search_similar_issues, query.query_text, query.jira_ticket_id, query.limit
+                executor, search_similar_issues, query.query_text, query.jira_ticket_id, query.limit, query.use_llm
             )
             confluence_task = asyncio.get_event_loop().run_in_executor(
                 executor, search_similar_confluence_pages, query.query_text, query.limit
@@ -399,6 +394,7 @@ async def search_issues(query: SearchQuery):
 
         llm_summary = ""
         if query.use_llm and combined_results:
+            logger.info(f"LLM Action requested (use_llm=True) for query: '{query.query_text}'. Generating summary...") # Added logging
             try:
                 # Generate summary using the top results
                 llm_summary = generate_summary_from_results(combined_results)

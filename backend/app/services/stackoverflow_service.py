@@ -226,11 +226,11 @@ def sanitize_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
             sanitized[k] = v
     return sanitized
 
-def search_similar_stackoverflow_content(query_text: str, limit: int = 10):
+def search_similar_stackoverflow_content(query_text: str, limit: int = 10, use_llm: bool = False):
     log_search_start(query_text, limit)
     try:
         rag_pipeline = _get_rag_pipeline()
-        rag_result = rag_pipeline.forward(query_text)
+        rag_result = rag_pipeline.forward(query_text,use_llm=use_llm)
         # Return as a list of dicts for frontend compatibility
         formatted = []
         for idx, context in enumerate(rag_result.context):

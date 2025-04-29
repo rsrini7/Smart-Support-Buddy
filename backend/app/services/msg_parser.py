@@ -113,26 +113,29 @@ def _get_rag_pipeline():
     _rag_pipeline = create_rag_pipeline(vector_retriever, bm25_retriever, reranker, llm)
     return _rag_pipeline
 
-def search_similar_msg_files(query_text: str, limit: int = 10):
+def msg_search(query_text: str, limit: int = 10, use_llm: bool = False) -> list:
+    """
+    Hybrid RAG search for MSG files.
+    Returns fused, reranked, and LLM-augmented results.
+    """
     log_search_start(query_text, limit)
     try:
-        rag_pipeline = _get_rag_pipeline()
-        rag_result = rag_pipeline.forward(query_text)
+        _get_rag_pipeline()
+        rag_result = _rag_pipeline.forward(query_text, use_llm=use_llm)
         formatted = []
         for idx, context in enumerate(rag_result.context):
             formatted.append({
-                "id": f"rag_{idx}",
+                "id": f"msg_{idx}",
                 "title": context[:],
                 "content": context,
                 "similarity_score": 1.0 if idx == 0 else 0.8,
                 "metadata": {},
-                "llm_answer": rag_result.answer if idx == 0 else None
             })
         log_search_success(len(formatted))
         return formatted
     except Exception as e:
-        log_search_failure(e)
-        return []
+        log_search_failure(str(e))
+        raise
 
 def parse_msg_file(file_path: str) -> Dict[str, Any]:
     logger.info(f"parse_msg_file called with file_path: {file_path}")

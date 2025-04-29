@@ -320,11 +320,11 @@ def _get_rag_pipeline():
     _rag_pipeline = create_rag_pipeline(vector_retriever, bm25_retriever, reranker, llm)
     return _rag_pipeline
 
-def search_similar_jira_tickets(query_text: str, limit: int = 10):
+def search_similar_jira_tickets(query_text: str, limit: int = 10, use_llm: bool = False):
     log_search_start(query_text, limit)
     try:
         rag_pipeline = _get_rag_pipeline()
-        rag_result = rag_pipeline.forward(query_text)
+        rag_result = rag_pipeline.forward(query_text, use_llm=use_llm)
         formatted = []
         for idx, context in enumerate(rag_result.context):
             formatted.append({

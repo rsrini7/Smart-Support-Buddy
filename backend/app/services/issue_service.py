@@ -116,7 +116,7 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
         logger.error(f"Error getting issue from vector database: {str(e)}")
         raise
 
-def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10) -> List[IssueResponse]:
+def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10, use_llm: bool = False) -> List[IssueResponse]:
     """
     Use the DSPy RAG pipeline for hybrid retrieval and answer generation.
     """
@@ -162,7 +162,7 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
                 ))
             return issue_responses
         # Otherwise, use the RAG pipeline
-        rag_result = rag_pipeline.forward(query_text)
+        rag_result = rag_pipeline.forward(query_text, use_llm=use_llm)
         # Process RAG results, using retrieved IDs and metadata
         responses = []
         # The context from RAG is now a list of dspy.Example objects with metadata
