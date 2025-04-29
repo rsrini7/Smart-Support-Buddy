@@ -81,7 +81,8 @@ If you encounter issues during setup or operation, consider the following troubl
           ```bash
           sudo ln -s /usr/bin/pwsh /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
           ```
-     - This should resolve the ENOENT error when tools expect PowerShell at the default Windows path.
+      - This should resolve the ENOENT error when tools expect PowerShell at the default Windows path.
 
-5. Enable Port Forward in vscode Ports View
-![VSCode-Port-Forward-WSL](./assets/VSCode-Port-Forward-WSL.png)
+   4.1. Enable Port Forward in vscode Ports View for WSL2
+   
+      ![VSCode-Port-Forward-WSL](./assets/VSCode-Port-Forward-WSL.png)

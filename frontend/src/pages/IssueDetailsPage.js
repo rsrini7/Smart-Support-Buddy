@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { BACKEND_API_BASE } from '../settings';
+import { BACKEND_API_BASE, JIRA_BASE_URL } from '../settings';
 import {
   Typography,
   Box,
@@ -336,7 +336,7 @@ const IssueDetailsPage = () => {
                       View in Jira
                     </Typography>
                     <Link 
-                      href={`${process.env.REACT_APP_JIRA_BASE_URL}/browse/${issue.jira_data.key}`} 
+                      href={`${JIRA_BASE_URL}/browse/${issue.jira_data.key}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                     >
