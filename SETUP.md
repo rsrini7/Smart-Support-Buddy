@@ -100,7 +100,16 @@ To start the frontend React application, use the provided script:
 
 To activate the backend's Python virtual environment, use the provided script:
 ```sh
+# For Linux/macOS (bash/zsh)
 source ./set_venv.sh
+```
+
+For Windows (PowerShell), open PowerShell as Administrator (if needed for execution policy) and run:
+
+```powershell
+# Make sure execution policy allows running local scripts
+# You might need to run: Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+. .\set_venv.ps1
 ```
 
 ## Environment Variables
@@ -179,7 +188,16 @@ To start the frontend React application, use the provided script:
 
 To activate the backend's Python virtual environment, use the provided script:
 ```sh
+# For Linux/macOS (bash/zsh)
 source ./set_venv.sh
+```
+
+For Windows (PowerShell), open PowerShell as Administrator (if needed for execution policy) and run:
+
+```powershell
+# Make sure execution policy allows running local scripts
+# You might need to run: Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+. .\set_venv.ps1
 ```
 
 ## Environment Variables
