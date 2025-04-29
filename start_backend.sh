@@ -133,6 +133,15 @@ fi
 # Change to backend directory
 cd "$BACKEND_DIR"
 
+# Check if 'uv' command exists, if not, install it using the provided script
+if ! command -v uv &> /dev/null; then
+    echo "'uv' command not found. Installing 'uv'..."
+    # Install 'uv' for Linux or macOS
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    # Add $HOME/.local/bin to PATH if not already present
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
 # Install dependencies (in backend dir)
 echo "Installing dependencies..."
 uv sync
