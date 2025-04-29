@@ -68,3 +68,20 @@ If you encounter issues during setup or operation, consider the following troubl
      1. Verify that the backend's `chromadb` Python package version matches the Docker image version.
      2. Ensure you are using `chromadb.HttpClient` and not `PersistentClient`.
      3. Avoid passing local-only settings (like `persist_directory`) to the HTTP client.
+
+4. **WSL PowerShell ENOENT Error:**
+   - If you encounter a `ENOENT: no such file or directory, open '/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'` error when running commands in WSL:
+     - This usually means the expected PowerShell executable path does not exist in your WSL environment.
+     - To resolve this, create the necessary directories and a symlink to the actual PowerShell executable:
+       1. Create the directory structure:
+          ```bash
+          sudo mkdir -p /mnt/c/Windows/System32/WindowsPowerShell/v1.0/
+          ```
+       2. Create a symlink to the PowerShell executable (adjust the source path if your PowerShell is elsewhere):
+          ```bash
+          sudo ln -s /usr/bin/pwsh /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
+          ```
+     - This should resolve the ENOENT error when tools expect PowerShell at the default Windows path.
+
+5. Enable Port Forward in vscode Ports View
+![VSCode-Port-Forward-WSL](./assets/VSCode-Port-Forward-WSL.png)
