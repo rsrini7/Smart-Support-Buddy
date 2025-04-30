@@ -277,6 +277,9 @@ def add_jira_ticket_to_vectordb(ticket_id: str, extra_metadata: Optional[Dict[st
         metadata = {"jira_ticket_id": ticket_id, **jira_data}
         if extra_metadata:
             metadata.update(extra_metadata)
+        # Ensure required metadata fields
+        metadata["source"] = "jira"
+        metadata["collection_name"] = COLLECTION_NAME
         client = get_vector_db_client()
         embedder = get_embedding_model()
         ids = index_vector_data(

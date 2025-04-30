@@ -70,6 +70,8 @@ def add_msg_file_to_vectordb(file_path: str, extra_metadata: dict = None, llm_au
             "recipients": recipients,
             "jira_id": jira_id,
             "jira_url": jira_url,
+            "source": "msg",
+            "collection_name": COLLECTION_NAME
         }
         if extra_metadata:
             metadata.update(extra_metadata)

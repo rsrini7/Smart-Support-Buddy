@@ -168,7 +168,7 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
         rag_result = rag_pipeline.forward(query_text, use_llm=use_llm)
         responses = []
         retrieved_examples = rag_result.context
-        logger.debug(f"RAG pipeline returned {len(retrieved_examples)} examples.")
+        logger.debug(f"Issue RAG pipeline returned {len(retrieved_examples)} examples.")
         # Filter out any results that are not from the Jira issues collection
         filtered_examples = [ex for ex in retrieved_examples if (ex.get('collection_name') == COLLECTION_NAME or ex.get('source') == 'jira') and not (ex.get('collection_name') == 'confluence_pages' or ex.get('source') == 'confluence')]
         logger.debug(f"Filtered to {len(filtered_examples)} Jira-only examples.")
