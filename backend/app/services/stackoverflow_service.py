@@ -42,6 +42,12 @@ def log_search_failure(error):
 _rag_pipeline = None
 _corpus = None
 
+# --- CLEAR CACHE UTILITY FOR TESTING/RESET ---
+def clear_stackoverflow_cache():
+    global _rag_pipeline, _corpus
+    _rag_pipeline = None
+    _corpus = None
+
 def _get_rag_pipeline(use_llm: bool = False):
     global _rag_pipeline, _corpus
     if _rag_pipeline is not None:
@@ -196,7 +202,7 @@ def add_stackoverflow_qa_to_vectordb(
             ids.append(aid)
             documents.append(ans["text"])
             metadatas.append(sanitize_metadata(answer_obj.model_dump()))
-        # Use unified ingest utility with configurable augmentation
+        # Index all documents
         index_vector_data(
             client=client,
             embedder=embedder,
@@ -211,6 +217,7 @@ def add_stackoverflow_qa_to_vectordb(
             normalize_language=normalize_language,
             target_language=target_language
         )
+        clear_stackoverflow_cache()  # Clear pipeline and corpus cache after ingest
         log_ingest_success(ids)
         return ids
     except Exception as e:

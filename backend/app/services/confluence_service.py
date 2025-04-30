@@ -1,4 +1,5 @@
 import logging
+from app.core.config import settings
 import hashlib
 import requests
 import os
@@ -198,13 +199,22 @@ def confluence_search(query_text: str, limit: int = 10, use_llm: bool = False) -
     """
     log_search_start(query_text, limit)
     try:
+        # Always refresh pipeline and corpus after ingestion to ensure latest data is used
+        global _rag_pipeline, _corpus
+        _rag_pipeline = None
+        _corpus = None
         rag_pipeline = _get_rag_pipeline(use_llm=use_llm)
         rag_result = rag_pipeline.forward(query_text, use_llm=use_llm)
         formatted = []
-        for idx, context in enumerate(rag_result.context):
+        # Defensive: handle empty or missing context
+        context_list = getattr(rag_result, "context", [])
+        if not context_list:
+            log_search_success(0)
+            return []
+        for idx, context in enumerate(context_list):
             formatted.append({
                 "id": f"confluence_{idx}",
-                "title": context[:],
+                "title": context[:100],
                 "content": context,
                 "similarity_score": 1.0 if idx == 0 else 0.8,
                 "metadata": {},
@@ -223,15 +233,16 @@ COLLECTION_NAME = "confluence_pages"
 
 def search_similar_confluence_pages(query_text: str, limit: int = 10):
     try:
-        collection = get_collection(COLLECTION_NAME)
-        embedding = get_embedding(query_text)
+        client = get_vector_db_client()
+        collection = client.get_collection(COLLECTION_NAME)
+        embedder = get_embedding_model()
+        embedding = embedder.encode(query_text)
         results = collection.query(
             query_embeddings=[embedding],
             n_results=limit,
             include=['metadatas', 'documents', 'distances']
         )
         formatted = []
-        # ChromaDB: ids may not be present unless always returned by backend; FAISS: ids always present
         ids = results.get("ids", [])[0] if "ids" in results and results.get("ids") else [str(i) for i in range(len(results.get("documents", [[]])[0]))]
         metadatas = results.get("metadatas", [])[0] if results.get("metadatas") else []
         documents = results.get("documents", [])[0] if results.get("documents") else []
@@ -243,7 +254,6 @@ def search_similar_confluence_pages(query_text: str, limit: int = 10):
             similarity_score = compute_similarity_score(distance)
             if similarity_score < settings.SIMILARITY_THRESHOLD:
                 continue
-            # Use ConfluencePage model for structured metadata
             page_obj = ConfluencePage(
                 page_id=page_id,
                 title=metadata.get('title', ''),
