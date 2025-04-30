@@ -128,7 +128,7 @@ def msg_search(query_text: str, limit: int = 10, use_llm: bool = False) -> list:
         for idx, context in enumerate(rag_result.context):
             formatted.append({
                 "id": f"msg_{idx}",
-                "title": context[:],
+                "title": context[:150]+" ...",
                 "content": context,
                 "similarity_score": 1.0 if idx == 0 else 0.8,
                 "metadata": {},

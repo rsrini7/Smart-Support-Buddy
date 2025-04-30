@@ -331,7 +331,7 @@ def search_similar_jira_tickets(query_text: str, limit: int = 10, use_llm: bool 
         for idx, context in enumerate(rag_result.context):
             formatted.append({
                 "id": f"rag_{idx}",
-                "title": context[:],
+                "title": context[:150]+" ...",
                 "content": context,
                 "similarity_score": 1.0 if idx == 0 else 0.8,
                 "metadata": {},
