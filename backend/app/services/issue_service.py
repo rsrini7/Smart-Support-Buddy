@@ -124,7 +124,7 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
     Ensures only Jira issues are returned, not Confluence or other data.
     """
     try:
-        rag_pipeline = _get_rag_pipeline()
+        rag_pipeline = _get_rag_pipeline(use_llm=use_llm)
         # If searching by Jira ticket only, fallback to direct lookup
         if jira_ticket_id and not query_text:
             collection = get_collection(COLLECTION_NAME)

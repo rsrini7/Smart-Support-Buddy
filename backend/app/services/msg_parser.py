@@ -122,7 +122,7 @@ def msg_search(query_text: str, limit: int = 10, use_llm: bool = False) -> list:
     """
     log_search_start(query_text, limit)
     try:
-        _get_rag_pipeline()
+        _get_rag_pipeline(use_llm=use_llm)
         rag_result = _rag_pipeline.forward(query_text, use_llm=use_llm)
         formatted = []
         for idx, context in enumerate(rag_result.context):

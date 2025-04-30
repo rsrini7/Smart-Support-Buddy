@@ -325,7 +325,7 @@ def _get_rag_pipeline(use_llm: bool = False):
 def search_similar_jira_tickets(query_text: str, limit: int = 10, use_llm: bool = False):
     log_search_start(query_text, limit)
     try:
-        rag_pipeline = _get_rag_pipeline()
+        rag_pipeline = _get_rag_pipeline(use_llm=use_llm)
         rag_result = rag_pipeline.forward(query_text, use_llm=use_llm)
         formatted = []
         for idx, context in enumerate(rag_result.context):

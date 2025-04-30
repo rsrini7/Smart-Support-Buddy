@@ -28,8 +28,8 @@ def log_ingest_success(ids):
 def log_ingest_failure(error):
     logger.error(f"[INGEST][FAILURE] Stack Overflow ingest failed: {error}")
 
-def log_search_start(query_text, limit):
-    logger.info(f"[SEARCH][START] Stack Overflow search called. Query: '{query_text}', Limit: {limit}")
+def log_search_start(query_text, limit, use_llm):
+    logger.info(f"[SEARCH][START] Stack Overflow search called. Query: '{query_text}', Limit: {limit} LLM: {use_llm}")
 
 def log_search_success(results_count):
     logger.info(f"[SEARCH][SUCCESS] Stack Overflow search returned {results_count} results.")
@@ -59,10 +59,12 @@ def _get_rag_pipeline(use_llm: bool = False):
     _corpus = documents
     embedder = get_embedding_model()
     reranker = get_reranker()  # FIX: use actual reranker model
-    # Use OpenRouter LLM via DSPy
+    # --- Ensure LLM is loaded if use_llm is True ---
     llm = None
     if use_llm:
         llm = get_openrouter_llm()
+        if llm is None:
+            raise RuntimeError("LLM could not be loaded but use_llm=True. Please check LLM configuration.")
     bm25_processor = create_bm25_index(_corpus)
     vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus)
     _rag_pipeline = create_rag_pipeline(vector_retriever, bm25_retriever, reranker, llm)
@@ -236,9 +238,9 @@ def sanitize_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
     return sanitized
 
 def search_similar_stackoverflow_content(query_text: str, limit: int = 10, use_llm: bool = False):
-    log_search_start(query_text, limit)
+    log_search_start(query_text, limit, use_llm)
     try:
-        rag_pipeline = _get_rag_pipeline()
+        rag_pipeline = _get_rag_pipeline(use_llm=use_llm)
         rag_result = rag_pipeline.forward(query_text,use_llm=use_llm)
         # Return as a list of dicts for frontend compatibility
         formatted = []

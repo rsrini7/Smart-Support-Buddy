@@ -54,6 +54,7 @@ class ConfluenceIngestRequest(BaseModel):
 class ConfluenceSearchRequest(BaseModel):
     query_text: str
     limit: int = 10
+    use_llm: bool = False
 
 class StackOverflowIngestRequest(BaseModel):
     stackoverflow_urls: List[str]
@@ -65,6 +66,7 @@ class StackOverflowIngestRequest(BaseModel):
 class StackOverflowSearchRequest(BaseModel):
     query_text: str
     limit: int = 10
+    use_llm: bool = False
 
 class LLMTopResultsCountRequest(BaseModel):
     llm_top_results_count: int
@@ -250,7 +252,7 @@ async def search_stackoverflow_qa(payload: StackOverflowSearchRequest):
     Search for similar Stack Overflow Q&A based on a query.
     """
     try:
-        results = search_similar_stackoverflow_content(payload.query_text, payload.limit)
+        results = search_similar_stackoverflow_content(payload.query_text, payload.limit, payload.use_llm)
         if not results or not results.get("ids"):
             return {
                 "status": "success",
@@ -289,7 +291,7 @@ async def search_confluence_pages(payload: ConfluenceSearchRequest):
     Search for similar Confluence pages based on a query.
     """
     try:
-        results = confluence_search(payload.query_text, payload.limit)
+        results = confluence_search(payload.query_text, payload.limit, payload.use_llm)
         if not results or not results.get("ids"):
             return {
                 "status": "success",
@@ -346,10 +348,10 @@ async def search_issues(query: SearchQuery):
                 executor, search_similar_issues, query.query_text, query.jira_ticket_id, query.limit, query.use_llm
             )
             confluence_task = asyncio.get_event_loop().run_in_executor(
-                executor, confluence_search, query.query_text, query.limit
+                executor, confluence_search, query.query_text, query.limit, query.use_llm
             )
             stackoverflow_task = asyncio.get_event_loop().run_in_executor(
-                executor, search_similar_stackoverflow_content, query.query_text, query.limit
+                executor, search_similar_stackoverflow_content, query.query_text, query.limit, query.use_llm
             )
 
             vector_issues, confluence_results, stackoverflow_results = await asyncio.gather(
@@ -426,7 +428,7 @@ def unified_search_endpoint(payload: dict):
     limit = payload.get("limit", 10)
     if not query_text:
         raise HTTPException(status_code=400, detail="query_text is required")
-    results = unified_rag_search(query_text, limit)
+    results = unified_rag_search(query_text, limit,payload.get("use_llm", False))
     return {"results": results}
 
 @router.get("/issues", response_model=List[IssueResponse])

@@ -59,14 +59,14 @@ def _get_rag_pipeline(use_llm: bool = False):
     return _rag_pipeline
 
 
-def unified_rag_search(query_text: str, limit: int = 10) -> List[Dict[str, Any]]:
+def unified_rag_search(query_text: str, limit: int = 10, use_llm: bool = False) -> List[Dict[str, Any]]:
     """
     Hybrid RAG search across Issues, Jira, and MSG files.
     Returns fused, reranked, and LLM-augmented results from all sources.
     """
     logger.info(f"[UNIFIED_RAG][START] Unified search called. Query: '{query_text}', Limit: {limit}")
     try:
-        _get_rag_pipeline()
+        _get_rag_pipeline(use_llm=use_llm)
         rag_result = _rag_pipeline.forward(query_text)
         formatted = []
         for idx, context in enumerate(rag_result.context):

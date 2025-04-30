@@ -102,7 +102,7 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
     """
     return real_get_issue(issue_id)
 
-def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10, similarity_threshold: Optional[float] = None) -> List[IssueResponse]:
+def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10, use_llm: bool = False) -> List[IssueResponse]:
     """
     Search for similar support issues / queries based on a query text or Jira ticket ID.
     
@@ -110,18 +110,25 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
         query_text: Text to search for (optional)
         jira_ticket_id: Optional Jira ticket ID to filter results
         limit: Maximum number of results to return
-        similarity_threshold: Optional minimum similarity score (0-1) to filter results
-        
+        use_llm: Whether to use LLM for similarity search
     Returns:
         List of IssueResponse objects representing similar issues
     """
-    results = real_search_similar_issues(query_text, jira_ticket_id, limit)
+    results = real_search_similar_issues(query_text, jira_ticket_id, limit, use_llm)
     
-    if similarity_threshold is not None:
-        from app.core.config import Settings
-        threshold = similarity_threshold if similarity_threshold is not None else Settings.SIMILARITY_THRESHOLD
-        results = [r for r in results if getattr(r, 'similarity_score', 0) >= threshold]
-    
+    # logger.info(f"Search results Vector Service: {results}")
+    # from app.core.config import Settings
+    # threshold = Settings.SIMILARITY_THRESHOLD
+    # def is_similar(issue):
+    #     score = getattr(issue, 'similarity_score', None)
+    #     if score is None:
+    #         return False
+    #     try:
+    #         return float(score) >= float(threshold)
+    #     except (TypeError, ValueError):
+    #         return False
+    # results = [r for r in results if is_similar(r)]
+
     return results
 
 def clear_all_issues() -> bool:
