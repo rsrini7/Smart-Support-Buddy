@@ -199,25 +199,30 @@ def confluence_search(query_text: str, limit: int = 10, use_llm: bool = False) -
     """
     log_search_start(query_text, limit)
     try:
-        # Always refresh pipeline and corpus after ingestion to ensure latest data is used
-        global _rag_pipeline, _corpus
-        _rag_pipeline = None
-        _corpus = None
         rag_pipeline = _get_rag_pipeline(use_llm=use_llm)
         rag_result = rag_pipeline.forward(query_text, use_llm=use_llm)
         formatted = []
-        # Defensive: handle empty or missing context
-        context_list = getattr(rag_result, "context", [])
-        if not context_list:
-            log_search_success(0)
-            return []
-        for idx, context in enumerate(context_list):
+        for idx, context in enumerate(rag_result.context):
+            # Compute similarity score using text similarity if possible
+            similarity_score = None
+            if hasattr(context, 'similarity') and context.similarity is not None:
+                similarity_score = float(context.similarity)
+            elif isinstance(context, dict) and 'similarity' in context:
+                similarity_score = float(context['similarity'])
+            elif hasattr(context, 'long_text') and isinstance(context.long_text, str):
+                from app.utils.similarity import compute_text_similarity_score
+                similarity_score = compute_text_similarity_score(query_text, context.long_text)
+            elif isinstance(context, dict) and 'long_text' in context:
+                from app.utils.similarity import compute_text_similarity_score
+                similarity_score = compute_text_similarity_score(query_text, context['long_text'])
+            else:
+                similarity_score = 0.0
             formatted.append({
-                "id": f"confluence_{idx}",
-                "title": context[:100],
-                "content": context,
-                "similarity_score": 1.0 if idx == 0 else 0.8,
-                "metadata": {},
+                "id": context.get('id') if isinstance(context, dict) else getattr(context, 'id', f"confluence_{idx}"),
+                "title": context.get('display_title') if isinstance(context, dict) else getattr(context, 'display_title', None),
+                "content": context.get('content') if isinstance(context, dict) else getattr(context, 'content', str(context)),
+                "similarity_score": similarity_score,
+                "metadata": context.get('metadata', {}) if isinstance(context, dict) else {},
             })
         log_search_success(len(formatted))
         return formatted

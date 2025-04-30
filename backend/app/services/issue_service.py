@@ -121,6 +121,7 @@ def get_issue(issue_id: str) -> Optional[IssueResponse]:
 def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = None, limit: int = 10, use_llm: bool = False) -> List[IssueResponse]:
     """
     Use the DSPy RAG pipeline for hybrid retrieval and answer generation.
+    Ensures only Jira issues are returned, not Confluence or other data.
     """
     try:
         rag_pipeline = _get_rag_pipeline()
@@ -165,42 +166,35 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
             return issue_responses
         # Otherwise, use the RAG pipeline
         rag_result = rag_pipeline.forward(query_text, use_llm=use_llm)
-        # Process RAG results, using retrieved IDs and metadata
         responses = []
-        # The context from RAG is now a list of dspy.Example objects with metadata
         retrieved_examples = rag_result.context
         logger.debug(f"RAG pipeline returned {len(retrieved_examples)} examples.")
-
-        # Fetch full issue details using the IDs from metadata
-        issue_ids = [ex.get('id') for ex in retrieved_examples if ex.get('id')]
-        logger.debug(f"Extracted issue IDs from RAG context: {issue_ids}") # Added debug log
-
-        # Batch fetch issues if possible, otherwise fetch one by one
-        # (Assuming get_issue fetches one by one for simplicity here)
+        # Filter out any results that are not from the Jira issues collection
+        filtered_examples = [ex for ex in retrieved_examples if (ex.get('collection_name') == COLLECTION_NAME or ex.get('source') == 'jira') and not (ex.get('collection_name') == 'confluence_pages' or ex.get('source') == 'confluence')]
+        logger.debug(f"Filtered to {len(filtered_examples)} Jira-only examples.")
+        for idx, example in enumerate(retrieved_examples):
+            logger.debug(f"RAG example {idx} source: {example.get('source')}, collection: {example.get('collection_name')}, id: {example.get('id')}")
+        issue_ids = [ex.get('id') for ex in filtered_examples if ex.get('id')]
+        logger.debug(f"Extracted issue IDs from filtered RAG context: {issue_ids}")
         issues_map = {}
         for issue_id in issue_ids:
-            if not issue_id: # Skip if ID is None or empty
+            if not issue_id:
                 logger.warning("Skipping fetch for None/empty issue ID.")
                 continue
             try:
                 issue = get_issue(issue_id)
                 if issue:
                     issues_map[issue_id] = issue
-                    logger.debug(f"Successfully fetched issue {issue_id} for map.") # Added debug log
+                    logger.debug(f"Successfully fetched issue {issue_id} for map.")
                 else:
-                    logger.warning(f"get_issue returned None for issue ID: {issue_id}") # Modified warning log
+                    logger.warning(f"get_issue returned None for issue ID: {issue_id}")
             except Exception as fetch_err:
-                 logger.error(f"Error fetching issue {issue_id} using get_issue: {fetch_err}") # Added error log for fetch exception
-
+                 logger.error(f"Error fetching issue {issue_id} using get_issue: {fetch_err}")
         logger.debug(f"Populated issues_map with {len(issues_map)} entries.")
-
-        for idx, example in enumerate(retrieved_examples):
-            # Ensure example is treated as a dictionary-like object for .get()
-            logger.debug(f"Processing RAG example {idx}: {example}") # Added debug log
+        for idx, example in enumerate(filtered_examples):
+            logger.debug(f"Processing filtered RAG example {idx}: {example}")
             if not hasattr(example, 'get'):
-                logger.warning(f"Skipping RAG example {idx} as it's not dictionary-like: {type(example)}")
                 continue
-
             issue_id = example.get('id')
             logger.debug(f"Extracted issue_id from example {idx}: {issue_id}") # Added debug log
 
@@ -223,10 +217,9 @@ def search_similar_issues(query_text: str = "", jira_ticket_id: Optional[str] = 
 
         logger.info(f"Search completed. Found {len(responses)} similar issues.")
         return responses[:limit]
-
     except Exception as e:
-        logger.error(f"Error searching similar issues: {str(e)}", exc_info=True)
-        return []
+        logger.error(f"Error in search_similar_issues: {str(e)}")
+        raise
 
 def add_issue_to_vectordb(
     issue: Dict[str, Any],
@@ -254,6 +247,8 @@ def add_issue_to_vectordb(
             "created_date": issue.get("created_at", str(datetime.now())),
             "jira_ticket_id": issue.get("jira_ticket_id"),
             "content_hash": content_hash,
+            "source": "jira",
+            "collection_name": COLLECTION_NAME
         }
         if extra_metadata:
             metadata.update(extra_metadata)

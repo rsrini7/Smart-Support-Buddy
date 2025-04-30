@@ -124,7 +124,9 @@ def add_issue_to_vectordb(
             "jira_ticket_id": jira_ticket_id or "",
             "jira_summary": jira_summary,
             "created_date": datetime.now().isoformat() if not (msg_data and msg_data.get("received_date")) else "",
-            "content_hash": content_hash
+            "content_hash": content_hash,
+            "source": "jira",
+            "collection_name": COLLECTION_NAME
         }
         # Safely assign msg_received_date
         received_date = msg_data.get("received_date", None) if msg_data else None
