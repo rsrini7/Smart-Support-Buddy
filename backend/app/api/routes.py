@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from app.services.vector_service import clear_collection
 
 from app.services.vector_service import search_similar_issues
-from app.services.confluence_service import search_similar_confluence_pages
+from app.services.confluence_service import confluence_search
 from app.services.confluence_service import add_confluence_page_to_vectordb
 from app.services.llm_service import generate_summary_from_results
 from app.services.stackoverflow_service import (
@@ -289,7 +289,7 @@ async def search_confluence_pages(payload: ConfluenceSearchRequest):
     Search for similar Confluence pages based on a query.
     """
     try:
-        results = search_similar_confluence_pages(payload.query_text, payload.limit)
+        results = confluence_search(payload.query_text, payload.limit)
         if not results or not results.get("ids"):
             return {
                 "status": "success",
@@ -346,7 +346,7 @@ async def search_issues(query: SearchQuery):
                 executor, search_similar_issues, query.query_text, query.jira_ticket_id, query.limit, query.use_llm
             )
             confluence_task = asyncio.get_event_loop().run_in_executor(
-                executor, search_similar_confluence_pages, query.query_text, query.limit
+                executor, confluence_search, query.query_text, query.limit
             )
             stackoverflow_task = asyncio.get_event_loop().run_in_executor(
                 executor, search_similar_stackoverflow_content, query.query_text, query.limit

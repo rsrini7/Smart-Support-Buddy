@@ -203,24 +203,51 @@ def confluence_search(query_text: str, limit: int = 10, use_llm: bool = False) -
         rag_result = rag_pipeline.forward(query_text, use_llm=use_llm)
         formatted = []
         for idx, context in enumerate(rag_result.context):
-            # Compute similarity score using text similarity if possible
+            # Prioritize score directly from RAG context if available
             similarity_score = None
-            if hasattr(context, 'similarity') and context.similarity is not None:
+            if hasattr(context, 'score') and context.score is not None:
+                similarity_score = float(context.score)
+            elif isinstance(context, dict) and 'score' in context and context['score'] is not None:
+                similarity_score = float(context['score'])
+            # Fallback: Check for 'similarity' attribute/key
+            elif hasattr(context, 'similarity') and context.similarity is not None:
                 similarity_score = float(context.similarity)
-            elif isinstance(context, dict) and 'similarity' in context:
+            elif isinstance(context, dict) and 'similarity' in context and context['similarity'] is not None:
                 similarity_score = float(context['similarity'])
+            # Fallback: Check for distance-based score
+            elif hasattr(context, 'distance') and context.distance is not None:
+                from app.utils.similarity import compute_similarity_score
+                similarity_score = compute_similarity_score(float(context.distance))
+            elif isinstance(context, dict) and 'distance' in context and context['distance'] is not None:
+                from app.utils.similarity import compute_similarity_score
+                similarity_score = compute_similarity_score(float(context['distance']))
+            # Fallback: Compute text similarity if necessary (less preferred)
             elif hasattr(context, 'long_text') and isinstance(context.long_text, str):
                 from app.utils.similarity import compute_text_similarity_score
                 similarity_score = compute_text_similarity_score(query_text, context.long_text)
             elif isinstance(context, dict) and 'long_text' in context:
                 from app.utils.similarity import compute_text_similarity_score
                 similarity_score = compute_text_similarity_score(query_text, context['long_text'])
+            elif hasattr(context, 'text') and isinstance(context.text, str):
+                from app.utils.similarity import compute_text_similarity_score
+                similarity_score = compute_text_similarity_score(query_text, context.text)
+            elif isinstance(context, dict) and 'text' in context:
+                from app.utils.similarity import compute_text_similarity_score
+                similarity_score = compute_text_similarity_score(query_text, context['text'])
             else:
+                # Default if no score can be determined
                 similarity_score = 0.0
+                logger.warning(f"No similarity score could be determined for Confluence result: {context}")
             formatted.append({
-                "id": context.get('id') if isinstance(context, dict) else getattr(context, 'id', f"confluence_{idx}"),
-                "title": context.get('display_title') if isinstance(context, dict) else getattr(context, 'display_title', None),
-                "content": context.get('content') if isinstance(context, dict) else getattr(context, 'content', str(context)),
+                "id": context.get('id'),
+                "title": context.get('title') ,
+                "content": context.get('content'),
+                "url": context.get('url', ''),
+                "space":context.get('space'),
+                "labels":context.get('labels'),
+                "creator":context.get('creator'),
+                "created":context.get('created'),
+                "updated":context.get('updated'),
                 "similarity_score": similarity_score,
                 "metadata": context.get('metadata', {}) if isinstance(context, dict) else {},
             })
@@ -232,48 +259,3 @@ def confluence_search(query_text: str, limit: int = 10, use_llm: bool = False) -
     except Exception as e:
         log_search_failure(e)
         return []
-
-
-COLLECTION_NAME = "confluence_pages"
-
-def search_similar_confluence_pages(query_text: str, limit: int = 10):
-    try:
-        client = get_vector_db_client()
-        collection = client.get_collection(COLLECTION_NAME)
-        embedder = get_embedding_model()
-        embedding = embedder.encode(query_text)
-        results = collection.query(
-            query_embeddings=[embedding],
-            n_results=limit,
-            include=['metadatas', 'documents', 'distances']
-        )
-        formatted = []
-        ids = results.get("ids", [])[0] if "ids" in results and results.get("ids") else [str(i) for i in range(len(results.get("documents", [[]])[0]))]
-        metadatas = results.get("metadatas", [])[0] if results.get("metadatas") else []
-        documents = results.get("documents", [])[0] if results.get("documents") else []
-        distances = results.get("distances", [])[0] if results.get("distances") else []
-        for i, page_id in enumerate(ids):
-            metadata = metadatas[i] if i < len(metadatas) else {}
-            document = documents[i] if i < len(documents) else ""
-            distance = distances[i] if i < len(distances) else 0.0
-            similarity_score = compute_similarity_score(distance)
-            if similarity_score < settings.SIMILARITY_THRESHOLD:
-                continue
-            page_obj = ConfluencePage(
-                page_id=page_id,
-                title=metadata.get('title', ''),
-                url=metadata.get('url', ''),
-                space=metadata.get('space'),
-                labels=metadata.get('labels'),
-                creator=metadata.get('creator'),
-                created=metadata.get('created'),
-                updated=metadata.get('updated'),
-                content=document,
-                similarity_score=similarity_score,
-                metadata=metadata
-            )
-            formatted.append(page_obj.model_dump())
-        return formatted
-    except Exception as e:
-        logger.error(f"Error searching similar Confluence pages: {str(e)}")
-        return None
