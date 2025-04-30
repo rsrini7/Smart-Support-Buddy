@@ -59,6 +59,8 @@ def _get_rag_pipeline(use_llm: bool = False):
     llm = None
     if use_llm:
         llm = get_openrouter_llm()
+        if llm is None:
+            raise RuntimeError("LLM could not be loaded but use_llm=True. Please check LLM configuration.")
     bm25_processor = create_bm25_index(_corpus)
     # Pass IDs and Metadatas to create_retrievers so BM25Retriever can use them
     vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus, doc_ids=_ids, metadatas=_metadatas)

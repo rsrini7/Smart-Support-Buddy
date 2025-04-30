@@ -52,6 +52,8 @@ def _get_rag_pipeline(use_llm: bool = False):
     llm = None
     if use_llm:
         llm = get_openrouter_llm()
+        if llm is None:
+            raise RuntimeError("LLM could not be loaded but use_llm=True. Please check LLM configuration.")
     bm25_processor = create_bm25_index(_corpus)
     # SyntheticCollection logic omitted for brevity, keep as is if needed
     vector_retriever, bm25_retriever = create_retrievers(client, embedder, bm25_processor, _corpus)
