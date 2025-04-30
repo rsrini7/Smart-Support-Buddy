@@ -42,7 +42,7 @@ def log_search_failure(error):
 _rag_pipeline = None
 _corpus = None
 
-def _get_rag_pipeline():
+def _get_rag_pipeline(use_llm: bool = False):
     global _rag_pipeline, _corpus
     if _rag_pipeline is not None:
         return _rag_pipeline
@@ -54,7 +54,9 @@ def _get_rag_pipeline():
     embedder = get_embedding_model()
     reranker = get_reranker()  # FIX: use actual reranker model
     # Use OpenRouter LLM via DSPy
-    llm = get_openrouter_llm()
+    llm = None
+    if use_llm:
+        llm = get_openrouter_llm()
     bm25_processor = create_bm25_index(_corpus)
     vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus)
     _rag_pipeline = create_rag_pipeline(vector_retriever, bm25_retriever, reranker, llm)

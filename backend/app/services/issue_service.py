@@ -20,7 +20,7 @@ COLLECTION_NAME = "issues"
 _rag_pipeline = None
 _corpus = None
 
-def _get_rag_pipeline():
+def _get_rag_pipeline(use_llm: bool = False):
     global _rag_pipeline, _corpus
     if _rag_pipeline is not None:
         return _rag_pipeline
@@ -56,7 +56,9 @@ def _get_rag_pipeline():
         llm=None
     )
     # Use OpenRouter LLM via DSPy
-    llm = get_openrouter_llm()
+    llm = None
+    if use_llm:
+        llm = get_openrouter_llm()
     bm25_processor = create_bm25_index(_corpus)
     # Pass IDs and Metadatas to create_retrievers so BM25Retriever can use them
     vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus, doc_ids=_ids, metadatas=_metadatas)

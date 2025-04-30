@@ -95,7 +95,7 @@ def add_msg_file_to_vectordb(file_path: str, extra_metadata: dict = None, llm_au
         log_ingest_failure(e)
         return None
 
-def _get_rag_pipeline():
+def _get_rag_pipeline(use_llm: bool = False):
     global _rag_pipeline, _corpus
     if _rag_pipeline is not None:
         return _rag_pipeline
@@ -107,7 +107,9 @@ def _get_rag_pipeline():
     _corpus = documents
     embedder = get_embedding_model()
     reranker = None
-    llm = get_openrouter_llm()
+    llm = None
+    if use_llm:
+        llm = get_openrouter_llm()
     bm25_processor = create_bm25_index(_corpus)
     vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus)
     _rag_pipeline = create_rag_pipeline(vector_retriever, bm25_retriever, reranker, llm)

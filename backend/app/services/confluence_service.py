@@ -37,11 +37,12 @@ def log_search_failure(error):
     logger.error(f"[SEARCH][FAILURE] Confluence search failed: {error}")
 # --- LOGGING INSTRUMENTATION END ---
 
+
 # Cache pipeline at module level to avoid reloading every call
 _rag_pipeline = None
 _corpus = None
 
-def _get_rag_pipeline():
+def _get_rag_pipeline(use_llm: bool = False):
     global _rag_pipeline, _corpus
     if _rag_pipeline is not None:
         return _rag_pipeline
@@ -54,10 +55,9 @@ def _get_rag_pipeline():
     # Determine db_type and db_path based on collection type
     if isinstance(collection, FaissCollection):
         db_type = 'faiss'
-        # Use the directory containing the index file as the path
         db_path = os.path.dirname(collection.index_path) if collection.index_path else None
         logger.info(f"Detected FAISS collection. Type: {db_type}, Path: {db_path}")
-    elif hasattr(collection, '_client'): # Assuming ChromaDB or similar structure
+    elif hasattr(collection, '_client'):
         db_type = 'chroma'
         chroma_settings = getattr(collection._client, '_settings', None)
         if isinstance(chroma_settings, dict):
@@ -73,12 +73,13 @@ def _get_rag_pipeline():
     embedder, reranker, _, _ = load_components(
         db_type=db_type,
         db_path=db_path,
-        embedder_model=None, # Let load_components handle default
-        reranker_model=None, # Let load_components handle default
+        embedder_model=None,
+        reranker_model=None,
         llm=None
     )
-    # Use OpenRouter LLM via DSPy
-    llm = get_openrouter_llm()
+    llm = None
+    if use_llm:
+        llm = get_openrouter_llm()
     bm25_processor = create_bm25_index(_corpus)
     vector_retriever, bm25_retriever = create_retrievers(collection, embedder, bm25_processor, _corpus)
     _rag_pipeline = create_rag_pipeline(vector_retriever, bm25_retriever, reranker, llm)
@@ -135,7 +136,8 @@ def add_confluence_page_to_vectordb(
     llm_augment: Optional[Any] = None,
     augment_metadata: bool = False,
     normalize_language: bool = False,
-    target_language: str = "en"
+    target_language: str = "en",
+    use_llm: bool = False
 ) -> Optional[str or List[str]]:
     log_ingest_start(confluence_url, extra_metadata)
     try:
@@ -164,7 +166,8 @@ def add_confluence_page_to_vectordb(
             metadata=None if extra_metadata is None else sanitize_metadata(extra_metadata),
         )
         metadata = sanitize_metadata(page_obj.model_dump())
-        # Use unified ingest utility with configurable augmentation
+        # Only use LLM augmentation if use_llm is True
+        llm_augment_to_use = llm_augment or llm_summarize if use_llm else None
         ids = index_vector_data(
             client=client,
             embedder=embedder,
@@ -174,7 +177,7 @@ def add_confluence_page_to_vectordb(
             metadatas=[metadata],
             clear_existing=False,
             deduplicate=True,
-            llm_augment=llm_augment or llm_summarize,
+            llm_augment=llm_augment_to_use,
             augment_metadata=augment_metadata,
             normalize_language=normalize_language,
             target_language=target_language
@@ -195,8 +198,8 @@ def confluence_search(query_text: str, limit: int = 10, use_llm: bool = False) -
     """
     log_search_start(query_text, limit)
     try:
-        _get_rag_pipeline()
-        rag_result = _rag_pipeline.forward(query_text, use_llm=use_llm)
+        rag_pipeline = _get_rag_pipeline(use_llm=use_llm)
+        rag_result = rag_pipeline.forward(query_text, use_llm=use_llm)
         formatted = []
         for idx, context in enumerate(rag_result.context):
             formatted.append({
@@ -214,3 +217,48 @@ def confluence_search(query_text: str, limit: int = 10, use_llm: bool = False) -
     except Exception as e:
         log_search_failure(e)
         return []
+
+
+COLLECTION_NAME = "confluence_pages"
+
+def search_similar_confluence_pages(query_text: str, limit: int = 10):
+    try:
+        collection = get_collection(COLLECTION_NAME)
+        embedding = get_embedding(query_text)
+        results = collection.query(
+            query_embeddings=[embedding],
+            n_results=limit,
+            include=['metadatas', 'documents', 'distances']
+        )
+        formatted = []
+        # ChromaDB: ids may not be present unless always returned by backend; FAISS: ids always present
+        ids = results.get("ids", [])[0] if "ids" in results and results.get("ids") else [str(i) for i in range(len(results.get("documents", [[]])[0]))]
+        metadatas = results.get("metadatas", [])[0] if results.get("metadatas") else []
+        documents = results.get("documents", [])[0] if results.get("documents") else []
+        distances = results.get("distances", [])[0] if results.get("distances") else []
+        for i, page_id in enumerate(ids):
+            metadata = metadatas[i] if i < len(metadatas) else {}
+            document = documents[i] if i < len(documents) else ""
+            distance = distances[i] if i < len(distances) else 0.0
+            similarity_score = compute_similarity_score(distance)
+            if similarity_score < settings.SIMILARITY_THRESHOLD:
+                continue
+            # Use ConfluencePage model for structured metadata
+            page_obj = ConfluencePage(
+                page_id=page_id,
+                title=metadata.get('title', ''),
+                url=metadata.get('url', ''),
+                space=metadata.get('space'),
+                labels=metadata.get('labels'),
+                creator=metadata.get('creator'),
+                created=metadata.get('created'),
+                updated=metadata.get('updated'),
+                content=document,
+                similarity_score=similarity_score,
+                metadata=metadata
+            )
+            formatted.append(page_obj.model_dump())
+        return formatted
+    except Exception as e:
+        logger.error(f"Error searching similar Confluence pages: {str(e)}")
+        return None

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Button, List, ListItem, ListItemText, Alert, CircularProgress, Paper } from '@mui/material';
+import { Box, Typography, Button, List, ListItem, ListItemText, Alert, CircularProgress, Checkbox,Paper, FormControlLabel } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { BACKEND_API_BASE } from '../settings';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +9,7 @@ const IngestMsgFilesPage = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [useLLM, setUseLLM] = useState(false);
   const navigate = useNavigate();
   const theme = useTheme();
 
@@ -32,6 +33,7 @@ const IngestMsgFilesPage = () => {
       files.forEach((file) => {
         formData.append('files', file);
       });
+      formData.append('use_llm', useLLM);
       const response = await fetch(`${BACKEND_API_BASE}/ingest-msg-dir`, {
         method: 'POST',
         body: formData,
@@ -72,7 +74,11 @@ const IngestMsgFilesPage = () => {
               onChange={handleFolderSelect}
             />
           </Button>
-
+          <FormControlLabel
+            control={<Checkbox checked={useLLM} onChange={e => setUseLLM(e.target.checked)} />}
+            label="LLM Action"
+            sx={{ ml: 2 }}
+          />
           <Button variant="contained" onClick={handleIngest} disabled={loading || files.length === 0}>
             {loading ? <CircularProgress size={24} /> : 'Ingest'}
           </Button>

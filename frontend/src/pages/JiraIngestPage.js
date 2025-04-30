@@ -13,6 +13,7 @@ const JiraIngestPage = () => {
   const [augmentMetadata, setAugmentMetadata] = useState(true);
   const [normalizeLanguage, setNormalizeLanguage] = useState(true);
   const [targetLanguage, setTargetLanguage] = useState('en');
+  const [useLLM, setUseLLM] = useState(false);
   const navigate = useNavigate();
   const theme = useTheme();
 
@@ -47,7 +48,8 @@ const JiraIngestPage = () => {
       jira_ticket_ids: jiraIds,
       augment_metadata: augmentMetadata,
       normalize_language: normalizeLanguage,
-      target_language: targetLanguage
+      target_language: targetLanguage,
+      use_llm: useLLM
     };
 
     try {
@@ -131,6 +133,11 @@ const JiraIngestPage = () => {
             <MenuItem value="zh">Chinese</MenuItem>
             {/* Add more languages as needed */}
           </Select>
+          <FormControlLabel
+            control={<Checkbox checked={useLLM} onChange={e => setUseLLM(e.target.checked)} />}
+            label="LLM Action"
+            sx={{ ml: 2 }}
+          />
         </FormGroup>
         <Button
           variant="contained"

@@ -13,6 +13,7 @@ const ConfluenceIngestPage = () => {
   const [augmentMetadata, setAugmentMetadata] = useState(true);
   const [normalizeLanguage, setNormalizeLanguage] = useState(true);
   const [targetLanguage, setTargetLanguage] = useState('en');
+  const [useLLM, setUseLLM] = useState(false);
   const navigate = useNavigate();
   const theme = useTheme();
 
@@ -55,7 +56,8 @@ const ConfluenceIngestPage = () => {
       confluence_urls: confluenceUrls,
       augment_metadata: augmentMetadata,
       normalize_language: normalizeLanguage,
-      target_language: targetLanguage
+      target_language: targetLanguage,
+      use_llm: useLLM
     };
 
     try {
@@ -136,6 +138,11 @@ const ConfluenceIngestPage = () => {
             <MenuItem value="zh">Chinese</MenuItem>
             {/* Add more languages as needed */}
           </Select>
+          <FormControlLabel
+            control={<Checkbox checked={useLLM} onChange={e => setUseLLM(e.target.checked)} />}
+            label="LLM Action"
+            sx={{ ml: 2 }}
+          />
         </FormGroup>
         <Button variant="contained" color="primary" onClick={handleSubmit} disabled={loading}>
           {loading ? <CircularProgress size={24} /> : 'Ingest'}

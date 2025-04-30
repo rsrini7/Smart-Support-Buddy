@@ -16,10 +16,9 @@ from pydantic import BaseModel
 from app.services.vector_service import clear_collection
 
 from app.services.vector_service import search_similar_issues
-from app.services.confluence_page_service import search_similar_confluence_pages
-from app.services.stackoverflow_qa_service import search_similar_stackoverflow_content
-from app.services.llm_service import generate_summary_from_results # Import LLM service
+from app.services.confluence_service import search_similar_confluence_pages
 from app.services.confluence_service import add_confluence_page_to_vectordb
+from app.services.llm_service import generate_summary_from_results
 from app.services.stackoverflow_service import (
     add_stackoverflow_qa_to_vectordb,
     search_similar_stackoverflow_content
@@ -37,6 +36,7 @@ class JiraIngestRequest(BaseModel):
     augment_metadata: bool = True
     normalize_language: bool = True
     target_language: str = "en"
+    use_llm: bool = False
 
 class IngestDirRequest(BaseModel):
     directory_path: str
@@ -49,6 +49,7 @@ class ConfluenceIngestRequest(BaseModel):
     augment_metadata: bool = True
     normalize_language: bool = True
     target_language: str = "en"
+    use_llm: bool = False
 
 class ConfluenceSearchRequest(BaseModel):
     query_text: str
@@ -59,6 +60,7 @@ class StackOverflowIngestRequest(BaseModel):
     augment_metadata: bool = False
     normalize_language: bool = False
     target_language: str = "en"
+    use_llm: bool = False
 
 class StackOverflowSearchRequest(BaseModel):
     query_text: str
@@ -137,7 +139,8 @@ async def ingest_confluence_page(payload: ConfluenceIngestRequest):
                 url,
                 augment_metadata=payload.augment_metadata,
                 normalize_language=payload.normalize_language,
-                target_language=payload.target_language
+                target_language=payload.target_language,
+                use_llm=payload.use_llm
             )
             if not page_id:
                 results.append({

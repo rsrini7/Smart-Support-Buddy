@@ -38,7 +38,7 @@ _rag_pipeline = None
 _corpus = None
 
 
-def _get_rag_pipeline():
+def _get_rag_pipeline(use_llm: bool = False):
     global _rag_pipeline, _corpus
     if _rag_pipeline is not None:
         return _rag_pipeline
@@ -49,7 +49,9 @@ def _get_rag_pipeline():
     embedder = get_embedding_model()
     client = get_vector_db_client()
     # Use OpenRouter LLM via DSPy
-    llm = get_openrouter_llm()
+    llm = None
+    if use_llm:
+        llm = get_openrouter_llm()
     bm25_processor = create_bm25_index(_corpus)
     # SyntheticCollection logic omitted for brevity, keep as is if needed
     vector_retriever, bm25_retriever = create_retrievers(client, embedder, bm25_processor, _corpus)

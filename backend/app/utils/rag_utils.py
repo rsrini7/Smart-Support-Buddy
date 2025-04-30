@@ -36,7 +36,8 @@ def index_vector_data(
     llm_augment: Optional[Callable[[str], str]] = None,
     augment_metadata: bool = True,
     normalize_language: bool = True,
-    target_language: str = "en"
+    target_language: str = "en",
+    use_llm: bool = False
 ) -> List[str]:
     collection = client.get_or_create_collection(collection_name)
     if clear_existing:
@@ -51,13 +52,14 @@ def index_vector_data(
     final_docs, final_ids, final_embeddings, final_metadatas = [], [], [], []
     for i, doc in enumerate(documents):
         # Normalize language
-        if normalize_language:
+        if normalize_language and use_llm:
             doc = llm_normalize_language(doc, target_language)
         # LLM-based summarization (if provided)
-        if llm_augment:
-            doc = llm_augment(doc)
-        else:
-            doc = llm_summarize(doc)
+        if use_llm:
+            if llm_augment:
+                doc = llm_augment(doc)
+            else:
+                doc = llm_summarize(doc)
         # Compute embedding
         embedding = embedder.encode(doc).tolist()
         # Deduplication: check for content hash
@@ -70,7 +72,7 @@ def index_vector_data(
         meta = metadatas[i] if (metadatas and i < len(metadatas)) else {}
         meta = dict(meta) if meta else {}
         meta["content_hash"] = content_hash
-        if augment_metadata:
+        if augment_metadata and use_llm:
             extracted = llm_extract_metadata(doc)
             meta.update({k: v for k, v in extracted.items() if k not in meta})
         final_docs.append(doc)
